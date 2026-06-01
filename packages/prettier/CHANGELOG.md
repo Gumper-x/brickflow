@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.12
+
+### Patch Changes
+
+- Fix workspace cli translate
+
 ## 0.0.11
 
 ### Patch Changes

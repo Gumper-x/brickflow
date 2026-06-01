@@ -1,5 +1,13 @@
 # @brickflow/ui
 
+## 0.0.12
+
+### Patch Changes
+
+- Fix workspace cli translate
+- Updated dependencies
+  - @brickflow/utils@0.0.12
+
 ## 0.0.11
 
 ### Patch Changes

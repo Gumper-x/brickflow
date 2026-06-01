@@ -1,15 +1,14 @@
 import fs from 'fs'
 import { globSync } from 'glob'
-import { dirname, join, relative, resolve } from 'path'
-import { fileURLToPath } from 'url'
+import { dirname, join, relative } from 'path'
 
+import { resolveWorkspaceRoot } from '../shared/workspace-root.js'
 import { getAiContextState } from './ai-context.js'
 import { translateBatch } from './ai.js'
 import { buildTranslateHelp, parseTranslateRuntimeArgs, setTranslateRuntimeConfig } from './runtime-config.js'
 import { listTranslationTargets, sortObjectKeys, stringifySortedJson } from './utils.js'
 
-const currentDir = dirname(fileURLToPath(import.meta.url))
-const workspaceRoot = resolve(currentDir, '../../../..')
+const workspaceRoot = resolveWorkspaceRoot()
 const rawArgs = process.argv.slice(3)
 
 if (rawArgs.includes('--help') || rawArgs.includes('-h')) {

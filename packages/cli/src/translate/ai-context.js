@@ -4,6 +4,7 @@ import fs from 'fs'
 import { dirname, join, relative, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
+import { resolveWorkspaceRoot } from '../shared/workspace-root.js'
 import { generateContentWithLimits } from './gemini.js'
 import {
   buildTranslateHelp,
@@ -14,8 +15,7 @@ import {
 } from './runtime-config.js'
 import { listTranslationTargets, stringifySortedJson } from './utils.js'
 
-const currentDir = dirname(fileURLToPath(import.meta.url))
-const workspaceRoot = resolve(currentDir, '../../../..')
+const workspaceRoot = resolveWorkspaceRoot()
 const CONTEXT_FILE_NAME = 'ai-context.json'
 const CHANGE_THRESHOLD = readFloat('TRANSLATE_CONTEXT_MIN_CHANGE', 0.3)
 const SOURCE_MAX_CHARS = readPositiveInt('TRANSLATE_CONTEXT_SOURCE_MAX_CHARS', 16000)
