@@ -22,7 +22,7 @@ const entries = inputDirs
   .flatMap((inputDir) =>
     readdirSync(inputDir)
       .filter((entry) => statSync(path.join(inputDir, entry)).isFile())
-      .map((entry) => ({ entry, inputDir }))
+      .map((entry) => ({ entry, inputDir })),
   )
   .sort((first, second) => {
     const entryComparison = first.entry.localeCompare(second.entry)
