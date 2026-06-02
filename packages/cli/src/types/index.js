@@ -10,29 +10,41 @@ if (args.includes('--help') || args.includes('-h')) {
 
 const options = parseArgs(args)
 
-if (!options.path || !options.typeName || !options.outputFile || !options.replacePattern) {
+if (options.paths.length === 0 || !options.typeName || !options.outputFile || !options.replacePattern) {
   printHelp()
   process.exit(1)
 }
 
-const inputDir = path.resolve(process.cwd(), options.path)
+const inputDirs = options.paths.map((inputPath) => path.resolve(process.cwd(), inputPath))
 const outputFile = path.resolve(process.cwd(), options.outputFile)
 const replacePattern = parseReplacePattern(options.replacePattern)
-const entries = readdirSync(inputDir)
-  .filter((entry) => statSync(path.join(inputDir, entry)).isFile())
-  .sort((first, second) => first.localeCompare(second))
+const entries = inputDirs
+  .flatMap((inputDir) =>
+    readdirSync(inputDir)
+      .filter((entry) => statSync(path.join(inputDir, entry)).isFile())
+      .map((entry) => ({ entry, inputDir }))
+  )
+  .sort((first, second) => {
+    const entryComparison = first.entry.localeCompare(second.entry)
 
-const typeValues = new Set(entries.map((entry) => applyReplacePattern(entry, replacePattern)).filter(Boolean))
+    if (entryComparison !== 0) {
+      return entryComparison
+    }
+
+    return first.inputDir.localeCompare(second.inputDir)
+  })
+
+const typeValues = new Set(entries.map(({ entry }) => applyReplacePattern(entry, replacePattern)).filter(Boolean))
 
 if (typeValues.size === 0) {
-  throw new Error(`No type values generated from: ${inputDir}`)
+  throw new Error(`No type values generated from: ${inputDirs.join(', ')}`)
 }
 
 const declaration = `declare type ${options.typeName} = ${[...typeValues].map((value) => `'${value}'`).join(' | ')}\n`
 writeFileSync(outputFile, declaration, 'utf8')
 
 console.log(`✅ Types generated for ${options.typeName}`)
-console.log(`   input:  ${inputDir}`)
+console.log(`   input:  ${inputDirs.join(', ')}`)
 console.log(`   output: ${outputFile}`)
 
 function applyReplacePattern(value, pattern) {
@@ -46,7 +58,7 @@ function applyReplacePattern(value, pattern) {
 function parseArgs(rawArgs) {
   const parsedOptions = {
     outputFile: null,
-    path: null,
+    paths: [],
     replacePattern: null,
     typeName: null,
   }
@@ -56,7 +68,12 @@ function parseArgs(rawArgs) {
     const value = rawArgs[index]
 
     if (value === '--path') {
-      parsedOptions.path = rawArgs[index + 1] ?? null
+      const inputPath = rawArgs[index + 1] ?? null
+
+      if (inputPath) {
+        parsedOptions.paths.push(inputPath)
+      }
+
       index += 1
       continue
     }
@@ -82,8 +99,8 @@ function parseArgs(rawArgs) {
     positional.push(value)
   }
 
-  if (!parsedOptions.path) {
-    parsedOptions.path = positional[0] ?? null
+  if (parsedOptions.paths.length === 0 && positional[0]) {
+    parsedOptions.paths.push(positional[0])
   }
 
   if (!parsedOptions.typeName) {
@@ -118,9 +135,10 @@ Usage:
   brick types ./path/to/files IconName ./types/icon.d.ts .svg
   brick types ./path/to/files IconName ./types/icon.d.ts /\\.svg$/
   brick types --path ./path/to/files --type-name IconName --output-file ./types/icon.d.ts --replace-pattern /\\.svg$/
+  brick types --path ./path/to/files --path ./path/to/more-files --type-name IconName --output-file ./types/icon.d.ts --replace-pattern /\\.svg$/
 
 Notes:
-  path: directory with source files
+  path: directory with source files, can be passed multiple times
   typeName: generated TypeScript type name
   outputFile: file to write declaration into
   replacePattern: string or regex literal used in replace(..., '') for each filename`)
