@@ -1,5 +1,11 @@
 # @brickflow/http
 
+## 0.0.13
+
+### Patch Changes
+
+- update multiply file in types
+
 ## 0.0.12
 
 ### Patch Changes
