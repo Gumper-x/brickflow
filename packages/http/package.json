@@ -1,9 +1,22 @@
 {
   "name": "@brickflow/http",
-  "version": "0.0.12",
-  "description": "",
-  "main": "index.js",
+  "version": "0.0.13",
+  "type": "module",
+  "description": "brickflow HTTP Nuxt module.",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/module.mjs",
+  "types": "./dist/module.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/module.d.mts",
+      "import": "./dist/module.mjs"
+    }
+  },
   "scripts": {
+    "build": "NODE_OPTIONS='--conditions=development' nuxt-module-build build",
+    "typecheck": "NODE_OPTIONS='--conditions=development' vue-tsc --project tsconfig.json --noEmit",
     "lint": "pnpm run --if-present typecheck && eslint -v && NODE_ENV=deploy eslint --cache .",
     "lint:fix": "pnpm exec eslint . --fix",
     "format": "pnpm exec prettier . --ignore-path ../../.prettierignore --write",
@@ -14,7 +27,12 @@
   },
   "devDependencies": {
     "@brickflow/lint": "workspace:*",
-    "@brickflow/prettier": "workspace:*"
+    "@brickflow/prettier": "workspace:*",
+    "@nuxt/kit": "4.4.6",
+    "@nuxt/module-builder": "1.0.2",
+    "nuxt": "4.4.6",
+    "vue": "3.5.35",
+    "vue-tsc": "3.3.2"
   },
   "author": "",
   "license": "ISC"
