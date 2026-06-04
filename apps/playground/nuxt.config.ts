@@ -1,4 +1,7 @@
 export default defineNuxtConfig({
+  brickflowHttp: {
+    cacheTtlMs: 1000 * 60 * 10,
+  },
   brickflowUi: {
     componentPrefix: 'Brick',
     target: 'playground',
@@ -7,5 +10,5 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true,
   },
-  modules: ['../../packages/ui/src/module.ts'],
+  modules: ['../../packages/ui/src/module.ts', '../../packages/http/src/module.ts'],
 })
