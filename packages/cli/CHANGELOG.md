@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Http
+- update multiply file in types
 
 ## 0.0.12
 
