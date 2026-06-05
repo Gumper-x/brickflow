@@ -1,97 +1,42 @@
 <script setup lang="ts">
-  import { createHttp, type HttpClient } from '#brickflow-http/http'
-  import { createGet, createUseHttp } from '#brickflow-http/nuxt'
-
-  type ProductQueryParams = {
-    limit: number
-    select: string
-    skip: number
-  }
+  import { DIRECT_BASE_URL, PROXY_BASE_URL, usePlaygroundBaseUrl } from '../../core/util'
+  import { DEFAULT_PRODUCT_QUERY_PARAMS } from '../../domains/catalog/use-case'
 
   const brickflow = usebrickflow()
-  const directBaseUrl = 'https://dummyjson.com'
-  const proxyBaseUrl = '/api/dummyjson'
-  const apiBaseUrl = useState('playground-http-base-url', () => directBaseUrl)
-
-  function createDynamicHttp(): HttpClient {
-    return createHttp({
-      baseURL: apiBaseUrl.value,
-      headers: {
-        'X-Playground-Http': 'playground-runtime',
-      },
-    })
-  }
-
-  const runtimeHttp: HttpClient = {
-    get(url, config) {
-      return createDynamicHttp().get(url, config)
-    },
-    post(url, data, config) {
-      return createDynamicHttp().post(url, data, config)
-    },
-  }
-
-  const localHttp = createHttp({
-    baseURL: '',
-    headers: {
-      'X-Playground-Http': 'playground-local',
-    },
-  })
-
-  const useRuntimeHttp = createUseHttp({
-    getHttpClient: () => runtimeHttp,
-    isDev: () => import.meta.dev,
-    ttl: 1000 * 60 * 10,
-  })
-  const useLocalHttp = createUseHttp({
-    getHttpClient: () => localHttp,
-    isDev: () => import.meta.dev,
-  })
-  const createRuntimeGet = createGet(useRuntimeHttp)
-  const createLocalGet = createGet(useLocalHttp)
-
-  const initialParams: ProductQueryParams = {
-    limit: 4,
-    select: 'title,price,category,thumbnail,rating',
-    skip: 0,
-  }
-
-  const productsEndpoint = createRuntimeGet<ProductQueryParams>()('/products')
-  const errorEndpoint = createLocalGet<Record<string, never>>()('/api/http-error-demo')
+  const app = useNuxtApp()
+  const apiBaseUrl = usePlaygroundBaseUrl()
   const lastProductsEffect = ref<null | { cached: boolean; skip: number }>(null)
 
-  const featuredProductsState = await productsEndpoint({
+  const featuredProductsState = await app.$di.catalog.featured({
     effect(_data, config) {
       lastProductsEffect.value = {
         cached: config.cached,
         skip: config.params.skip,
       }
     },
-    initParams: initialParams,
+    initParams: DEFAULT_PRODUCT_QUERY_PARAMS,
     server: true,
   })
 
-  const handledErrorState = await errorEndpoint({
+  const handledErrorState = await app.$di.system.errorDemo({
     lazy: true,
     server: false,
   })
 
   const apiCheck = await useAsyncData('playground-http-test', async () => {
-    const response = await createDynamicHttp().get('/test')
-
-    return response.data
+    return await app.$di.system.healthCheck()
   })
 
   const featuredProducts = computed(() => featuredProductsState.data?.products ?? [])
   const featuredTotal = computed(() => featuredProductsState.data?.total ?? 0)
-  const currentSkip = computed(() => featuredProductsState.data?.skip ?? initialParams.skip)
+  const currentSkip = computed(() => featuredProductsState.data?.skip ?? DEFAULT_PRODUCT_QUERY_PARAMS.skip)
   const apiMethod = computed(() => apiCheck.data.value?.method ?? 'pending')
-  const apiRouteMode = computed(() => (apiBaseUrl.value === proxyBaseUrl ? 'Local proxy' : 'Direct origin'))
+  const apiRouteMode = computed(() => (apiBaseUrl.value === PROXY_BASE_URL ? 'Local proxy' : 'Direct origin'))
   const apiStatus = computed(() => apiCheck.data.value?.status ?? 'pending')
   const errorKind = computed(() => handledErrorState.error?.kind ?? 'not_requested')
   const errorMessage = computed(() => handledErrorState.error?.message ?? 'Run the request to inspect the error.')
   const errorStatus = computed(() => handledErrorState.error?.status ?? 'idle')
-  const isProxyMode = computed(() => apiBaseUrl.value === proxyBaseUrl)
+  const isProxyMode = computed(() => apiBaseUrl.value === PROXY_BASE_URL)
   const productsEffectSummary = computed(() => {
     if (!lastProductsEffect.value) {
       return 'effect() has not run yet.'
@@ -100,28 +45,47 @@
     return `${lastProductsEffect.value.cached ? 'cache' : 'network'} payload for skip=${lastProductsEffect.value.skip}`
   })
 
-  const directSnippet = [
-    "const http = createHttp({ baseURL, headers: { 'X-Playground-Http': 'playground-runtime' } })",
-    "const { data } = await http.get('/test')",
+  const structureSnippet = [
+    'types/http.d.ts',
+    'plugins/01.di.ts',
+    'core/util.ts',
+    'domains/catalog/use-case.ts',
+    'domains/system/use-case.ts',
+    'app/pages/index.vue',
+  ].join('\n')
+  const pluginSnippet = [
+    'const httpClient = createRuntimeHttpClient()',
+    '',
+    'return {',
+    '  provide: {',
+    '    http: httpClient,',
+    '    di: createPlaygroundDi({ httpClient }),',
+    '  },',
+    '}',
   ].join('\n')
   const createGetSnippet = [
-    'const useHttp = createUseHttp({ getHttpClient: () => runtimeHttp, isDev: () => import.meta.dev })',
-    'const createPlaygroundGet = createGet(useHttp)',
-    "const products = createPlaygroundGet<ProductQueryParams>()('/products')",
+    'const useHttp = createUseHttp({ getHttpClient: () => useNuxtApp().$http, isDev: () => import.meta.dev })',
+    'export const createGet = createHttpGet(useHttp)',
+    "featured: createGet<ProductQueryParams>()('/products')",
   ].join('\n')
   const requestSnippet = [
-    'const featuredProductsHttp = await products({',
-    "  initParams: { limit: 4, select: 'title,price,category,thumbnail,rating', skip: 0 },",
+    'const featuredProductsHttp = await app.$di.catalog.featured({',
+    '  initParams: DEFAULT_PRODUCT_QUERY_PARAMS,',
     '  server: true,',
     '})',
     '',
-    'await featuredProductsHttp.fetch({ ...params, skip: params.skip + params.limit })',
+    'await featuredProductsHttp.fetch({',
+    '  ...DEFAULT_PRODUCT_QUERY_PARAMS,',
+    '  skip: DEFAULT_PRODUCT_QUERY_PARAMS.skip + DEFAULT_PRODUCT_QUERY_PARAMS.limit,',
+    '})',
   ].join('\n')
   const errorSnippet = [
-    "const localHttp = createHttp({ baseURL: '' })",
-    'const localUseHttp = createUseHttp({ getHttpClient: () => localHttp })',
-    'const createLocalGet = createGet(localUseHttp)',
-    "const errorDemo = createLocalGet<Record<string, never>>()('/api/http-error-demo')",
+    "errorDemo: createLocalGet<Record<string, never>>()('/api/http-error-demo')",
+    '',
+    'const handledErrorState = await app.$di.system.errorDemo({',
+    '  lazy: true,',
+    '  server: false,',
+    '})',
   ].join('\n')
 
   async function applyBaseUrl(nextBaseUrl: string): Promise<void> {
@@ -131,8 +95,8 @@
 
   async function loadNextProducts(): Promise<void> {
     await featuredProductsState.fetch({
-      ...initialParams,
-      skip: currentSkip.value + initialParams.limit,
+      ...DEFAULT_PRODUCT_QUERY_PARAMS,
+      skip: currentSkip.value + DEFAULT_PRODUCT_QUERY_PARAMS.limit,
     })
   }
 
@@ -140,7 +104,7 @@
     await Promise.all([
       apiCheck.refresh(),
       featuredProductsState.fetch({
-        ...initialParams,
+        ...DEFAULT_PRODUCT_QUERY_PARAMS,
         skip: 0,
       }),
     ])
@@ -160,7 +124,7 @@
         <div class="grid gap-3">
           <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brick-600">playground examples</span>
           <h1 class="max-w-3xl text-5xl font-semibold tracking-[-0.04em] text-ink-950">
-            Playground now mirrors the HTTP README.
+            Playground now mirrors the HTTP README with real plugin wiring.
           </h1>
           <p
             class="max-w-xl text-base/7 text-zinc-700"
@@ -169,34 +133,40 @@
             {{ brickflow.message }}
           </p>
           <p class="max-w-2xl text-sm/6 text-zinc-600">
-            The page is split into the three flows described in
+            The example is split into the same three flows described in
             <code>@brickflow/http</code>
-            docs: direct
-            <code>createHttp()</code>
-            for one-shot calls,
-            <code>createUseHttp() + createGet()</code>
-            for typed async state, and a dedicated typed error example.
+            docs, but now the wiring lives in real project files:
+            <code>plugins/01.di.ts</code>
+            ,
+            <code>core/util.ts</code>
+            , and
+            <code>domains/*/use-case.ts</code>
+            .
           </p>
           <p class="max-w-2xl text-sm/6 text-zinc-600">
-            Only the typed products client reads the editable
-            <code>baseURL</code>
-            at request time. The error demo uses a local Nitro route with
-            <code>baseURL: ''</code>
-            so it stays valid regardless of which remote source is selected.
+            The plugin provides
+            <code>$http</code>
+            and
+            <code>$di</code>
+            . The page only consumes domain methods, so this playground is now a direct implementation sample, not
+            an inline demo.
           </p>
+          <pre
+            class="max-w-xl overflow-x-auto rounded-2xl bg-zinc-950 px-4 py-3 text-xs/6 text-zinc-100"
+          ><code>{{ structureSnippet }}</code></pre>
         </div>
 
         <div class="flex flex-wrap gap-3">
           <BrickButton>Try BrickButton</BrickButton>
           <BrickButton
             variant="secondary"
-            @click="applyBaseUrl(directBaseUrl)"
+            @click="applyBaseUrl(DIRECT_BASE_URL)"
           >
             Use direct API
           </BrickButton>
           <BrickButton
             variant="secondary"
-            @click="applyBaseUrl(proxyBaseUrl)"
+            @click="applyBaseUrl(PROXY_BASE_URL)"
           >
             Use local proxy
           </BrickButton>
@@ -251,8 +221,11 @@
             <span class="text-xs font-semibold uppercase tracking-[0.28em] text-brick-500">1. createHttp()</span>
             <h2 class="text-2xl font-semibold tracking-[-0.03em] text-zinc-950">One-shot request example</h2>
             <p class="text-sm/6 text-zinc-600">
-              This mirrors the README recommendation for simple direct calls. The page builds a low-level client
-              and uses it for
+              The low-level client is created once in
+              <code>plugins/01.di.ts</code>
+              and exposed as
+              <code>$http</code>
+              . The direct domain method then uses it for
               <code>GET /test</code>
               without any async-state wrapper.
             </p>
@@ -260,7 +233,7 @@
 
           <pre
             class="overflow-x-auto rounded-2xl bg-zinc-950 px-4 py-3 text-xs/6 text-zinc-100"
-          ><code>{{ directSnippet }}</code></pre>
+          ><code>{{ pluginSnippet }}</code></pre>
 
           <div class="grid gap-3 text-sm text-zinc-700">
             <div class="rounded-2xl bg-brick-50 px-4 py-3 font-mono text-brick-950">GET {{ apiBaseUrl }}/test</div>
@@ -300,7 +273,11 @@
             </span>
             <h2 class="text-2xl font-semibold tracking-[-0.03em] text-zinc-950">Reusable typed endpoint</h2>
             <p class="text-sm/6 text-zinc-600">
-              The endpoint is bound once, then the page consumes the returned state object with
+              The endpoint is bound once in
+              <code>core/util.ts</code>
+              and
+              <code>domains/catalog/use-case.ts</code>
+              . The page then consumes the returned state object with
               <code>data</code>
               ,
               <code>pending</code>
@@ -406,7 +383,9 @@
             </span>
             <h2 class="text-2xl font-semibold tracking-[-0.03em] text-zinc-950">Local error branch example</h2>
             <p class="max-w-2xl text-sm/6 text-zinc-700">
-              This request uses its own local client, because
+              This request uses a local endpoint helper from
+              <code>domains/system/use-case.ts</code>
+              because
               <code>/api/http-error-demo</code>
               is a Nitro route and should not be prefixed with the remote DummyJSON base URL. The returned payload
               lands in
