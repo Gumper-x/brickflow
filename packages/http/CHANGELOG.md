@@ -1,5 +1,11 @@
 # @brickflow/http
 
+## 0.0.15
+
+### Patch Changes
+
+- Http update
+
 ## 0.0.14
 
 ### Patch Changes

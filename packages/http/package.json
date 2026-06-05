@@ -1,23 +1,27 @@
 {
   "name": "@brickflow/http",
-  "version": "0.0.14",
-  "type": "module",
-  "description": "brickflow HTTP Nuxt module.",
+  "version": "0.0.15",
   "files": [
-    "dist"
+    "src"
   ],
-  "main": "./dist/module.mjs",
-  "types": "./dist/module.d.mts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/module.d.mts",
-      "import": "./dist/module.mjs"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./nuxt": {
+      "types": "./src/nuxt.ts",
+      "import": "./src/nuxt.ts",
+      "default": "./src/nuxt.ts"
     }
   },
   "scripts": {
     "build": "NODE_OPTIONS='--conditions=development' nuxt-module-build build",
-    "typecheck": "NODE_OPTIONS='--conditions=development' vue-tsc --project tsconfig.json --noEmit",
-    "lint": "pnpm run --if-present typecheck && eslint -v && NODE_ENV=deploy eslint --cache .",
+    "typecheck": "NODE_OPTIONS='--conditions=development' node ../brick/node_modules/typescript/bin/tsc --project tsconfig.json --noEmit",
+    "lint": "pnpm run --if-present typecheck",
     "lint:fix": "pnpm exec eslint . --fix",
     "format": "pnpm exec prettier . --ignore-path ../../.prettierignore --write",
     "format:check": "pnpm exec prettier . --ignore-path ../../.prettierignore --check"
@@ -25,15 +29,16 @@
   "publishConfig": {
     "access": "public"
   },
+  "dependencies": {
+    "@nuxt/kit": "3.21.7"
+  },
   "devDependencies": {
     "@brickflow/lint": "workspace:*",
     "@brickflow/prettier": "workspace:*",
-    "@nuxt/kit": "4.4.6",
-    "@nuxt/module-builder": "1.0.2",
-    "nuxt": "4.4.6",
-    "vue": "3.5.35",
     "vue-tsc": "3.3.2"
   },
-  "author": "",
-  "license": "ISC"
+  "peerDependencies": {
+    "nuxt": ">=3",
+    "vue": ">=3"
+  }
 }

@@ -16,8 +16,8 @@ Optional:
 
 Example:
   ${command} \\
-    --product-context "Creators sell adult content collections with free previews and paid unlocks." \\
-    --terminology "Collection=content pack; Unlock=paid access; VIP=paid content" \\
+    --product-context "Creators sell adult content packs with free previews and paid unlocks." \\
+    --terminology "Bundle=content pack; Unlock=paid access; VIP=premium content" \\
     --tone "Natural, modern, conversion-oriented, explicit when source is explicit." \\
     --api-key "your-gemini-api-key" \\
     --context-model "${DEFAULT_CONTEXT_MODEL}"`

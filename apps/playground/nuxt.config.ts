@@ -1,6 +1,8 @@
+import { fileURLToPath } from 'node:url'
+
 export default defineNuxtConfig({
-  brickflowHttp: {
-    cacheTtlMs: 1000 * 60 * 10,
+  alias: {
+    '#brickflow-http': fileURLToPath(new URL('../../packages/http/src', import.meta.url)),
   },
   brickflowUi: {
     componentPrefix: 'Brick',
@@ -10,5 +12,5 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true,
   },
-  modules: ['../../packages/ui/src/module.ts', '../../packages/http/src/module.ts'],
+  modules: ['../../packages/ui/src/module.ts'],
 })

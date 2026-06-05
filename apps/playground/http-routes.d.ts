@@ -1,5 +1,3 @@
-import type { HttpErrorPayload } from '@brickflow/http'
-
 interface DummyProductListResponse {
   limit: number
   products: DummyProductPreview[]
@@ -21,24 +19,20 @@ interface DummyTestResponse {
   status: 'ok'
 }
 
-declare global {
-  interface BrickflowHttpRouteMap {
-    '/api/http-error-demo': {
-      error: HttpErrorPayload & {
-        kind: 'playground_demo'
-      }
+interface PlaygroundHttpError {
+  kind: 'playground_demo'
+  message: string
+  status: 'error'
+}
+
+declare module '#brickflow-http/http' {
+  interface HttpTypeConfig {
+    endpoints: {
+      '/api/http-error-demo': PlaygroundHttpError
+      '/products': DummyProductListResponse
+      '/test': DummyTestResponse
     }
-    '/products': {
-      data: DummyProductListResponse
-      params: {
-        limit: number
-        select?: string
-        skip: number
-      }
-    }
-    '/test': {
-      data: DummyTestResponse
-    }
+    error: PlaygroundHttpError
   }
 }
 
