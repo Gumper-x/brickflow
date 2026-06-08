@@ -1,5 +1,5 @@
-import type { HttpClient, HttpResponseData } from '#brickflow-http/http'
-import type { CreateGetOptions, CreateGetResult } from '#brickflow-http/nuxt'
+import type { HttpClient, HttpResponseData } from '@brickflow/http'
+import type { CreateGetOptions, CreateGetResult } from '@brickflow/http/nuxt'
 
 import { createLocalGet } from '../../core/util'
 

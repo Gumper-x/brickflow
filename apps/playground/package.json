@@ -15,14 +15,15 @@
   },
   "dependencies": {
     "@brickflow/ui": "workspace:*",
-    "nuxt": "4.4.6"
+    "@brickflow/http": "workspace:*",
+    "nuxt": "4.4.7"
   },
   "devDependencies": {
     "@brickflow/lint": "workspace:*",
     "@brickflow/prettier": "workspace:*",
     "@nuxt/test-utils": "4.0.3",
-    "vitest": "4.1.7",
-    "vue-tsc": "3.3.2"
+    "vitest": "4.1.8",
+    "vue-tsc": "3.3.4"
   },
   "author": "",
   "license": "ISC"

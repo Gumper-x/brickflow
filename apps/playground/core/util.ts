@@ -1,8 +1,7 @@
 import type { Ref } from 'vue'
 
-import { createHttp, type HttpClient } from '#brickflow-http/http'
-import { createGet as createHttpGet, createUseHttp } from '#brickflow-http/nuxt'
-import { useNuxtApp, useState } from '#imports'
+import { createHttp, type HttpClient } from '@brickflow/http'
+import { createGet as createHttpGet, createUseHttp } from '@brickflow/http/nuxt'
 
 export const DIRECT_BASE_URL = 'https://dummyjson.com'
 export const PROXY_BASE_URL = '/api/dummyjson'

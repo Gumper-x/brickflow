@@ -1,6 +1,6 @@
-import type { HttpClient } from '#brickflow-http/http'
+import type { HttpClient } from '@brickflow/http'
 
-import type { PlaygroundDi } from './domains'
+import type { PlaygroundDi } from '../domains'
 
 declare module '#app' {
   interface NuxtApp {

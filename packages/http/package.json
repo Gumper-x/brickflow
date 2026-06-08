@@ -4,20 +4,21 @@
   "description": "Minimal HTTP transport and Nuxt state helpers for brickflow.",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "development": "./src/index.ts",
       "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
     },
     "./nuxt": {
-      "types": "./dist/nuxt.d.ts",
+      "types": "./src/nuxt.ts",
       "development": "./src/nuxt.ts",
       "import": "./dist/nuxt.mjs",
       "default": "./dist/nuxt.mjs"
@@ -35,13 +36,13 @@
     "access": "public"
   },
   "dependencies": {
-    "@nuxt/kit": "3.21.7"
+    "@nuxt/kit": "4.4.7"
   },
   "devDependencies": {
     "@brickflow/lint": "workspace:*",
     "@brickflow/prettier": "workspace:*",
-    "rolldown": "1.0.3",
-    "vue-tsc": "3.3.2"
+    "rolldown": "1.1.0",
+    "vue-tsc": "3.3.4"
   },
   "peerDependencies": {
     "nuxt": ">=3",

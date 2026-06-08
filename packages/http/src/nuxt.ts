@@ -1,5 +1,6 @@
-import { useLazyAsyncData, useState } from '#app'
 import { onScopeDispose, shallowReactive, shallowRef } from 'vue'
+
+import { useLazyAsyncData, useState } from '#app'
 
 import type {
   HttpClient,
@@ -18,12 +19,37 @@ const DAY = 1000 * 60 * 60 * 24
 const DEFAULT_CHANNEL_NAME = 'http-tab-sync'
 const DEFAULT_TTL = DAY * 7
 
+export type CreateGetOptions<T extends HttpKey, P extends HttpParam> = Omit<UseHttpOptions<T, P>, 'url'>
+
+export interface CreateGetPayload<T extends HttpKey, P extends HttpParam> {
+  effect?: (
+    data: HttpResponseData<T>,
+    config: {
+      cached: boolean
+      params: P
+    },
+  ) => undefined
+  ignore?: (response: HttpResponse<HttpError>) => boolean
+  isError?: (payload: HttpResponseData<T>) => boolean
+  mapParams?: <R extends P>(params?: R) => R
+}
+
+export interface CreateGetResult<T extends HttpKey, P extends HttpParam> {
+  data: HttpSuccessData<T> | null
+  error: Extract<HttpResponseData<T>, HttpError> | null
+  fetch: (params?: P, opt?: { signal: AbortSignal }) => Promise<void>
+  hasFirstData: boolean
+  hasFreshData: boolean
+  pending: boolean
+  pendingCache: boolean
+}
+
 export interface CreateUseHttpDependencies {
   channelName?: string
   getCache?: () => null | UseHttpCache
   getHttpClient: () => HttpClient
-  isError?: HttpErrorGuard<unknown, HttpError>
   isDev?: () => boolean
+  isError?: HttpErrorGuard<unknown, HttpError>
   ttl?: number
 }
 
@@ -38,49 +64,12 @@ export interface UseHttpCacheEntry<T> {
   value: T
 }
 
-type UseHttpOptionsBase<T extends HttpKey, P extends HttpParam> = {
-  effect?: (
-    data: HttpResponseData<T>,
-    config: {
-      cached: boolean
-      params: P
-    },
-  ) => void
-  ignore?: (response: HttpResponse<HttpError>) => boolean
-  initParams?: P
-  lazy?: true
-  mapParams?: <R extends P>(params?: R) => R
-  server?: boolean
-  url: T
+export interface UseHttpFn {
+  <T extends HttpKey, P extends HttpParam>(options: UseHttpOptions<T, P>): Promise<UseHttpResult<T, P>>
 }
 
 export type UseHttpOptions<T extends HttpKey, P extends HttpParam> = UseHttpOptionsBase<T, P> & {
   isError?: (payload: HttpResponseData<T>) => boolean
-}
-
-export type CreateGetOptions<T extends HttpKey, P extends HttpParam> = Omit<UseHttpOptions<T, P>, 'url'>
-
-export interface CreateGetResult<T extends HttpKey, P extends HttpParam> {
-  data: HttpSuccessData<T> | null
-  error: Extract<HttpResponseData<T>, HttpError> | null
-  fetch: (params?: P, opt?: { signal: AbortSignal }) => Promise<void>
-  hasFirstData: boolean
-  hasFreshData: boolean
-  pending: boolean
-  pendingCache: boolean
-}
-
-export interface CreateGetPayload<T extends HttpKey, P extends HttpParam> {
-  effect?: (
-    data: HttpResponseData<T>,
-    config: {
-      cached: boolean
-      params: P
-    },
-  ) => undefined
-  ignore?: (response: HttpResponse<HttpError>) => boolean
-  isError?: (payload: HttpResponseData<T>) => boolean
-  mapParams?: <R extends P>(params?: R) => R
 }
 
 export interface UseHttpResult<T extends HttpKey, P extends HttpParam> {
@@ -100,8 +89,20 @@ type BroadcastMessage = {
   type: 'STATE_UPDATE'
 }
 
-export interface UseHttpFn {
-  <T extends HttpKey, P extends HttpParam>(options: UseHttpOptions<T, P>): Promise<UseHttpResult<T, P>>
+type UseHttpOptionsBase<T extends HttpKey, P extends HttpParam> = {
+  effect?: (
+    data: HttpResponseData<T>,
+    config: {
+      cached: boolean
+      params: P
+    },
+  ) => void
+  ignore?: (response: HttpResponse<HttpError>) => boolean
+  initParams?: P
+  lazy?: true
+  mapParams?: <R extends P>(params?: R) => R
+  server?: boolean
+  url: T
 }
 
 export function createGet(useHttp: UseHttpFn) {
@@ -371,6 +372,21 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies) {
   return useHttp
 }
 
+function createIsErrorGuard<TData>(
+  localGuard?: (payload: TData) => boolean,
+  globalGuard?: HttpErrorGuard<unknown, HttpError>,
+): (payload: TData) => boolean {
+  if (localGuard) {
+    return localGuard
+  }
+
+  if (globalGuard) {
+    return globalGuard as (payload: TData) => boolean
+  }
+
+  return (payload: TData): boolean => hasErrorStatus(payload)
+}
+
 function getChannel(name: string, currentChannel?: BroadcastChannel | null): BroadcastChannel | null {
   if (currentChannel) {
     return currentChannel
@@ -394,21 +410,6 @@ function hasErrorStatus(payload: unknown): payload is { status: 'error' } {
     'status' in payload &&
     (payload as { status?: string }).status === 'error',
   )
-}
-
-function createIsErrorGuard<TData>(
-  localGuard?: (payload: TData) => boolean,
-  globalGuard?: HttpErrorGuard<unknown, HttpError>,
-): (payload: TData) => boolean {
-  if (localGuard) {
-    return localGuard
-  }
-
-  if (globalGuard) {
-    return globalGuard as (payload: TData) => boolean
-  }
-
-  return (payload: TData): boolean => hasErrorStatus(payload)
 }
 
 function normalizeBroadcastValue<T>(payload: T): T {

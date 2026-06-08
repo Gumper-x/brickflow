@@ -1,4 +1,4 @@
-import type { HttpClient } from '#brickflow-http/http'
+import type { HttpClient } from '@brickflow/http'
 
 import { type CatalogUseCase, createCatalogUseCase } from './catalog/use-case'
 import { createSystemUseCase, type SystemUseCase } from './system/use-case'

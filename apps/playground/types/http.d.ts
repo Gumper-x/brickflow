@@ -25,7 +25,7 @@ interface PlaygroundHttpError {
   status: 'error'
 }
 
-declare module '#brickflow-http/http' {
+declare module '@brickflow/http' {
   interface HttpTypeConfig {
     endpoints: {
       '/api/http-error-demo': PlaygroundHttpError

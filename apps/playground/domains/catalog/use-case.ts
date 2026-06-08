@@ -1,5 +1,5 @@
-import type { HttpParam } from '#brickflow-http/http'
-import type { CreateGetOptions, CreateGetResult } from '#brickflow-http/nuxt'
+import type { HttpParam } from '@brickflow/http'
+import type { CreateGetOptions, CreateGetResult } from '@brickflow/http/nuxt'
 
 import { createGet } from '../../core/util'
 

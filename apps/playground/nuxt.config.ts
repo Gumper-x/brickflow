@@ -1,9 +1,4 @@
-import { fileURLToPath } from 'node:url'
-
 export default defineNuxtConfig({
-  alias: {
-    '#brickflow-http': fileURLToPath(new URL('../../packages/http/src', import.meta.url)),
-  },
   brickflowUi: {
     componentPrefix: 'Brick',
     target: 'playground',
