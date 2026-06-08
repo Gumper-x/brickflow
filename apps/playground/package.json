@@ -6,7 +6,7 @@
     "dev": "NODE_OPTIONS='--conditions=development' nuxt dev",
     "postinstall": "NODE_OPTIONS='--conditions=development' nuxt prepare",
     "build": "NODE_OPTIONS='--conditions=development' nuxt build",
-    "typecheck": "NODE_OPTIONS='--conditions=development' nuxt typecheck",
+    "typecheck": "vue-tsc --noEmit",
     "test": "NODE_OPTIONS='--conditions=development' nuxt prepare && vitest run",
     "lint": "pnpm typecheck && eslint -v && NODE_ENV=deploy eslint --cache .",
     "lint:fix": "pnpm exec eslint . --fix",

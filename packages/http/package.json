@@ -27,7 +27,7 @@
   "scripts": {
     "build": "rolldown -c build.config.ts && tsc --project tsconfig.build.json",
     "typecheck": "NODE_OPTIONS='--conditions=development' tsc --project tsconfig.json --noEmit",
-    "lint": "pnpm run --if-present typecheck",
+    "lint": "pnpm typecheck && eslint -v && NODE_ENV=deploy eslint --cache .",
     "lint:fix": "pnpm exec eslint . --fix",
     "format": "pnpm exec prettier . --ignore-path ../../.prettierignore --write",
     "format:check": "pnpm exec prettier . --ignore-path ../../.prettierignore --check"

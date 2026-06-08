@@ -1,6 +1,6 @@
 <script setup lang="ts">
-  import { DIRECT_BASE_URL, PROXY_BASE_URL, usePlaygroundBaseUrl } from '../../core/util'
-  import { DEFAULT_PRODUCT_QUERY_PARAMS } from '../../domains/catalog/use-case'
+  import { DIRECT_BASE_URL, PROXY_BASE_URL, usePlaygroundBaseUrl } from '../core/util'
+  import { DEFAULT_PRODUCT_QUERY_PARAMS } from '../domains/catalog/use-case'
 
   const brickflow = usebrickflow()
   const app = useNuxtApp()
