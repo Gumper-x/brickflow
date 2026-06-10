@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.16
+
+### Patch Changes
+
+- Http refactor
+
 ## 0.0.15
 
 ### Patch Changes

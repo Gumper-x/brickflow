@@ -1,5 +1,13 @@
 # @brickflow/ui
 
+## 0.0.16
+
+### Patch Changes
+
+- Http refactor
+- Updated dependencies
+  - @brickflow/utils@0.0.16
+
 ## 0.0.15
 
 ### Patch Changes

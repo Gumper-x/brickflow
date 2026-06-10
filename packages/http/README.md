@@ -1,361 +1,208 @@
 # @brickflow/http
 
-Minimal HTTP package used in this repo for:
+Минимальный HTTP-пакет для brickflow:
 
-- low-level HTTP transport via `createHttp`
-- Nuxt async state wrapper via `createUseHttp`
-- reusable endpoint factory via `createGet`
-- project-level typing through `declare module '@brickflow/http'`
+- `createHttp` для низкоуровневых `GET`/`POST`
+- `createUseHttp` для Nuxt state-обёртки с cache, SSR и ручным `fetch`
+- `defineGet` для типизированных endpoint-фабрик
+- `createUseCase` для DI-паттерна в доменных модулях
 
-This package does not know your API schema by default. Endpoint types and optional error typing are configured in the
-consumer project through `type.d.ts`.
+Актуальные примеры в репозитории лежат в `apps/playground`.
 
 ## Exports
 
-From `@brickflow/http`:
-
-- `createHttp`
-- `createURL`
-- `hashData`
-- HTTP types: `HttpClient`, `HttpError`, `HttpKey`, `HttpParam`, `HttpResponse`, `HttpResponseData`, `HttpSuccessData`
-
-From `@brickflow/http/nuxt`:
-
-- `createUseHttp`
-- `createGet`
-- Nuxt types: `UseHttpOptions`, `UseHttpResult`, `UseHttpFn`
-
-## 1. Configure API types in `type.d.ts`
-
-In this repo the typing is configured in `types/http.d.ts`.
+Рекомендуемый импорт:
 
 ```ts
-import type { Convention, ConventionKeys } from 'convention'
+import { createHttp, createUseHttp, createUseCase, defineGet } from '@brickflow/http'
+```
 
-type BrickHttpError = Exclude<Convention<ConventionKeys>, { status: 'success' }>
-type BrickHttpSchema = {
-  [TKey in ConventionKeys]: Convention<TKey>
+Из пакета также экспортируются:
+
+- `createURL`
+- `hashData`
+- типы `HttpClient`, `HttpConfig`, `HttpEndpoint`, `HttpKey`, `HttpParam`, `HttpResponse`, `HttpResponseData`
+- Nuxt-типы `UseHttpFn`, `UseHttpOptions`, `UseHttpResult`
+
+Сабпуть `@brickflow/http/nuxt` остаётся доступным, но в текущей кодовой базе `playground` использует импорты из корня.
+
+## Типизация API
+
+Пакет не знает схему вашего API заранее. Её нужно объявить в проекте через `declare module '@brickflow/http'`.
+
+Актуальный пример из `apps/playground/types/http.d.ts`:
+
+```ts
+import type { HttpKey, HttpResponseData } from '@brickflow/http'
+
+type Convention = {
+  '/api/http-error-demo': null
+  '/products':
+    | {
+        limit: number
+        products: {
+          category: string
+          id: number
+          price: number
+          rating: number
+          thumbnail: string
+          title: string
+        }[]
+        skip: number
+        total: number
+      }
+    | {
+        message: 'error'
+      }
 }
 
 declare module '@brickflow/http' {
-  interface HttpTypeConfig {
-    endpoints: BrickHttpSchema
-    error: BrickHttpError
+  interface HttpConfig<TKey extends HttpKey = HttpKey> {
+    ignore?: (data: HttpResponseData<TKey>) => boolean
   }
+
+  interface HttpEndpoint extends Convention {}
 }
+
+export {}
 ```
 
-What this gives:
+Что это даёт:
 
-- `HttpKey` becomes your endpoint union
-- `HttpResponseData<'some/endpoint'>` becomes the response type for that endpoint
-- `HttpSuccessData<'some/endpoint'>` becomes response without the configured error branch
-- `UseHttpResult<T, P>['error']` is inferred from `HttpTypeConfig['error']`
+- `HttpKey` становится union из endpoint-ключей
+- `httpClient.get('/products')` получает корректный тип ответа
+- `createGet<Params>()('/products')` наследует тот же контракт
+- `HttpConfig` можно расширять своими полями, как в playground через `ignore`
 
-If you do not configure `error`, the package does not invent one. In that case `HttpError` becomes `never`, and
-`UseHttpResult['error']` is typed from your explicit guard logic only at runtime.
+Если нужен типизированный `error` в `UseHttpResult`, дополнительно расширьте `HttpErrorMap`. По умолчанию `error` имеет тип `never`, а разделение между `data` и `error` зависит только от runtime `isError`.
 
-This is the main place where project typing should live.
+## createHttp
 
-## 2. Create low-level HTTP client
-
-Real usage from `plugins/01.di.ts`:
+Актуальный пример из `apps/playground/plugins/01.di.ts`:
 
 ```ts
 import { createHttp } from '@brickflow/http'
 
+import { handlePlaygroundResponse } from '~/core/http-error'
+
 const httpClient = createHttp({
-  arrayMode: 'repeat',
-  baseURL: apiUrl,
-  headers: () => ({
-    'Client-Env': config.public.isDev ? 'development' : undefined,
-    'Client-Lang': String(locale.value ?? 'en'),
-    'Client-Socket-Id': socketClient?.io.id || '',
-    'X-Requested-With': 'XMLHttpRequest',
-  }),
-  onResponse: responseInterceptor,
+  baseURL: 'https://dummyjson.com',
+  headers: {
+    'X-Playground-Http': 'playground-runtime',
+  },
+  onResponse: handlePlaygroundResponse,
 })
 ```
 
-Available options:
+Поддерживаемые опции:
 
-- `baseURL`
-- `arrayMode`
-- `fetch`
-- `headers`
-- `onResponse`
-- `timeout`
+- `baseURL: string`
+- `arrayMode?: 'json' | 'repeat'`
+- `fetch?: typeof fetch`
+- `headers?: Record<string, string | undefined> | (() => Record<string, string | undefined>)`
+- `onResponse?: (response) => void | Promise<void>`
+- `timeout?: number`
 
-`createHttp` returns:
+### GET
 
 ```ts
-interface HttpClient {
-  get(url, config?)
-  post(url, data?, config?)
+const response = await httpClient.get('/products', {
+  params: {
+    limit: 10,
+  },
+  retry: {
+    delay: 300,
+    retries: 3,
+  },
+})
+```
+
+Особенности:
+
+- query строится из `params`
+- `GET` поддерживает retry для `429` и `5xx`
+- delay экспоненциальный: `delay * 2 ** attempt`
+- `signal` можно передать как один `AbortSignal` или массив `AbortSignal[]`
+
+### POST
+
+```ts
+const { data } = await httpClient.post('/api/http-error-demo')
+```
+
+Для `POST`:
+
+- `Record<string, unknown>` сериализуется в JSON
+- `FormData` отправляется как есть
+- retry нет
+- если response не JSON, пакет вернёт пустой объект в `data`
+
+### Расширение `HttpConfig`
+
+Так как `HttpConfig` расширяемый, можно прокидывать свои поля в запрос и читать их в `onResponse`.
+
+Пример из playground:
+
+```ts
+httpClient.get('/products', {
+  ignore: (data) => data?.limit === 20,
+})
+```
+
+```ts
+export function handlePlaygroundResponse(
+  response: Parameters<NonNullable<CreateHttpOptions['onResponse']>>[0],
+): void {
+  console.log(response.config.ignore?.(response.data))
 }
 ```
 
-`arrayMode` controls how array query params are serialized for requests created by this client:
+## createUseHttp
 
-- `'json'`: `tags=["a","b"]`
-- `'repeat'`: `tags[]=a&tags[]=b`
-
-## 3. Use `HttpClient` directly
-
-Used in domain methods that do not need cached async state.
-
-Example from `domains/content/use-case.ts`:
+В `apps/playground/core/http.ts` app-level инстанс создаётся один раз:
 
 ```ts
-async create(title: string, type: string, description?: string) {
-  const { data } = await httpClient.post('content/create', {
-    description,
-    title,
-    type,
-  })
+import { createUseHttp, defineGet } from '@brickflow/http'
 
-  return data
-}
-```
+import { dbDeleteKeysWithPart, dbGet, dbSafeSet } from './indexdb'
 
-Another example:
-
-```ts
-async updateType(itemId: string, type: string) {
-  const { data } = await httpClient.post('content/update-type', {
-    itemId,
-    type,
-  })
-
-  return data
-}
-```
-
-Use this style when:
-
-- request is one-shot
-- you do not need `pending`, `hasFirstData`, cache, SSR sync, or `fetch()`
-
-## 4. Create Nuxt `useHttp`
-
-In this repo the app-level `useHttp` is created once in `core/util.ts`:
-
-```ts
-import { createUseHttp } from '@brickflow/http/nuxt'
+const CACHE_DB_NAME = 'smart-cache-v2'
+const CACHE_STORE_NAME = 'playground-http'
 
 const useHttp = createUseHttp({
   getCache: () => ({
-    deleteKeysWithPart: async (part) => await dbDeleteKeysWithPart(part, 'smart-cache-v2', STORE_NAME),
-    get: async (key) => await dbGet(key, 'smart-cache-v2', STORE_NAME),
-    set: async (key, value, ttl) => await dbSafeSet(key, value, 'smart-cache-v2', STORE_NAME, ttl),
+    deleteKeysWithPart: async (part: string) => await dbDeleteKeysWithPart(part, CACHE_DB_NAME, CACHE_STORE_NAME),
+    get: async <T>(key: string) => await dbGet<T>(key, CACHE_DB_NAME, CACHE_STORE_NAME),
+    set: async <T>(key: string, value: T, ttl: number) =>
+      await dbSafeSet<T>(key, value, CACHE_DB_NAME, CACHE_STORE_NAME, ttl),
   }),
   getHttpClient: () => useNuxtApp().$http,
-  isDev: () => useRuntimeConfig().public.isDev,
+  isDev: () => false,
 })
+
+export const createGet = defineGet(useHttp)
 ```
 
-Dependencies:
+Зависимости:
 
-- `getHttpClient`
-- `getCache`
-- `isError`
-- `isDev`
-- `ttl`
-- `channelName`
+- `getHttpClient` обязательно
+- `getCache` опционально
+- `isDev` опционально
+- `isError` опционально
+- `ttl` опционально
+- `channelName` опционально
 
-`isError` can be set globally here if your project needs a custom runtime error predicate.
+`createUseHttp` возвращает функцию `useHttp(options)`, которая создаёт реактивное состояние запроса:
 
-## 5. Bind `createGet` once
+- `data`
+- `error`
+- `pending`
+- `pendingCache`
+- `hasFirstData`
+- `hasFreshData`
+- `fetch(params?, { signal? })`
 
-The package exports `createGet(useHttp)`, which builds typed endpoint helpers on top of your local `useHttp`.
-
-Real usage from `core/util.ts`:
-
-```ts
-import { createGet as createHttpGet, createUseHttp } from '@brickflow/http/nuxt'
-
-const useHttp = createUseHttp({ ... })
-
-export const createGet = createHttpGet(useHttp)
-```
-
-After that you can reuse `createGet` in domain files.
-
-## 6. Create typed GET endpoints
-
-### Without params
-
-Example from `domains/storage/use-case.ts`:
-
-```ts
-plans: createGet()('storage/plans')
-```
-
-### With params
-
-Example from `domains/feed/use-case.ts`:
-
-```ts
-home: createGet<{
-  category?: 'fresh' | 'popular' | 'recommended' | 'updated'
-  limit: number
-  offset: number
-}>()('feed/home')
-```
-
-### Handle response in app code
-
-If you need custom error handling or want to ignore a specific error branch, do it in your app code through
-`onResponse`, not in the package:
-
-```ts
-const httpClient = createHttp({
-  baseURL: apiUrl,
-  onResponse(response) {
-    if (response.data?.status === 'error' && response.data.kind === 'no_auth') {
-      return
-    }
-
-    if (response.data?.status === 'error') {
-      console.error(response)
-    }
-  },
-})
-```
-
-### With `effect`
-
-Example from `domains/root/use-case.ts`:
-
-```ts
-main: createGet()('root/main', {
-  effect(data, config) {
-    if (data.status === 'error') {
-      return
-    }
-
-    if (!config.cached) {
-      userStore.setUser(data.user)
-      userStore.setRegion(data.region)
-    }
-  },
-})
-```
-
-### With `effect` and success handling
-
-Example from `domains/storage/use-case.ts`:
-
-```ts
-current: createGet()('storage/current', {
-  effect(data) {
-    if (data.status === 'success') {
-      storageStore.setCurrentPlan(data.plan)
-    }
-  },
-})
-```
-
-## 7. Consume endpoint state in components
-
-### Create request object
-
-Example from `components/Search/index.vue`:
-
-```ts
-const searchFastHttp = await app.$di.search.fast({
-  lazy: true,
-  server: false,
-})
-```
-
-### Trigger fetch manually
-
-```ts
-await searchFastHttp.fetch({
-  text: searchQuery.value,
-})
-```
-
-### Read `data`
-
-```ts
-const data = searchFastHttp.data
-
-if (data?.status === 'success') {
-  items.value = data.items
-  users.value = data.users
-}
-```
-
-### Read loading flags
-
-Example from `components/ProfileMyGrid/index.vue`:
-
-```vue
-:loading="myContentHttp.pending || myContentHttp.pendingCache"
-```
-
-### Use `hasFirstData`
-
-```vue
-v-if="!myContentHttp.pending && myContentHttp.hasFirstData && items.length === 0"
-```
-
-## 8. `effect` semantics
-
-`effect` receives the full response payload.
-
-That means:
-
-- it is called for success
-- it is called for error
-- you can branch on `data.status`
-- `config.cached` tells whether the payload came from cache
-- `config.params` contains mapped params used for the request
-
-Example from `pages/profile/[username].vue`:
-
-```ts
-const profileHttp = await app.$di.profile.info({
-  effect(data) {
-    if (data.status === 'error' && data.kind === 'not_found') {
-      showError(createError({
-        fatal: true,
-        statusCode: 404,
-        statusMessage: 'Page Not Found',
-      }))
-    }
-  },
-  initParams: {
-    username: String(profileParam.value),
-  },
-  server: true,
-})
-```
-
-## 9. `data` and `error`
-
-`UseHttpResult<T, P>` is split like this:
-
-- `data`: success payload only
-- `error`: configured project error payload only
-
-Internally the split is done by runtime error predicate:
-
-- global `isError` from `createUseHttp(...)`
-- or per-request `isError`
-- without `isError`, the package does not guess
-
-Important:
-
-- runtime error predicate does not reconfigure TypeScript types
-- TypeScript error type comes from `declare module '@brickflow/http'`
-- if no `error` type is declared, the package assumes nothing and does not create a default error shape
-
-## 10. Supported request options
-
-For `useHttp` / `createGet`:
+### Опции useHttp
 
 - `url`
 - `initParams`
@@ -365,72 +212,179 @@ For `useHttp` / `createGet`:
 - `lazy`
 - `server`
 
-Example with `initParams`:
+`effect(data, config)` вызывается и для cache, и для fresh-response:
+
+- `config.cached === true` для cache
+- `config.cached === false` для сети
+- `config.params` содержит уже применённые params
+
+## defineGet
+
+`defineGet` связывает app-level `useHttp` с endpoint-фабриками:
 
 ```ts
-const myContentHttp = await app.$di.content.my({
+const useHttp = createUseHttp({ ... })
+
+export const createGet = defineGet(useHttp)
+```
+
+Дальше в домене можно описывать запросы коротко и типизированно:
+
+```ts
+products: createGet<{
+  limit: number
+}>()('/products')
+```
+
+`defineGet` поддерживает два слоя настроек:
+
+1. Базовые настройки endpoint-а при объявлении:
+
+```ts
+const products = createGet<{ limit: number }>()('/products', {
+  mapParams: (params) => ({
+    limit: params?.limit ?? 10,
+  }),
+})
+```
+
+2. Runtime-опции при вызове:
+
+```ts
+const productsHttp = await products({
+  initParams: { limit: 20 },
+  lazy: true,
+  server: false,
+})
+```
+
+Если `effect`, `mapParams` или `isError` указаны и при объявлении, и при вызове, пакет объединяет их так:
+
+- `effect` вызывает оба обработчика
+- `isError` из runtime имеет приоритет
+- `mapParams` из runtime имеет приоритет
+
+## createUseCase
+
+В playground доменный модуль собирается через `createUseCase`:
+
+```ts
+import { createUseCase } from '@brickflow/http'
+
+import { createGet } from '~/core/http'
+
+export default createUseCase()(({ httpClient }) => {
+  return {
+    async apiError() {
+      const { data } = await httpClient.post('/api/http-error-demo')
+      return data
+    },
+
+    products: createGet<{
+      limit: number
+    }>()('/products'),
+  }
+})
+```
+
+Это даёт простой контракт для DI: use-case получает `httpClient`, а внутри может смешивать:
+
+- прямые mutation/one-shot запросы через `httpClient`
+- stateful GET-запросы через `createGet`
+
+## Использование в компоненте
+
+Актуальный пример из `apps/playground/pages/index.vue`:
+
+```vue
+<script lang="ts" setup>
+  const app = useNuxtApp()
+  const httpProducts = await app.$di.product.products({
+    lazy: true,
+  })
+</script>
+
+<template>
+  <button
+    type="button"
+    @click="httpProducts.fetch()"
+  >
+    {{ httpProducts.hasFirstData }} Action
+  </button>
+
+  {{ httpProducts.data }}
+</template>
+```
+
+Типичный сценарий:
+
+1. Создать request-state через `await endpoint({ ...options })`
+2. Если `lazy: true`, вызвать `fetch()` вручную
+3. Читать `data`, `error`, `pending`, `pendingCache`
+
+Пример с параметрами:
+
+```ts
+const productsHttp = await app.$di.product.products({
   initParams: {
-    limit: props.limit,
-    offset: 0,
-    order: selectedOrder.value,
-    orderColumn: 'date',
-    type: selectedType.value,
+    limit: 10,
   },
+  lazy: true,
+})
+
+await productsHttp.fetch({
+  limit: 30,
 })
 ```
 
-Example with `fetch(...)` overriding params:
+## Cache и синхронизация между вкладками
 
-```ts
-await myContentHttp.fetch({
-  limit: props.limit,
-  offset,
-  order: selectedOrder.value,
-  orderColumn: 'date',
-  type: selectedType.value,
-})
-```
+Если передан `getCache`, `createUseHttp`:
 
-## 11. Cache behavior
+- сначала пробует отдать cache
+- вызывает `effect(..., { cached: true })` для cache-ответа
+- затем делает сетевой запрос
+- сохраняет успешный ответ в cache
+- при изменении хеша удаляет связанные cache-ключи через `deleteKeysWithPart`
 
-When `getCache` is provided, `createUseHttp`:
+Дополнительно пакет использует `BroadcastChannel` и синхронизирует свежие успешные GET-ответы между вкладками.
 
-- tries cached value first
-- calls `effect(..., { cached: true })` for cached payload
-- then performs fresh request
-- stores success response in cache
-- invalidates related keys when response hash changes
+По умолчанию:
 
-In this repo the cache is backed by IndexedDB in `core/util.ts`.
+- `ttl = 7 дней`
+- `channelName = 'http-tab-sync'`
 
-## 12. URL and hash helpers
+## SSR
 
-The package also exports helpers used by the current implementation:
+Если вызвать endpoint с `server: true`, на сервере пакет использует `useLazyAsyncData`, сохраняет результат в `useState` и переиспользует его на клиенте после гидрации.
+
+Это полезно для страниц, где нужен первый ответ уже в SSR, но тот же контракт `data / pending / fetch` должен остаться и на клиенте.
+
+## Вспомогательные функции
 
 ```ts
 import { createURL, hashData } from '@brickflow/http'
 ```
 
-`createURL(url, params)` builds query strings.
+- `createURL(url, params)` строит query string
+- `hashData(data)` считает SHA-1 через `crypto.subtle`, а без него использует fallback-хеш
 
-`hashData(data)` computes response hash for cache invalidation.
+## Когда что использовать
 
-## 13. Recommended usage in this repo
+`createHttp`:
 
-Use `createHttp` when:
+- POST/мутации
+- one-shot запросы
+- когда не нужен reactive state
 
-- you need direct `get/post`
-- you are writing mutations or one-shot calls
+`createUseHttp` + `defineGet`:
 
-Use `createUseHttp` + `createGet` when:
+- SSR-friendly GET
+- cache и `pendingCache`
+- повторное использование endpoint-описаний
+- ручной `fetch()`
 
-- you need SSR-aware async state
-- you need `pending`, `pendingCache`, `hasFirstData`, `hasFreshData`
-- you need cache integration
-- you want reusable typed endpoint factories in domain modules
+`createUseCase`:
 
-Use `type.d.ts` when:
-
-- you want to define endpoint keys
-- you want to define the optional project-wide error type
-- you want all consumers to infer the same API schema
+- доменные модули с DI
+- единый контракт для доступа к `httpClient`
