@@ -2,56 +2,25 @@ import { onScopeDispose, shallowReactive, shallowRef } from 'vue'
 
 import { useLazyAsyncData, useState } from '#app'
 
-import type {
-  HttpClient,
-  HttpError,
-  HttpErrorGuard,
-  HttpKey,
-  HttpParam,
-  HttpResponse,
-  HttpResponseData,
-  HttpSuccessData,
-} from './http'
+import type { GetConfig, HttpClient, HttpErrorGuard, HttpKey, HttpParam, HttpResponseData } from './http'
 
 import { createURL, hashData } from './utils'
 
 const DAY = 1000 * 60 * 60 * 24
 const DEFAULT_CHANNEL_NAME = 'http-tab-sync'
 const DEFAULT_TTL = DAY * 7
-
-export type CreateGetOptions<T extends HttpKey, P extends HttpParam> = Omit<UseHttpOptions<T, P>, 'url'>
-
-export interface CreateGetPayload<T extends HttpKey, P extends HttpParam> {
-  effect?: (
-    data: HttpResponseData<T>,
-    config: {
-      cached: boolean
-      params: P
-    },
-  ) => undefined
-  ignore?: (response: HttpResponse<HttpError>) => boolean
-  isError?: (payload: HttpResponseData<T>) => boolean
-  mapParams?: <R extends P>(params?: R) => R
-}
-
-export interface CreateGetResult<T extends HttpKey, P extends HttpParam> {
-  data: HttpSuccessData<T> | null
-  error: Extract<HttpResponseData<T>, HttpError> | null
-  fetch: (params?: P, opt?: { signal: AbortSignal }) => Promise<void>
-  hasFirstData: boolean
-  hasFreshData: boolean
-  pending: boolean
-  pendingCache: boolean
-}
-
 export interface CreateUseHttpDependencies {
   channelName?: string
-  getCache?: () => null | UseHttpCache
+  getCache: () => null | UseHttpCache
   getHttpClient: () => HttpClient
   isDev?: () => boolean
-  isError?: HttpErrorGuard<unknown, HttpError>
+  isError?: HttpErrorGuard<unknown>
   ttl?: number
 }
+
+export type HttpError = HttpErrorMap[keyof HttpErrorMap]
+export interface HttpErrorMap {}
+export type HttpSuccessData<TKey extends HttpKey = HttpKey> = Exclude<HttpResponseData<TKey>, HttpError>
 
 export interface UseHttpCache {
   deleteKeysWithPart: (part: string) => Promise<void>
@@ -68,14 +37,20 @@ export interface UseHttpFn {
   <T extends HttpKey, P extends HttpParam>(options: UseHttpOptions<T, P>): Promise<UseHttpResult<T, P>>
 }
 
-export type UseHttpOptions<T extends HttpKey, P extends HttpParam> = UseHttpOptionsBase<T, P> & {
+export interface UseHttpOptions<T extends HttpKey, P extends HttpParam> {
+  effect?: UseHttpEffect<T, P>
+  initParams?: P
   isError?: (payload: HttpResponseData<T>) => boolean
+  lazy?: true
+  mapParams?: (params?: P) => P
+  server?: boolean
+  url: T
 }
 
 export interface UseHttpResult<T extends HttpKey, P extends HttpParam> {
   data: HttpSuccessData<T> | null
-  error: Extract<HttpResponseData<T>, HttpError> | null
-  fetch: (params?: P, opt?: { signal: AbortSignal }) => Promise<void>
+  error: null | UseHttpError<T>
+  fetch: UseHttpFetch<P>
   hasFirstData: boolean
   hasFreshData: boolean
   pending: boolean
@@ -89,50 +64,19 @@ type BroadcastMessage = {
   type: 'STATE_UPDATE'
 }
 
-type UseHttpOptionsBase<T extends HttpKey, P extends HttpParam> = {
-  effect?: (
-    data: HttpResponseData<T>,
-    config: {
-      cached: boolean
-      params: P
-    },
-  ) => void
-  ignore?: (response: HttpResponse<HttpError>) => boolean
-  initParams?: P
-  lazy?: true
-  mapParams?: <R extends P>(params?: R) => R
-  server?: boolean
-  url: T
+type UseHttpEffect<T extends HttpKey, P extends HttpParam> = (
+  data: HttpResponseData<T>,
+  config: UseHttpEffectConfig<P>,
+) => void
+type UseHttpEffectConfig<P extends HttpParam> = {
+  cached: boolean
+  params: P
 }
+type UseHttpError<T extends HttpKey> = Extract<HttpResponseData<T>, HttpError>
 
-export function createGet(useHttp: UseHttpFn) {
-  return function withParams<P extends HttpParam>() {
-    return function withUrl<T extends HttpKey>(
-      url: T,
-      payload?: CreateGetPayload<T, P>,
-    ): (options?: CreateGetOptions<T, P>) => Promise<CreateGetResult<T, P>> {
-      return async function request(options: CreateGetOptions<T, P> = {}): Promise<CreateGetResult<T, P>> {
-        const result = await useHttp({
-          ignore: payload?.ignore,
-          isError: options.isError ?? payload?.isError,
-          ...options,
-          effect: (...args) => {
-            const [data, config] = args
+type UseHttpFetch<P extends HttpParam> = (params?: P, opt?: { signal: AbortSignal }) => Promise<void>
 
-            payload?.effect?.(data, config)
-            options?.effect?.(data, config)
-          },
-          mapParams: payload?.mapParams,
-          url,
-        })
-
-        return result
-      }
-    }
-  }
-}
-
-export function createUseHttp(dependencies: CreateUseHttpDependencies) {
+export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpFn {
   let channel: BroadcastChannel | null
 
   const useHttp: UseHttpFn = async <T extends HttpKey, P extends HttpParam>(
@@ -140,7 +84,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies) {
   ): Promise<UseHttpResult<T, P>> => {
     const mapParams = (params?: P): P => {
       if (options.mapParams) {
-        return options.mapParams(params ?? ({} as P))
+        return options.mapParams(params)
       }
 
       return params ?? ({} as P)
@@ -170,7 +114,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies) {
       result.data = value
     }
     const syncResult = (payload: HttpResponseData<T> | null | undefined): void => {
-      if (payload == null) {
+      if (payload === null || payload === undefined) {
         setData(null)
         setError(null)
         return
@@ -194,7 +138,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies) {
       const ssr = await useLazyAsyncData(initFullUrl, async () => {
         return await httpClient.get<T>(options.url, {
           params: paramsReactive.value,
-        })
+        } as GetConfig<T>)
       })
 
       result.fetch = async (params?: P) => {
@@ -297,10 +241,9 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies) {
 
           const signalHttp = fetchOpt?.signal ? [controller.signal, fetchOpt.signal] : controller.signal
           const response = await httpClient.get<T>(options.url, {
-            ignore: options.ignore,
             params: mappedParams,
             signal: signalHttp,
-          })
+          } as GetConfig<T>)
           const responsePayload = response.data as HttpResponseData<T>
 
           effect?.(responsePayload, {
@@ -374,7 +317,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies) {
 
 function createIsErrorGuard<TData>(
   localGuard?: (payload: TData) => boolean,
-  globalGuard?: HttpErrorGuard<unknown, HttpError>,
+  globalGuard?: HttpErrorGuard<unknown>,
 ): (payload: TData) => boolean {
   if (localGuard) {
     return localGuard
@@ -384,7 +327,7 @@ function createIsErrorGuard<TData>(
     return globalGuard as (payload: TData) => boolean
   }
 
-  return (payload: TData): boolean => hasErrorStatus(payload)
+  return (): boolean => false
 }
 
 function getChannel(name: string, currentChannel?: BroadcastChannel | null): BroadcastChannel | null {
@@ -401,15 +344,6 @@ function getChannel(name: string, currentChannel?: BroadcastChannel | null): Bro
 
 function getRandom(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
-function hasErrorStatus(payload: unknown): payload is { status: 'error' } {
-  return Boolean(
-    payload &&
-    typeof payload === 'object' &&
-    'status' in payload &&
-    (payload as { status?: string }).status === 'error',
-  )
 }
 
 function normalizeBroadcastValue<T>(payload: T): T {

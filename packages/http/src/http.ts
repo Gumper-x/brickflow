@@ -1,106 +1,93 @@
-export type ConventionError = HttpError
-
 export interface CreateHttpOptions {
+  arrayMode?: HttpArrayMode
   baseURL: string
   fetch?: typeof fetch
-  headers?: (() => Record<string, string | undefined>) | Record<string, string | undefined>
-  onResponseError?: (response: HttpResponse<HttpError>) => Promise<void> | void
-  requestInit?: Omit<RequestInit, 'body' | 'headers' | 'method' | 'signal'>
+  headers?: (() => HttpHeaders) | HttpHeaders
+  onResponse?: (response: HttpAnyResponse) => Promise<void> | void
   timeout?: number
 }
 
-export interface GetConfig extends HttpConfig {
+export type GetConfig<TKey extends HttpKey = HttpKey> = HttpConfigFull<TKey> & {
   retry?: {
     delay?: number
     retries?: number
   }
 }
 
-export interface HttpClient {
-  get: <T extends HttpKey>(url: T, config?: GetConfig) => Promise<HttpResponse<HttpResponseData<T>>>
-  post: <T extends HttpKey>(
+export type HttpAnyResponse = HttpResponse<HttpResponseData<HttpKey>, HttpKey, HttpConfigFull<HttpKey>>
+
+export type HttpArrayMode = 'json' | 'repeat'
+
+export type HttpClient = {
+  get: <T extends HttpKey, TConfig extends GetConfig<T> = GetConfig<T>>(
+    url: T,
+    config?: TConfig,
+  ) => Promise<HttpResponse<HttpResponseData<T>, T, TConfig>>
+  post: <T extends HttpKey, TConfig extends PostConfig<T> = PostConfig<T>>(
     url: T,
     data?: FormData | Record<string, unknown>,
-    config?: PostConfig,
-  ) => Promise<HttpResponse<HttpResponseData<T>>>
+    config?: TConfig,
+  ) => Promise<HttpResponse<HttpResponseData<T>, T, TConfig>>
 }
 
-export interface HttpDefaultError {
-  [key: string]: unknown
-  kind?: string
-  message?: string
-  status: 'error'
-}
-export interface HttpDefaultSuccess {
-  [key: string]: unknown
-  status?: 'success'
-}
-export type HttpError = HttpConfigValue<'error', HttpDefaultError>
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export interface HttpConfig<TKey extends HttpKey = HttpKey> {}
+export interface HttpEndpoint {}
+export type HttpErrorGuard<TData = unknown, TError extends TData = TData> = (payload: TData) => payload is TError
+
 export type HttpKey = Extract<keyof HttpSchema, string>
 export type HttpParam = Record<string, boolean | number | string | string[] | undefined>
-export type HttpMatchedError<TData = unknown, TError = HttpError> = Extract<TData, TError>
-export type HttpMatchedSuccess<TData = unknown, TError = HttpError> = Exclude<TData, HttpMatchedError<TData, TError>>
-export type HttpErrorData<TData = unknown> = HttpMatchedError<TData>
-export type HttpSuccessResult<TData = unknown, TError = HttpErrorData<TData>> = HttpMatchedSuccess<TData, TError>
-export type HttpErrorGuard<TData = unknown, TError extends TData = HttpMatchedError<TData>> = (
-  payload: TData,
-) => payload is TError
-export interface HttpResponse<T = HttpResponseData> {
-  config: {
-    ignore?: ((response: HttpResponse<HttpError>) => boolean) | undefined
-    url: string
-  }
+
+export interface HttpResponse<
+  T = unknown,
+  TKey extends HttpKey = HttpKey,
+  TConfig extends HttpConfigFull<TKey> = HttpConfigFull<TKey>,
+> {
+  config: HttpResponseConfig<TKey, TConfig>
   data: T
   status: number
 }
+export type HttpResponseConfig<
+  TKey extends HttpKey = HttpKey,
+  TConfig extends HttpConfig<TKey> = HttpConfig<TKey>,
+> = Omit<TConfig, 'signal'> & { url: string }
 
 export type HttpResponseData<TKey extends HttpKey = HttpKey> = HttpSchema[TKey]
 
-export type HttpSchema = HttpConfigValue<'endpoints', Record<string, HttpDefaultError | HttpDefaultSuccess>>
+export type PostConfig<TKey extends HttpKey = HttpKey> = HttpConfigFull<TKey>
 
-export type HttpSuccessData<TKey extends HttpKey = HttpKey> = Exclude<HttpResponseData<TKey>, HttpError>
-
-export interface HttpTypeConfig {}
-
-export interface PostConfig extends HttpConfig {}
-
-interface HttpConfig {
-  ignore?: (response: HttpResponse<HttpError>) => boolean
+type HttpConfigFull<TKey extends HttpKey = HttpKey> = HttpConfig<TKey> & {
   params?: HttpParam
   signal?: AbortSignal | AbortSignal[]
 }
 
-type HttpConfigValue<TKey extends string, TFallback> = TKey extends keyof HttpTypeConfig
-  ? HttpTypeConfig[TKey]
-  : TFallback
+type HttpHeaders = Record<string, string | undefined>
 
-type QueryArrayMode = 'json' | 'repeat'
+type HttpSchema = keyof HttpEndpoint extends never ? Record<string, unknown> : HttpEndpoint
 
 export function createHttp(options: CreateHttpOptions): HttpClient {
+  const arrayMode = options.arrayMode ?? 'json'
   const clientFetch = options.fetch ?? fetch
   const timeout = options.timeout ?? 80000
 
   return {
-    get<T extends HttpKey>(url: T, config: GetConfig = {}) {
-      const requestUrl = `${joinUrl(options.baseURL, url)}${toQueryString(config.params, 'json')}`
-      const { delay = 300, retries = 3 } = config.retry ?? {}
+    get<T extends HttpKey, TConfig extends GetConfig<T> = GetConfig<T>>(url: T, config?: TConfig) {
+      const requestConfig = (config ?? {}) as TConfig
+      const requestUrl = `${joinUrl(options.baseURL, url)}${toQueryString(requestConfig.params, arrayMode)}`
+      const { delay = 300, retries = 3 } = requestConfig.retry ?? {}
 
-      const attemptRequest = async (attempt: number): Promise<HttpResponse<HttpResponseData<T>>> => {
+      const attemptRequest = async (attempt: number): Promise<HttpResponse<HttpResponseData<T>, T, TConfig>> => {
         try {
           const result = await clientFetch(requestUrl, {
-            ...options.requestInit,
             credentials: 'include',
             headers: resolveHeaders(options.headers),
             method: 'GET',
-            signal: createSignal(config.signal, timeout),
+            signal: createSignal(requestConfig.signal, timeout),
           })
 
           const parsedResult = await result.json()
-          const response = {
-            config: {
-              ignore: config.ignore,
-              url: joinUrl(options.baseURL, url),
-            },
+          const response: HttpResponse<HttpResponseData<T>, T, TConfig> = {
+            config: createResponseConfig<T, TConfig>(joinUrl(options.baseURL, url), requestConfig),
             data: parsedResult,
             status: result.status,
           }
@@ -110,7 +97,7 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
             return attemptRequest(attempt + 1)
           }
 
-          await options.onResponseError?.(response)
+          await options.onResponse?.(response as HttpAnyResponse)
           return response
         } catch (err) {
           if (isAbortError(err) || attempt >= retries) {
@@ -124,11 +111,15 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
 
       return attemptRequest(0)
     },
-    async post<T extends HttpKey>(url: T, data?: FormData | Record<string, unknown>, config: PostConfig = {}) {
+    async post<T extends HttpKey, TConfig extends PostConfig<T> = PostConfig<T>>(
+      url: T,
+      data?: FormData | Record<string, unknown>,
+      config?: TConfig,
+    ) {
+      const requestConfig = (config ?? {}) as TConfig
       const isForm = isFormData(data)
-      const requestUrl = `${joinUrl(options.baseURL, url)}${toQueryString(config.params, 'repeat')}`
+      const requestUrl = `${joinUrl(options.baseURL, url)}${toQueryString(requestConfig.params, arrayMode)}`
       const response = await clientFetch(requestUrl, {
-        ...options.requestInit,
         body: isForm || data === undefined ? data : JSON.stringify(data),
         credentials: 'include',
         headers: resolveHeaders(
@@ -136,7 +127,7 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
           data !== undefined && !isForm ? { 'Content-Type': 'application/json' } : undefined,
         ),
         method: 'POST',
-        signal: createSignal(config.signal, timeout),
+        signal: createSignal(requestConfig.signal, timeout),
       })
 
       let parsedResult: Awaited<ReturnType<typeof response.json>> = {}
@@ -146,16 +137,13 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
         parsedResult = {}
       }
 
-      const parsedResponse = {
-        config: {
-          ignore: config.ignore,
-          url: joinUrl(options.baseURL, url),
-        },
+      const parsedResponse: HttpResponse<HttpResponseData<T>, T, TConfig> = {
+        config: createResponseConfig<T, TConfig>(joinUrl(options.baseURL, url), requestConfig),
         data: parsedResult,
         status: response.status,
       }
 
-      await options.onResponseError?.(parsedResponse)
+      await options.onResponse?.(parsedResponse as HttpAnyResponse)
       return parsedResponse
     },
   }
@@ -173,6 +161,19 @@ function createAnySignal(signals: AbortSignal[]): AbortSignal {
   })
 
   return controller.signal
+}
+
+function createResponseConfig<TKey extends HttpKey, TConfig extends HttpConfigFull<TKey>>(
+  url: string,
+  config: TConfig,
+): HttpResponseConfig<TKey, TConfig> {
+  const responseConfig = { ...config } as Record<string, unknown>
+  delete responseConfig.signal
+
+  return {
+    ...responseConfig,
+    url,
+  } as HttpResponseConfig<TKey, TConfig>
 }
 
 function createSignal(signal: AbortSignal | AbortSignal[] | undefined, timeout: number): AbortSignal {
@@ -249,7 +250,7 @@ function serializeQueryValue(
   urlParams: URLSearchParams,
   key: string,
   value: HttpParam[string],
-  arrayMode: QueryArrayMode,
+  arrayMode: HttpArrayMode,
 ): void {
   if (value === undefined) {
     return
@@ -270,7 +271,7 @@ function serializeQueryValue(
   urlParams.append(key, String(value))
 }
 
-function toQueryString(params?: HttpParam, arrayMode: QueryArrayMode = 'json'): string {
+function toQueryString(params?: HttpParam, arrayMode: HttpArrayMode = 'json'): string {
   const urlParams = new URLSearchParams()
 
   Object.entries(params ?? {}).forEach(([key, value]) => {

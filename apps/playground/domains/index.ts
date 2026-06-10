@@ -1,16 +1,15 @@
 import type { HttpClient } from '@brickflow/http'
 
-import { type CatalogUseCase, createCatalogUseCase } from './catalog/use-case'
-import { createSystemUseCase, type SystemUseCase } from './system/use-case'
+import useProduct from './product/use-case'
 
 export interface PlaygroundDi {
-  catalog: CatalogUseCase
-  system: SystemUseCase
+  product: ReturnType<typeof useProduct>
 }
 
-export function createPlaygroundDi(dependencies: { httpClient: HttpClient }): PlaygroundDi {
+export function createPlaygroundDi(payload: { httpClient: HttpClient }): PlaygroundDi {
+  const { httpClient } = payload
+
   return {
-    catalog: createCatalogUseCase(),
-    system: createSystemUseCase(dependencies.httpClient),
+    product: useProduct({ httpClient }),
   }
 }

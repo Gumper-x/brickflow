@@ -7,7 +7,8 @@ Minimal HTTP package used in this repo for:
 - reusable endpoint factory via `createGet`
 - project-level typing through `declare module '@brickflow/http'`
 
-This package does not know your API schema by default. The schema and error type are configured in the consumer project through `type.d.ts`.
+This package does not know your API schema by default. Endpoint types and optional error typing are configured in the
+consumer project through `type.d.ts`.
 
 ## Exports
 
@@ -51,6 +52,9 @@ What this gives:
 - `HttpSuccessData<'some/endpoint'>` becomes response without the configured error branch
 - `UseHttpResult<T, P>['error']` is inferred from `HttpTypeConfig['error']`
 
+If you do not configure `error`, the package does not invent one. In that case `HttpError` becomes `never`, and
+`UseHttpResult['error']` is typed from your explicit guard logic only at runtime.
+
 This is the main place where project typing should live.
 
 ## 2. Create low-level HTTP client
@@ -61,6 +65,7 @@ Real usage from `plugins/01.di.ts`:
 import { createHttp } from '@brickflow/http'
 
 const httpClient = createHttp({
+  arrayMode: 'repeat',
   baseURL: apiUrl,
   headers: () => ({
     'Client-Env': config.public.isDev ? 'development' : undefined,
@@ -68,17 +73,17 @@ const httpClient = createHttp({
     'Client-Socket-Id': socketClient?.io.id || '',
     'X-Requested-With': 'XMLHttpRequest',
   }),
-  onResponseError: responseInterceptor,
+  onResponse: responseInterceptor,
 })
 ```
 
 Available options:
 
 - `baseURL`
+- `arrayMode`
 - `fetch`
 - `headers`
-- `onResponseError`
-- `requestInit`
+- `onResponse`
 - `timeout`
 
 `createHttp` returns:
@@ -89,6 +94,11 @@ interface HttpClient {
   post(url, data?, config?)
 }
 ```
+
+`arrayMode` controls how array query params are serialized for requests created by this client:
+
+- `'json'`: `tags=["a","b"]`
+- `'repeat'`: `tags[]=a&tags[]=b`
 
 ## 3. Use `HttpClient` directly
 
@@ -193,21 +203,22 @@ home: createGet<{
 }>()('feed/home')
 ```
 
-### With `ignore`
+### Handle response in app code
 
-Example from `domains/content/use-case.ts`:
+If you need custom error handling or want to ignore a specific error branch, do it in your app code through
+`onResponse`, not in the package:
 
 ```ts
-analytics: createGet<{
-  itemId: string
-  period: '7d' | '28d' | '90d'
-}>()('content/analytics', {
-  ignore(res) {
-    if (res.data.kind === 'no_auth') {
-      return true
+const httpClient = createHttp({
+  baseURL: apiUrl,
+  onResponse(response) {
+    if (response.data?.status === 'error' && response.data.kind === 'no_auth') {
+      return
     }
 
-    return false
+    if (response.data?.status === 'error') {
+      console.error(response)
+    }
   },
 })
 ```
@@ -334,12 +345,13 @@ Internally the split is done by runtime error predicate:
 
 - global `isError` from `createUseHttp(...)`
 - or per-request `isError`
-- fallback: `payload.status === 'error'`
+- without `isError`, the package does not guess
 
 Important:
 
 - runtime error predicate does not reconfigure TypeScript types
 - TypeScript error type comes from `declare module '@brickflow/http'`
+- if no `error` type is declared, the package assumes nothing and does not create a default error shape
 
 ## 10. Supported request options
 
@@ -349,7 +361,6 @@ For `useHttp` / `createGet`:
 - `initParams`
 - `mapParams`
 - `effect`
-- `ignore`
 - `isError`
 - `lazy`
 - `server`
@@ -421,5 +432,5 @@ Use `createUseHttp` + `createGet` when:
 Use `type.d.ts` when:
 
 - you want to define endpoint keys
-- you want to define the project-wide error type
+- you want to define the optional project-wide error type
 - you want all consumers to infer the same API schema

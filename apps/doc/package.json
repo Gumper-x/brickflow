@@ -3,11 +3,11 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "build": "TMPDIR=/tmp nuxt build",
+    "dev": "TMPDIR=/tmp nuxt dev",
+    "generate": "TMPDIR=/tmp nuxt generate",
+    "preview": "TMPDIR=/tmp nuxt preview",
+    "postinstall": "TMPDIR=/tmp nuxt prepare"
   },
   "dependencies": {
     "nuxt": "4.4.7",

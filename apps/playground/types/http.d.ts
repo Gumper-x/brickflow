@@ -1,39 +1,32 @@
-interface DummyProductListResponse {
-  limit: number
-  products: DummyProductPreview[]
-  skip: number
-  total: number
-}
+import type { HttpKey, HttpResponseData } from '@brickflow/http'
 
-interface DummyProductPreview {
-  category: string
-  id: number
-  price: number
-  rating: number
-  thumbnail: string
-  title: string
-}
-
-interface DummyTestResponse {
-  method: 'GET'
-  status: 'ok'
-}
-
-interface PlaygroundHttpError {
-  kind: 'playground_demo'
-  message: string
-  status: 'error'
+type Convention = {
+  '/api/http-error-demo': null
+  '/products':
+    | {
+        limit: number
+        products: {
+          category: string
+          id: number
+          price: number
+          rating: number
+          thumbnail: string
+          title: string
+        }[]
+        skip: number
+        total: number
+      }
+    | {
+        message: 'error'
+      }
 }
 
 declare module '@brickflow/http' {
-  interface HttpTypeConfig {
-    endpoints: {
-      '/api/http-error-demo': PlaygroundHttpError
-      '/products': DummyProductListResponse
-      '/test': DummyTestResponse
-    }
-    error: PlaygroundHttpError
+  interface HttpConfig<TKey extends HttpKey = HttpKey> {
+    ignore?: (data: HttpResponseData<TKey>) => boolean
   }
+
+  interface HttpEndpoint extends Convention {}
 }
 
 export {}
