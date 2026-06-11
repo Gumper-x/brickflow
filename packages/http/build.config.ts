@@ -1,7 +1,7 @@
 import { defineConfig } from 'rolldown'
 
 export default defineConfig({
-  external: ['#app', 'vue'],
+  external: ['nuxt/app', 'vue'],
   input: {
     index: './src/index.ts',
     nuxt: './src/nuxt.ts',

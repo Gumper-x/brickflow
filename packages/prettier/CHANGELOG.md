@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.17
+
+### Patch Changes
+
+- Remove alias from http
+
 ## 0.0.16
 
 ### Patch Changes

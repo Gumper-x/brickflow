@@ -1,6 +1,5 @@
+import { useLazyAsyncData, useState } from 'nuxt/app'
 import { onScopeDispose, shallowReactive, shallowRef } from 'vue'
-
-import { useLazyAsyncData, useState } from '#app'
 
 import type { GetConfig, HttpClient, HttpErrorGuard, HttpKey, HttpParam, HttpResponseData } from './http'
 
