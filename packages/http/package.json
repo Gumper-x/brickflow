@@ -1,6 +1,6 @@
 {
   "name": "@brickflow/http",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Minimal HTTP transport and Nuxt state helpers for brickflow.",
   "sideEffects": false,
   "files": [

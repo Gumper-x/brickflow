@@ -24,7 +24,7 @@ export type HttpClient = {
   ) => Promise<HttpResponse<HttpResponseData<T>, T, TConfig>>
   post: <
     T extends HttpKey,
-    TData extends Record<keyof TData, unknown> = Record<string, unknown>,
+    TData extends Record<string, unknown> = Record<string, unknown>,
     TConfig extends PostConfig<T> = PostConfig<T>,
   >(
     url: T,
@@ -41,7 +41,7 @@ export type HttpErrorGuard<TData = unknown, TError extends TData = TData> = (pay
 export type HttpKey = Extract<keyof HttpSchema, string>
 
 export type HttpParam = Record<string, boolean | number | string | string[] | undefined>
-export type HttpPostData<TData extends Record<keyof TData, unknown> = Record<string, unknown>> = FormData | TData
+export type HttpPostData<TData extends Record<string, unknown> = Record<string, unknown>> = FormData | TData
 
 export interface HttpResponse<
   T = unknown,
@@ -118,7 +118,7 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
     },
     async post<
       T extends HttpKey,
-      TData extends Record<keyof TData, unknown> = Record<string, unknown>,
+      TData extends Record<string, unknown> = Record<string, unknown>,
       TConfig extends PostConfig<T> = PostConfig<T>,
     >(url: T, data?: HttpPostData<TData>, config?: TConfig) {
       const requestConfig = (config ?? {}) as TConfig

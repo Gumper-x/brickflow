@@ -1,5 +1,11 @@
 # @brickflow/http
 
+## 0.0.20
+
+### Patch Changes
+
+- Fix post data types
+
 ## 0.0.19
 
 ### Patch Changes

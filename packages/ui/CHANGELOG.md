@@ -1,5 +1,13 @@
 # @brickflow/ui
 
+## 0.0.20
+
+### Patch Changes
+
+- Fix post data types
+- Updated dependencies
+  - @brickflow/utils@0.0.20
+
 ## 0.0.19
 
 ### Patch Changes
