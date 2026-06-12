@@ -17,26 +17,31 @@ export type GetConfig<TKey extends HttpKey = HttpKey> = HttpConfigFull<TKey> & {
 export type HttpAnyResponse = HttpResponse<HttpResponseData<HttpKey>, HttpKey, HttpConfigFull<HttpKey>>
 
 export type HttpArrayMode = 'json' | 'repeat'
-
 export type HttpClient = {
   get: <T extends HttpKey, TConfig extends GetConfig<T> = GetConfig<T>>(
     url: T,
     config?: TConfig,
   ) => Promise<HttpResponse<HttpResponseData<T>, T, TConfig>>
-  post: <T extends HttpKey, TConfig extends PostConfig<T> = PostConfig<T>>(
+  post: <
+    T extends HttpKey,
+    TData extends Record<keyof TData, unknown> = Record<string, unknown>,
+    TConfig extends PostConfig<T> = PostConfig<T>,
+  >(
     url: T,
-    data?: FormData | Record<string, unknown>,
+    data?: HttpPostData<TData>,
     config?: TConfig,
   ) => Promise<HttpResponse<HttpResponseData<T>, T, TConfig>>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export interface HttpConfig<TKey extends HttpKey = HttpKey> {}
+
 export interface HttpEndpoint {}
 export type HttpErrorGuard<TData = unknown, TError extends TData = TData> = (payload: TData) => payload is TError
-
 export type HttpKey = Extract<keyof HttpSchema, string>
+
 export type HttpParam = Record<string, boolean | number | string | string[] | undefined>
+export type HttpPostData<TData extends Record<keyof TData, unknown> = Record<string, unknown>> = FormData | TData
 
 export interface HttpResponse<
   T = unknown,
@@ -111,11 +116,11 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
 
       return attemptRequest(0)
     },
-    async post<T extends HttpKey, TConfig extends PostConfig<T> = PostConfig<T>>(
-      url: T,
-      data?: FormData | Record<string, unknown>,
-      config?: TConfig,
-    ) {
+    async post<
+      T extends HttpKey,
+      TData extends Record<keyof TData, unknown> = Record<string, unknown>,
+      TConfig extends PostConfig<T> = PostConfig<T>,
+    >(url: T, data?: HttpPostData<TData>, config?: TConfig) {
       const requestConfig = (config ?? {}) as TConfig
       const isForm = isFormData(data)
       const requestUrl = `${joinUrl(options.baseURL, url)}${toQueryString(requestConfig.params, arrayMode)}`
@@ -213,7 +218,7 @@ function isAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError'
 }
 
-function isFormData(value: FormData | Record<string, unknown> | undefined): value is FormData {
+function isFormData(value: unknown): value is FormData {
   return typeof FormData !== 'undefined' && value instanceof FormData
 }
 

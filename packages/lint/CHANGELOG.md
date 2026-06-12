@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.19
+
+### Patch Changes
+
+- Fix signature type
+
 ## 0.0.18
 
 ### Patch Changes
