@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.18
+
+### Patch Changes
+
+- Type for create-get
+
 ## 0.0.17
 
 ### Patch Changes

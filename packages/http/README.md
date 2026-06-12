@@ -236,6 +236,16 @@ products: createGet<{
 }>()('/products')
 ```
 
+Если нужно явно переопределить тип ответа для конкретного endpoint-а, можно добавить ещё один generic-слой:
+
+```ts
+products: createGet<{
+  limit: number
+}>()<{
+  test: string
+}>('/products')
+```
+
 `defineGet` поддерживает два слоя настроек:
 
 1. Базовые настройки endpoint-а при объявлении:

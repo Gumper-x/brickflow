@@ -1,5 +1,13 @@
 # @brickflow/ui
 
+## 0.0.18
+
+### Patch Changes
+
+- Type for create-get
+- Updated dependencies
+  - @brickflow/utils@0.0.18
+
 ## 0.0.17
 
 ### Patch Changes
