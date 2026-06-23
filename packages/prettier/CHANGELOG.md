@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.21
+
+### Patch Changes
+
+- Http params from url
+
 ## 0.0.20
 
 ### Patch Changes

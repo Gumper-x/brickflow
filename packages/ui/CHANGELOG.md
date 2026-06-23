@@ -1,5 +1,13 @@
 # @brickflow/ui
 
+## 0.0.21
+
+### Patch Changes
+
+- Http params from url
+- Updated dependencies
+  - @brickflow/utils@0.0.21
+
 ## 0.0.20
 
 ### Patch Changes
