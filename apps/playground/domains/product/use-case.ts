@@ -9,6 +9,8 @@ export default createUseCase()(({ httpClient }) => {
       return data
     },
 
+    productOne: createGet()('/products/:productId'),
+    productOne2: createGet<{ test: number }>()('/products/:productId'),
     products: createGet<{
       limit: number
     }>()('/products'),

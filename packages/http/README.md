@@ -236,6 +236,61 @@ products: createGet<{
 }>()('/products')
 ```
 
+Path-параметры можно передавать тем же объектом `params`:
+
+```ts
+productOne: createGet<{
+  productId: number
+}>()('/products/:productId')
+```
+
+При вызове `productId` будет подставлен в URL, а не уйдёт в query string:
+
+```ts
+const productHttp = await app.$di.product.productOne({
+  lazy: true,
+})
+
+await productHttp.fetch({
+  productId: 3,
+})
+```
+
+Если generic не передан, `:segment` автоматически типизируется как `string`:
+
+```ts
+productOne: createGet()('/products/:productId')
+```
+
+Если generic передан, path params мерджатся с ним:
+
+```ts
+productOne: createGet<{
+  test: number
+}>()('/products/:productId')
+```
+
+В этом случае тип params будет таким:
+
+```ts
+{
+  productId: string
+  test: number
+}
+```
+
+Path params нужно передавать явно:
+
+```ts
+const productHttp = await app.$di.product.productOne({
+  lazy: true,
+})
+
+await productHttp.fetch({
+  productId: '3',
+})
+```
+
 Если нужно явно переопределить тип ответа для конкретного endpoint-а, можно добавить ещё один generic-слой:
 
 ```ts

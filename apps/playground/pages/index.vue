@@ -1,8 +1,18 @@
 <script lang="ts" setup>
-  console.log('SETUP')
   const app = useNuxtApp()
   const httpProducts = await app.$di.product.products({
     lazy: true,
+  })
+  const httpProduct1 = await app.$di.product.productOne({
+    initParams: {
+      productId: '1',
+    },
+  })
+  const httpProduct2 = await app.$di.product.productOne2({
+    initParams: {
+      productId: '2',
+      test: 3,
+    },
   })
 </script>
 
@@ -16,6 +26,10 @@
     >
       {{ httpProducts.hasFirstData }} Action
     </button>
+    httpProduct1
+    {{ httpProduct1.hasFirstData }}
+    httpProduct2
+    {{ httpProduct2.hasFirstData }}
     <br />
     {{ httpProducts.data }}
   </main>

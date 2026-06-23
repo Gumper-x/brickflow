@@ -3,7 +3,7 @@ import { createUseHttp, defineGet } from '@brickflow/http'
 import { dbDeleteKeysWithPart, dbGet, dbSafeSet } from './indexdb'
 
 const CACHE_DB_NAME = 'smart-cache-v2'
-const CACHE_STORE_NAME = 'playground-http'
+const CACHE_STORE_NAME = 'data'
 
 const useHttp = createUseHttp({
   getCache: () => ({

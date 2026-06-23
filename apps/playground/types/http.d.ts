@@ -19,6 +19,12 @@ type Convention = {
     | {
         message: 'error'
       }
+  '/products/:productId': {
+    category: 'beauty'
+    description: 'The Powder Canister is a finely milled setting powder designed to set makeup and control shine. With a lightweight and translucent formula, it provides a smooth and matte finish.'
+    id: 3
+    title: 'Powder Canister'
+  }
 }
 
 declare module '@brickflow/http' {

@@ -1,9 +1,10 @@
 import type { HttpParam } from './http'
 
 export function createURL(url: string, params?: HttpParam): string {
+  const resolved = resolveUrlParams(url, params)
   const urlParams = new URLSearchParams()
 
-  Object.entries(params ?? {}).forEach(([key, value]) => {
+  Object.entries(resolved.params ?? {}).forEach(([key, value]) => {
     if (value === undefined) {
       return
     }
@@ -19,7 +20,7 @@ export function createURL(url: string, params?: HttpParam): string {
   })
 
   const query = urlParams.size > 0 ? `?${urlParams}` : ''
-  return urlParams.size > 0 ? `${url}${query}` : url
+  return urlParams.size > 0 ? `${resolved.url}${query}` : resolved.url
 }
 
 export function fastDevHash(data: unknown): string {
@@ -47,4 +48,44 @@ export async function hashData(data: unknown): Promise<string> {
   }
 
   return fastDevHash(data)
+}
+
+export function resolveUrlParams(
+  url: string,
+  params?: HttpParam,
+): {
+  params: HttpParam | undefined
+  url: string
+} {
+  if (!params) {
+    return {
+      params,
+      url,
+    }
+  }
+
+  const usedKeys: Record<string, true> = {}
+  const resolvedUrl = url.replaceAll(/:(\w+)/g, (segment, key: string) => {
+    const value = params[key]
+
+    if (value === undefined) {
+      return segment
+    }
+
+    usedKeys[key] = true
+    return encodeURIComponent(String(value))
+  })
+  const queryParams = Object.entries(params).reduce<HttpParam>((acc, [key, value]) => {
+    if (usedKeys[key]) {
+      return acc
+    }
+
+    acc[key] = value
+    return acc
+  }, {})
+
+  return {
+    params: Object.keys(queryParams).length > 0 ? queryParams : undefined,
+    url: resolvedUrl,
+  }
 }

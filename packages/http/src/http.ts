@@ -1,3 +1,5 @@
+import { resolveUrlParams } from './utils'
+
 export interface CreateHttpOptions {
   arrayMode?: HttpArrayMode
   baseURL: string
@@ -78,7 +80,8 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
   return {
     get<T extends HttpKey, TConfig extends GetConfig<T> = GetConfig<T>>(url: T, config?: TConfig) {
       const requestConfig = (config ?? {}) as TConfig
-      const requestUrl = `${joinUrl(options.baseURL, url)}${toQueryString(requestConfig.params, arrayMode)}`
+      const resolved = resolveUrlParams(url, requestConfig.params)
+      const requestUrl = `${joinUrl(options.baseURL, resolved.url)}${toQueryString(resolved.params, arrayMode)}`
       const { delay = 300, retries = 3 } = requestConfig.retry ?? {}
 
       const attemptRequest = async (attempt: number): Promise<HttpResponse<HttpResponseData<T>, T, TConfig>> => {
@@ -92,7 +95,10 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
 
           const parsedResult = await result.json()
           const response: HttpResponse<HttpResponseData<T>, T, TConfig> = {
-            config: createResponseConfig<T, TConfig>(joinUrl(options.baseURL, url), requestConfig),
+            config: createResponseConfig<T, TConfig>(joinUrl(options.baseURL, resolved.url), {
+              ...requestConfig,
+              params: resolved.params,
+            }),
             data: parsedResult,
             status: result.status,
           }
@@ -123,7 +129,8 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
     >(url: T, data?: HttpPostData<TData>, config?: TConfig) {
       const requestConfig = (config ?? {}) as TConfig
       const isForm = isFormData(data)
-      const requestUrl = `${joinUrl(options.baseURL, url)}${toQueryString(requestConfig.params, arrayMode)}`
+      const resolved = resolveUrlParams(url, requestConfig.params)
+      const requestUrl = `${joinUrl(options.baseURL, resolved.url)}${toQueryString(resolved.params, arrayMode)}`
       const response = await clientFetch(requestUrl, {
         body: isForm || data === undefined ? data : JSON.stringify(data),
         credentials: 'include',
@@ -143,7 +150,10 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
       }
 
       const parsedResponse: HttpResponse<HttpResponseData<T>, T, TConfig> = {
-        config: createResponseConfig<T, TConfig>(joinUrl(options.baseURL, url), requestConfig),
+        config: createResponseConfig<T, TConfig>(joinUrl(options.baseURL, resolved.url), {
+          ...requestConfig,
+          params: resolved.params,
+        }),
         data: parsedResult,
         status: response.status,
       }
