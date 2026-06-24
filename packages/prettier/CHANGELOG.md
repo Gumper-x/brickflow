@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.22
+
+### Patch Changes
+
+- bump
+
 ## 0.0.21
 
 ### Patch Changes

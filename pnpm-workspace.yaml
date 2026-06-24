@@ -11,6 +11,7 @@ allowBuilds:
   sharp: true
   ttf2woff2: true
   vue-demi: true
+minimumReleaseAge: 0 
 shamefullyHoist: true
 sharedWorkspaceLockfile: true
 verifyDepsBeforeRun: false

@@ -1,6 +1,6 @@
 {
   "name": "@brickflow/utils",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "type": "module",
   "description": "Shared utility helpers for brickflow packages.",
   "sideEffects": false,
@@ -33,8 +33,8 @@
     "@brickflow/lint": "workspace:*",
     "@brickflow/prettier": "workspace:*",
     "@types/big.js": "7.0.0",
-    "rolldown": "1.1.0",
-    "rolldown-plugin-dts": "0.25.2"
+    "rolldown": "1.1.3",
+    "rolldown-plugin-dts": "0.26.0"
   },
   "author": "",
   "license": "ISC",
