@@ -1,7 +1,6 @@
 import { parse as babelParse } from '@babel/parser'
 import traverseModule from '@babel/traverse'
-import bkt from '@babel/types'
-const { isIdentifier, isMemberExpression, isStringLiteral, isTemplateLiteral } = bkt
+import { isIdentifier, isMemberExpression, isStringLiteral, isTemplateLiteral } from '@babel/types'
 import { compileTemplate, parse as parseSFC } from '@vue/compiler-sfc'
 import { execFileSync } from 'child_process'
 import { createHash } from 'crypto'

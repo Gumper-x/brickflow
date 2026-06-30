@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.23
+
+### Patch Changes
+
+- Lock update
+
 ## 0.0.22
 
 ### Patch Changes
