@@ -16,7 +16,7 @@
   })
   // const httpProduct3 = await app.$di.product.productOne3({
   //   initParams: {
-  //     productId: '3',
+  //     lol: 'sdf',
   //   },
   // })
 </script>

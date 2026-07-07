@@ -1,6 +1,6 @@
 {
   "name": "@brickflow/prettier",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "type": "module",
   "description": "Shared Prettier config for brickflow workspaces.",
   "files": [

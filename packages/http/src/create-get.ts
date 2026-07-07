@@ -9,9 +9,10 @@ export interface CreateGetFactory<P extends HttpParam> {
 }
 export type CreateGetOptions<T extends string, P extends HttpParam> = Omit<
   UseHttpOptions<HttpKey, P>,
-  'effect' | 'isError' | 'url'
+  'effect' | 'initParams' | 'isError' | 'url'
 > & {
   effect?: CreateGetEffect<T, P>
+  initParams?: CreateGetInitParams<P>
   isError?: CreateGetIsError<T>
 }
 export type CreateGetPayload<T extends string, P extends HttpParam> = {
@@ -36,6 +37,7 @@ type CreateGetEffectConfig<P extends HttpParam> = {
   params: P
 }
 type CreateGetEmptyParams = Record<never, never>
+type CreateGetInitParams<P extends HttpParam> = [keyof P] extends [never] ? never : P
 
 type CreateGetIsError<T extends string> = (payload: CreateGetData<T>) => boolean
 

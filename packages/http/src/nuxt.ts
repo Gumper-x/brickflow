@@ -71,8 +71,11 @@ type UseHttpEffectConfig<P extends HttpParam> = {
   params: P
 }
 type UseHttpError<T extends HttpKey> = Extract<HttpResponseData<T>, HttpError>
-
-type UseHttpFetch<P extends HttpParam> = (params?: P, opt?: { signal: AbortSignal }) => Promise<void>
+type UseHttpFetch<P extends HttpParam> = (
+  params?: UseHttpFetchParams<P>,
+  opt?: { signal: AbortSignal },
+) => Promise<void>
+type UseHttpFetchParams<P extends HttpParam> = [keyof P] extends [never] ? never : P
 
 export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpFn {
   let channel: BroadcastChannel | null

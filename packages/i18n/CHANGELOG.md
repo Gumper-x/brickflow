@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.26
+
+### Patch Changes
+
+- Params typed
+
 ## 0.0.25
 
 ### Patch Changes
