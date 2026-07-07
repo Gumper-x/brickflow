@@ -15,6 +15,13 @@ export type CreateGetOptions<T extends string, P extends HttpParam> = Omit<
   initParams?: CreateGetInitParams<P>
   isError?: CreateGetIsError<T>
 }
+export type CreateGetParams<T extends string, P extends HttpParam> = Omit<CreateGetPathParams<T>, keyof P> & P
+export type CreateGetPathParams<T extends string> = [CreateGetParamKeys<T>] extends [never]
+  ? CreateGetEmptyParams
+  : {
+      [K in CreateGetParamKeys<T>]: string
+    }
+
 export type CreateGetPayload<T extends string, P extends HttpParam> = {
   effect?: CreateGetEffect<T, P>
   isError?: CreateGetIsError<T>
@@ -26,7 +33,6 @@ export type CreateGetResult<T extends string, P extends HttpParam> = Omit<
   data: Exclude<CreateGetData<T>, HttpError> | null
   error: Extract<CreateGetData<T>, HttpError> | null
 }
-
 type CreateGetData<T extends string> = T extends HttpKey ? HttpResponseData<T> : unknown
 type CreateGetEffect<T extends string, P extends HttpParam> = (
   data: CreateGetData<T>,
@@ -36,22 +42,16 @@ type CreateGetEffectConfig<P extends HttpParam> = {
   cached: boolean
   params: P
 }
+
 type CreateGetEmptyParams = Record<never, never>
+
 type CreateGetInitParams<P extends HttpParam> = [keyof P] extends [never] ? never : P
-
 type CreateGetIsError<T extends string> = (payload: CreateGetData<T>) => boolean
-
 type CreateGetParamKeys<T extends string> = T extends `${string}:${infer Rest}`
   ? Rest extends `${infer Key}/${infer Tail}`
     ? CreateGetParamKeys<`/${Tail}`> | Key
     : Rest
   : never
-type CreateGetParams<T extends string, P extends HttpParam> = Omit<CreateGetPathParams<T>, keyof P> & P
-type CreateGetPathParams<T extends string> = [CreateGetParamKeys<T>] extends [never]
-  ? CreateGetEmptyParams
-  : {
-      [K in CreateGetParamKeys<T>]: string
-    }
 
 export function createUseCase<D>() {
   return <T>(
