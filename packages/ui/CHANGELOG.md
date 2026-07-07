@@ -1,5 +1,13 @@
 # @brickflow/ui
 
+## 0.0.24
+
+### Patch Changes
+
+- Remove generic response
+- Updated dependencies
+  - @brickflow/utils@0.0.24
+
 ## 0.0.23
 
 ### Patch Changes

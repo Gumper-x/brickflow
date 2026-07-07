@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.24
+
+### Patch Changes
+
+- Remove generic response
+
 ## 0.0.23
 
 ### Patch Changes
