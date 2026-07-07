@@ -14,14 +14,20 @@
       test: 3,
     },
   })
+  const httpProduct3 = await app.$di.product.productOne3({
+    initParams: {
+      productId: 3,
+    },
+  })
 </script>
 
 <template>
   <main class="space-y-4 p-6">
     <h1>Playground</h1>
+    <BrickButton>sdf</BrickButton>
     <button
       type="button"
-      class="bg-green-950 text-green-400 rounded-md px-2 py-1 cursor-pointer"
+      class="bg-green-950 tabular-nums text-green-400 rounded-md px-2 py-1 cursor-pointer"
       @click="httpProducts.fetch()"
     >
       {{ httpProducts.hasFirstData }} Action

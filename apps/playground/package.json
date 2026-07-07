@@ -6,7 +6,7 @@
     "dev": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt dev",
     "postinstall": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt prepare",
     "build": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt build",
-    "typecheck": "vue-tsc --noEmit",
+    "typecheck": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt prepare && vue-tsc --noEmit",
     "test": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt prepare && vitest run",
     "lint": "pnpm typecheck && eslint -v && NODE_ENV=deploy eslint --cache .",
     "lint:fix": "pnpm exec eslint . --fix",

@@ -1,0 +1,14 @@
+{
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    [
+      "uiStyles\\s*:\\s*\\{([\\s\\S]*)\\}\\s*[,;]?",
+      "['\"`]([^'\"`]*)['\"`]"
+    ],
+    "class:\\s*?[\"'`]([^\"'`]*).*?,",
+    "/\\*\\s*tw\\s*\\*/\\s*'([^']*)'",
+    "/\\*\\s*tw\\s*\\*/\\s*\"([^\"]*)\""
+  ]
+}

@@ -17,7 +17,7 @@ export const usebrickflow = (): brickflowComposable => {
   const brickflowConfig = computed(() => (config.public.brickflowUi ?? {}) as brickflowPublicConfig)
   const target = computed(() => brickflowConfig.value.target ?? 'world')
   const message = computed(() => brickflowConfig.value.message ?? `Hello ${target.value}`)
-  const className = computed(() => (target.value === 'world' ? 'ring-1 ring-brick-100/70' : ''))
+  const className = computed(() => (target.value === 'world' ? UI_STYLE.state.world : ''))
 
   return {
     className,
