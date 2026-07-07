@@ -1,6 +1,6 @@
 {
   "name": "@brickflow/lint",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "type": "module",
   "description": "Shared ESLint configs for brickflow workspaces.",
   "files": [

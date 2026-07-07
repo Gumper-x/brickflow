@@ -1,5 +1,13 @@
 # @brickflow/ui
 
+## 0.0.25
+
+### Patch Changes
+
+- Remove mapParams
+- Updated dependencies
+  - @brickflow/utils@0.0.25
+
 ## 0.0.24
 
 ### Patch Changes

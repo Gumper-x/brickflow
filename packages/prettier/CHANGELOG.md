@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.25
+
+### Patch Changes
+
+- Remove mapParams
+
 ## 0.0.24
 
 ### Patch Changes
