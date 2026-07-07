@@ -2,36 +2,34 @@ import type { HttpClient, HttpKey, HttpParam, HttpResponseData } from './http'
 import type { HttpError, UseHttpFn, UseHttpOptions, UseHttpResult } from './nuxt'
 
 export interface CreateGetFactory<P extends HttpParam> {
-  <D = never, T extends HttpKey = HttpKey>(
+  <T extends string>(
     url: T,
-    payload?: CreateGetPayload<T, CreateGetParams<T, P>, D>,
-  ): (
-    options?: CreateGetOptions<T, CreateGetParams<T, P>, D>,
-  ) => Promise<CreateGetResult<T, CreateGetParams<T, P>, D>>
+    payload?: CreateGetPayload<T, CreateGetParams<T, P>>,
+  ): (options?: CreateGetOptions<T, CreateGetParams<T, P>>) => Promise<CreateGetResult<T, CreateGetParams<T, P>>>
 }
-export type CreateGetOptions<T extends HttpKey, P extends HttpParam, D = never> = Omit<
-  UseHttpOptions<T, P>,
+export type CreateGetOptions<T extends string, P extends HttpParam> = Omit<
+  UseHttpOptions<HttpKey, P>,
   'effect' | 'isError' | 'url'
 > & {
-  effect?: CreateGetEffect<T, P, D>
-  isError?: CreateGetIsError<T, D>
+  effect?: CreateGetEffect<T, P>
+  isError?: CreateGetIsError<T>
 }
-export type CreateGetPayload<T extends HttpKey, P extends HttpParam, D = never> = {
-  effect?: CreateGetEffect<T, P, D>
-  isError?: CreateGetIsError<T, D>
-  mapParams?: UseHttpOptions<T, P>['mapParams']
+export type CreateGetPayload<T extends string, P extends HttpParam> = {
+  effect?: CreateGetEffect<T, P>
+  isError?: CreateGetIsError<T>
+  mapParams?: UseHttpOptions<HttpKey, P>['mapParams']
 }
-export type CreateGetResult<T extends HttpKey, P extends HttpParam, D = never> = Omit<
-  UseHttpResult<T, P>,
+export type CreateGetResult<T extends string, P extends HttpParam> = Omit<
+  UseHttpResult<HttpKey, P>,
   'data' | 'error'
 > & {
-  data: Exclude<CreateGetData<T, D>, HttpError> | null
-  error: Extract<CreateGetData<T, D>, HttpError> | null
+  data: Exclude<CreateGetData<T>, HttpError> | null
+  error: Extract<CreateGetData<T>, HttpError> | null
 }
 
-type CreateGetData<T extends HttpKey, D> = [D] extends [never] ? HttpResponseData<T> : D
-type CreateGetEffect<T extends HttpKey, P extends HttpParam, D = never> = (
-  data: CreateGetData<T, D>,
+type CreateGetData<T extends string> = T extends HttpKey ? HttpResponseData<T> : unknown
+type CreateGetEffect<T extends string, P extends HttpParam> = (
+  data: CreateGetData<T>,
   config: CreateGetEffectConfig<P>,
 ) => void
 type CreateGetEffectConfig<P extends HttpParam> = {
@@ -40,15 +38,15 @@ type CreateGetEffectConfig<P extends HttpParam> = {
 }
 type CreateGetEmptyParams = Record<never, never>
 
-type CreateGetIsError<T extends HttpKey, D = never> = (payload: CreateGetData<T, D>) => boolean
+type CreateGetIsError<T extends string> = (payload: CreateGetData<T>) => boolean
 
 type CreateGetParamKeys<T extends string> = T extends `${string}:${infer Rest}`
   ? Rest extends `${infer Key}/${infer Tail}`
     ? CreateGetParamKeys<`/${Tail}`> | Key
     : Rest
   : never
-type CreateGetParams<T extends HttpKey, P extends HttpParam> = Omit<CreateGetPathParams<T>, keyof P> & P
-type CreateGetPathParams<T extends HttpKey> = [CreateGetParamKeys<T>] extends [never]
+type CreateGetParams<T extends string, P extends HttpParam> = Omit<CreateGetPathParams<T>, keyof P> & P
+type CreateGetPathParams<T extends string> = [CreateGetParamKeys<T>] extends [never]
   ? CreateGetEmptyParams
   : {
       [K in CreateGetParamKeys<T>]: string
@@ -62,27 +60,27 @@ export function createUseCase<D>() {
 
 export function defineGet(useHttp: UseHttpFn) {
   return function withParams<P extends HttpParam = CreateGetEmptyParams>(): CreateGetFactory<P> {
-    function withUrl<T extends HttpKey, D = never>(
+    function withUrl<T extends string>(
       url: T,
-      payload?: CreateGetPayload<T, CreateGetParams<T, P>, D>,
+      payload?: CreateGetPayload<T, CreateGetParams<T, P>>,
     ): (
-      options?: CreateGetOptions<T, CreateGetParams<T, P>, D>,
-    ) => Promise<CreateGetResult<T, CreateGetParams<T, P>, D>> {
+      options?: CreateGetOptions<T, CreateGetParams<T, P>>,
+    ) => Promise<CreateGetResult<T, CreateGetParams<T, P>>> {
       return async function request(
-        options: CreateGetOptions<T, CreateGetParams<T, P>, D> = {},
-      ): Promise<CreateGetResult<T, CreateGetParams<T, P>, D>> {
+        options: CreateGetOptions<T, CreateGetParams<T, P>> = {},
+      ): Promise<CreateGetResult<T, CreateGetParams<T, P>>> {
         const result = await useHttp({
           ...options,
           effect: (data, config) => {
-            payload?.effect?.(data as CreateGetData<T, D>, config)
-            options?.effect?.(data as CreateGetData<T, D>, config)
+            payload?.effect?.(data as CreateGetData<T>, config)
+            options?.effect?.(data as CreateGetData<T>, config)
           },
           isError: options.isError ?? payload?.isError,
           mapParams: options.mapParams ?? payload?.mapParams,
           url,
-        } as UseHttpOptions<T, CreateGetParams<T, P>>)
+        } as UseHttpOptions<HttpKey, CreateGetParams<T, P>>)
 
-        return result as CreateGetResult<T, CreateGetParams<T, P>, D>
+        return result as CreateGetResult<T, CreateGetParams<T, P>>
       }
     }
 

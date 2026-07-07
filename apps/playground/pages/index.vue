@@ -14,11 +14,11 @@
       test: 3,
     },
   })
-  const httpProduct3 = await app.$di.product.productOne3({
-    initParams: {
-      productId: 3,
-    },
-  })
+  // const httpProduct3 = await app.$di.product.productOne3({
+  //   initParams: {
+  //     productId: '3',
+  //   },
+  // })
 </script>
 
 <template>

@@ -11,13 +11,13 @@ export default createUseCase()(({ httpClient }) => {
 
     productOne: createGet()('/products/:productId'),
     productOne2: createGet<{ test: number }>()('/products/:productId'),
-    productOne3: createGet()<{ someFake: string }>('/products/:sexId'),
+    productOne3: createGet()('/products/:productId'),
     products: createGet<{
       limit: number
     }>()('/products'),
 
     products2: createGet<{
       limit: number
-    }>()<{ test: string }>('/products'),
+    }>()('/products'),
   }
 })
