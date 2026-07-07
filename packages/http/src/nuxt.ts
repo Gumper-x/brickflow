@@ -41,7 +41,6 @@ export interface UseHttpOptions<T extends HttpKey, P extends HttpParam> {
   initParams?: P
   isError?: (payload: HttpResponseData<T>) => boolean
   lazy?: true
-  mapParams?: (params?: P) => P
   server?: boolean
   url: T
 }
@@ -81,18 +80,12 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
   const useHttp: UseHttpFn = async <T extends HttpKey, P extends HttpParam>(
     options: UseHttpOptions<T, P>,
   ): Promise<UseHttpResult<T, P>> => {
-    const mapParams = (params?: P): P => {
-      if (options.mapParams) {
-        return options.mapParams(params)
-      }
-
-      return params ?? ({} as P)
-    }
+    const resolveParams = (params?: P): P => params ?? ({} as P)
     const effect = options.effect
     const isError = createIsErrorGuard(options.isError, dependencies.isError)
 
     const buildUrl = createURL
-    const initFullUrl = buildUrl(options.url, mapParams(options.initParams))
+    const initFullUrl = buildUrl(options.url, resolveParams(options.initParams))
     const httpClient = dependencies.getHttpClient()
     const cache = import.meta.client ? (dependencies.getCache?.() ?? null) : null
     let hasDataFromServer = false
@@ -133,7 +126,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
     const serverData = useState<null | unknown>(`http-${initFullUrl}`, () => null)
 
     if (options.server && import.meta.server) {
-      const paramsReactive = shallowRef(mapParams(options.initParams))
+      const paramsReactive = shallowRef(resolveParams(options.initParams))
       const ssr = await useLazyAsyncData(initFullUrl, async () => {
         return await httpClient.get<T>(options.url, {
           params: paramsReactive.value,
@@ -141,7 +134,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
       })
 
       result.fetch = async (params?: P) => {
-        paramsReactive.value = mapParams(params)
+        paramsReactive.value = resolveParams(params)
         await ssr.refresh()
       }
 
@@ -157,7 +150,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
       if (serverData.value) {
         effect?.(serverData.value as HttpResponseData<T>, {
           cached: false,
-          params: mapParams(options.initParams),
+          params: resolveParams(options.initParams),
         })
       }
 
@@ -203,7 +196,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
       const ttl = dependencies.ttl ?? DEFAULT_TTL
 
       const runFetch = async (params?: P, fetchOpt?: { signal?: AbortSignal }): Promise<void> => {
-        const mappedParams = mapParams(params)
+        const mappedParams = resolveParams(params)
         const fullUrl = buildUrl(options.url, mappedParams)
         const fetchId = Date.now() + getRandom(0, 300)
 

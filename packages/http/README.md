@@ -206,7 +206,6 @@ export const createGet = defineGet(useHttp)
 
 - `url`
 - `initParams`
-- `mapParams`
 - `effect`
 - `isError`
 - `lazy`
@@ -306,11 +305,7 @@ products: createGet<{
 1. Базовые настройки endpoint-а при объявлении:
 
 ```ts
-const products = createGet<{ limit: number }>()('/products', {
-  mapParams: (params) => ({
-    limit: params?.limit ?? 10,
-  }),
-})
+const products = createGet<{ limit: number }>()('/products')
 ```
 
 2. Runtime-опции при вызове:
@@ -323,11 +318,10 @@ const productsHttp = await products({
 })
 ```
 
-Если `effect`, `mapParams` или `isError` указаны и при объявлении, и при вызове, пакет объединяет их так:
+Если `effect` или `isError` указаны и при объявлении, и при вызове, пакет объединяет их так:
 
 - `effect` вызывает оба обработчика
 - `isError` из runtime имеет приоритет
-- `mapParams` из runtime имеет приоритет
 
 ## createUseCase
 

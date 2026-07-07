@@ -17,7 +17,6 @@ export type CreateGetOptions<T extends string, P extends HttpParam> = Omit<
 export type CreateGetPayload<T extends string, P extends HttpParam> = {
   effect?: CreateGetEffect<T, P>
   isError?: CreateGetIsError<T>
-  mapParams?: UseHttpOptions<HttpKey, P>['mapParams']
 }
 export type CreateGetResult<T extends string, P extends HttpParam> = Omit<
   UseHttpResult<HttpKey, P>,
@@ -76,7 +75,6 @@ export function defineGet(useHttp: UseHttpFn) {
             options?.effect?.(data as CreateGetData<T>, config)
           },
           isError: options.isError ?? payload?.isError,
-          mapParams: options.mapParams ?? payload?.mapParams,
           url,
         } as UseHttpOptions<HttpKey, CreateGetParams<T, P>>)
 
