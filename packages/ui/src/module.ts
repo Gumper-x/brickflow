@@ -22,7 +22,10 @@ import {
 export interface ModuleOptions {
   componentPrefix?: string
   configPath?: string
-  target?: string
+}
+
+interface BrickflowRuntimeConfig {
+  message?: string
 }
 
 const UI_STYLE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?|vue)$/
@@ -51,7 +54,6 @@ export default defineNuxtModule<ModuleOptions>({
   defaults: {
     componentPrefix: 'Brick',
     configPath: '~/ui.config.ts',
-    target: 'world',
   },
   meta: {
     compatibility: {
@@ -62,7 +64,7 @@ export default defineNuxtModule<ModuleOptions>({
   },
   async setup(options, nuxt) {
     const resolver = createResolver(import.meta.url)
-    const currentConfig = nuxt.options.runtimeConfig.public.brickflowUi ?? {}
+    const currentConfig = (nuxt.options.runtimeConfig.public.brickflowUi ?? {}) as BrickflowRuntimeConfig
     const defaultConfigPath = resolver.resolve('./runtime/tailwind')
     const runtimePath = resolver.resolve('./runtime')
     const resolvedConfigPath = await resolvePath(options.configPath ?? defaultConfigPath).catch(
@@ -124,8 +126,7 @@ export default defineNuxtModule<ModuleOptions>({
 
     nuxt.options.runtimeConfig.public.brickflowUi = {
       ...currentConfig,
-      message: 'world',
-      target: options.target ?? 'world',
+      message: currentConfig.message ?? 'Hello world',
     }
 
     nuxt.options.alias['#brickflow-ui-config'] = uiConfigTemplate.dst
