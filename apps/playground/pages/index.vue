@@ -1,42 +1,76 @@
 <script lang="ts" setup>
-  const app = useNuxtApp()
-  const httpProducts = await app.$di.product.products({
-    lazy: true,
+  const screen = useScreen()
+  const clicks = ref(0)
+  const screenReady = ref(false)
+
+  const activeScreen = computed(() => {
+    const screens = ['base', 'sm', 'md', 'lg', 'xl', 'xxl'] as const
+
+    return screens.find((key) => screen[key]) ?? 'unknown'
   })
-  const httpProduct1 = await app.$di.product.productOne({
-    initParams: {
-      productId: '1',
-    },
+
+  onMounted(async () => {
+    await screen.ready
+    screenReady.value = true
   })
-  const httpProduct2 = await app.$di.product.productOne2({
-    initParams: {
-      productId: '2',
-      test: 3,
-    },
-  })
-  // const httpProduct3 = await app.$di.product.productOne3({
-  //   initParams: {
-  //     lol: 'sdf',
-  //   },
-  // })
 </script>
 
 <template>
-  <main class="space-y-4 p-6">
-    <h1>Playground</h1>
-    <BrickButton>sdf</BrickButton>
-    <button
-      type="button"
-      class="bg-green-950 tabular-nums text-green-400 rounded-md px-2 py-1 cursor-pointer"
-      @click="httpProducts.fetch()"
-    >
-      {{ httpProducts.hasFirstData }} Action
-    </button>
-    httpProduct1
-    {{ httpProduct1.hasFirstData }}
-    httpProduct2
-    {{ httpProduct2.hasFirstData }}
-    <br />
-    {{ httpProducts.data }}
+  <main class="mx-auto max-w-3xl space-y-10 p-6 sm:p-10">
+    <section class="space-y-4">
+      <p class="text-sm font-medium text-gray-500">BrickButton</p>
+      <div class="flex flex-wrap items-center gap-3">
+        <BrickButton @click="clicks += 1">
+          <template #leading><span aria-hidden="true">+</span></template>
+          Add item
+        </BrickButton>
+        <BrickButton
+          color="plain"
+          variant="glass"
+        >
+          Secondary
+        </BrickButton>
+        <BrickButton
+          color="win"
+          variant="soft"
+          size="lg"
+        >
+          Saved
+        </BrickButton>
+        <BrickButton
+          color="danger"
+          variant="ghost"
+          square
+          aria-label="Delete"
+        >
+          ×
+        </BrickButton>
+        <BrickButton
+          color="alt"
+          variant="ghost"
+        >
+          Clicked {{ clicks }} times
+        </BrickButton>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <p class="text-sm font-medium text-gray-500">useScreen</p>
+      <p class="text-sm text-gray-300">
+        <template v-if="screenReady">
+          Active range:
+          <strong>{{ activeScreen }}</strong>
+        </template>
+        <template v-else>Detecting screen size…</template>
+      </p>
+      <div class="grid gap-2 rounded-lg bg-gray-100 p-3 text-sm font-medium text-gray-700">
+        <p :class="screen.baseClass">base: under 40rem</p>
+        <p :class="screen.smClass">sm: 40rem–48rem</p>
+        <p :class="screen.mdClass">md: 48rem–64rem</p>
+        <p :class="screen.lgClass">lg: 64rem–80rem</p>
+        <p :class="screen.xlClass">xl: 80rem–96rem</p>
+        <p :class="screen.xxlClass">xxl: 96rem and up</p>
+      </div>
+    </section>
   </main>
 </template>

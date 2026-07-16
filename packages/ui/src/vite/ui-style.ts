@@ -1,4 +1,4 @@
-import { basename, extname, resolve } from 'node:path'
+import { basename, dirname, extname, resolve } from 'node:path'
 
 import type { BrickflowUiStyles } from '../runtime/tailwind'
 
@@ -92,7 +92,10 @@ const resolveUiStyleConfigPath = (id: string, path: string[]): string[] => {
     return path
   }
 
-  return [toCamelCase(basename(cleanId, extname(cleanId))), ...path]
+  const componentName = basename(cleanId, extname(cleanId))
+  const configName = componentName === 'index' ? basename(dirname(cleanId)) : componentName
+
+  return [toCamelCase(configName), ...path]
 }
 
 const resolveStyleValue = (styles: BrickflowUiStyles, id: string, path: string[]): unknown => {

@@ -5,11 +5,12 @@ import {
   createResolver,
   defineNuxtModule,
   resolvePath,
+  updateTemplates,
 } from '@nuxt/kit'
 import tailwindcss from '@tailwindcss/vite'
 import { createJiti } from 'jiti'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
-import { join, relative, resolve } from 'node:path'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 
 import { type BrickflowUiConfig, defineBrickflowUiConfig } from './runtime/tailwind'
 import {
@@ -24,11 +25,152 @@ export interface ModuleOptions {
   configPath?: string
 }
 
-interface BrickflowRuntimeConfig {
-  message?: string
-}
+export type {
+  BrickflowConfig,
+  BrickflowI18n,
+  BrickflowRouteLocationParam,
+} from './runtime/composables/useTranslate'
 
 const UI_STYLE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?|vue)$/
+const UI_COMPONENT_FILE_PATTERN = /(?:^|[/\\])index\.vue$/
+const UI_DEMO_FILE_PATTERN = /\.demo\.vue$/
+
+const toKebabCase = (value: string): string =>
+  value
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/[\\/]/g, '-')
+    .toLowerCase()
+
+const getComponentName = (path: string): string => path.replace(/[/\\]index\.vue$/, '').replaceAll('/', ' / ')
+
+interface NuxtOptionsWithRouteRules {
+  routeRules?: Record<string, UiRouteRule>
+}
+
+interface UiComponentProp {
+  name: string
+  required: boolean
+  type: string
+}
+
+interface UiRouteRule {
+  headers?: Record<string, string>
+  ssr?: boolean
+}
+
+interface UiStyleValue {
+  path: string
+  value?: string
+}
+
+const readObjectPath = (source: unknown, path: string[]): unknown =>
+  path.reduce<unknown>((value, key) => {
+    if (!value || typeof value !== 'object') {
+      return undefined
+    }
+
+    return (value as Record<string, unknown>)[key]
+  }, source)
+
+const getBracedContent = (source: string, fromIndex: number): string | undefined => {
+  const openingIndex = source.indexOf('{', fromIndex)
+  if (openingIndex === -1) {
+    return undefined
+  }
+
+  let depth = 0
+
+  for (let index = openingIndex; index < source.length; index += 1) {
+    const character = source[index]
+    if (character === '{') {
+      depth += 1
+    } else if (character === '}') {
+      depth -= 1
+    }
+
+    if (depth === 0) {
+      return source.slice(openingIndex + 1, index)
+    }
+  }
+
+  return undefined
+}
+
+const getPropsSource = (source: string): string | undefined => {
+  const interfaceIndex = source.indexOf('interface Props')
+  if (interfaceIndex !== -1) {
+    return getBracedContent(source, interfaceIndex)
+  }
+
+  const definePropsIndex = source.indexOf('defineProps<')
+
+  return definePropsIndex === -1 ? undefined : getBracedContent(source, definePropsIndex)
+}
+
+const collectComponentProps = (source: string): UiComponentProp[] => {
+  const propsSource = getPropsSource(source)
+  if (!propsSource) {
+    return []
+  }
+
+  return propsSource.split('\n').flatMap((sourceLine) => {
+    const line = sourceLine.trim().replace(/[;,]$/, '')
+    const separatorIndex = line.indexOf(':')
+    const name = line.slice(0, separatorIndex)
+    const type = line.slice(separatorIndex + 1).trim()
+
+    if (separatorIndex === -1 || !/^[a-z_$][\w$]*\??$/i.test(name) || !type) {
+      return []
+    }
+
+    return [
+      {
+        name: name.replace(/\?$/, ''),
+        required: !name.endsWith('?'),
+        type,
+      },
+    ]
+  })
+}
+
+const collectComponentSlots = (source: string): string[] => {
+  const conditionalSlots = [...source.matchAll(/\$slots\.([A-Za-z_$][\w$]*)/g)]
+    .map((match) => match[1])
+    .filter((slot): slot is string => Boolean(slot))
+  const renderedSlots = [...source.matchAll(/<slot\b[^>]*>/g)].map((match) => {
+    const name = match[0].match(/\bname=["']([^"']+)["']/)?.[1]
+
+    return name ?? 'default'
+  })
+
+  return [...new Set([...conditionalSlots, ...renderedSlots])].sort()
+}
+
+const toComponentStyleKey = (path: string): string => {
+  const componentName = basename(dirname(path))
+
+  return `${componentName[0]?.toLowerCase()}${componentName.slice(1)}`
+}
+
+const collectComponentStyleValues = (
+  source: string,
+  componentPath: string,
+  styles: BrickflowUiConfig['uiStyles'],
+): UiStyleValue[] =>
+  [...new Set(collectUiStylePathsFromCode(source).map((path) => path.join('.')))].sort().map((path) => {
+    const segments = path.split('.')
+    const componentValue = readObjectPath(styles, [toComponentStyleKey(componentPath), ...segments])
+    const globalValue = readObjectPath(styles, segments)
+
+    let value: string | undefined
+    if (typeof componentValue === 'string') {
+      value = componentValue
+    } else if (typeof globalValue === 'string') {
+      value = globalValue
+    }
+
+    return { path, value }
+  })
 
 const scanUiStyleFiles = async (directory: string): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true }).catch(() => [])
@@ -63,10 +205,24 @@ export default defineNuxtModule<ModuleOptions>({
     name: '@brickflow/ui',
   },
   async setup(options, nuxt) {
+    const nuxtOptions = nuxt.options as unknown as NuxtOptionsWithRouteRules
+
+    nuxtOptions.routeRules ??= {}
+    const uiRouteRule = nuxtOptions.routeRules['/ui'] ?? {}
+
+    nuxtOptions.routeRules['/ui'] = {
+      ...uiRouteRule,
+      headers: {
+        'X-Robots-Tag': 'noindex, nofollow, noarchive',
+        ...uiRouteRule.headers,
+      },
+      ssr: uiRouteRule.ssr ?? false,
+    }
+
     const resolver = createResolver(import.meta.url)
-    const currentConfig = (nuxt.options.runtimeConfig.public.brickflowUi ?? {}) as BrickflowRuntimeConfig
     const defaultConfigPath = resolver.resolve('./runtime/tailwind')
     const runtimePath = resolver.resolve('./runtime')
+    const componentsDirectory = resolve(runtimePath, 'components')
     const resolvedConfigPath = await resolvePath(options.configPath ?? defaultConfigPath).catch(
       () => defaultConfigPath,
     )
@@ -74,6 +230,107 @@ export default defineNuxtModule<ModuleOptions>({
       interopDefault: true,
       moduleCache: false,
     })
+
+    const toPascalCase = (value: string): string =>
+      value
+        .split(/[/\\._-]+/)
+        .filter(Boolean)
+        .map((segment) => `${segment[0]?.toUpperCase()}${segment.slice(1)}`)
+        .join('')
+
+    const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+    const getUiComponentNameFromImport = (
+      specifier: string,
+      demoPath: string,
+      componentsRoot: string,
+    ): string | undefined => {
+      if (!specifier.startsWith('.')) {
+        return undefined
+      }
+
+      const componentPath = resolve(dirname(demoPath), specifier)
+      if (
+        relative(componentsRoot, componentPath).startsWith('..') ||
+        !UI_COMPONENT_FILE_PATTERN.test(componentPath)
+      ) {
+        return undefined
+      }
+
+      return toPascalCase(relative(componentsRoot, componentPath).replace(/[/\\]index\.vue$/, ''))
+    }
+
+    const createDemoCode = (
+      source: string,
+      demoPath: string,
+      componentsRoot: string,
+      componentPrefix: string,
+    ): string => {
+      const importedComponents = new Map<string, string>()
+      const removeScriptBlocks = (
+        code: string,
+        shouldRemove: (openingTag: string, content: string) => boolean,
+      ): string => {
+        const openingTagPrefix = '<script'
+        const closingTag = '</script>'
+        let result = ''
+        let cursor = 0
+        let scriptStart = code.indexOf(openingTagPrefix, cursor)
+
+        while (scriptStart !== -1) {
+          const nextCharacter = code[scriptStart + openingTagPrefix.length]
+          if (nextCharacter && !/[\s>]/.test(nextCharacter)) {
+            scriptStart = code.indexOf(openingTagPrefix, scriptStart + openingTagPrefix.length)
+            continue
+          }
+
+          const openingEnd = code.indexOf('>', scriptStart)
+          const closingStart = openingEnd === -1 ? -1 : code.indexOf(closingTag, openingEnd)
+          if (openingEnd === -1 || closingStart === -1) {
+            break
+          }
+
+          const openingTag = code.slice(scriptStart, openingEnd + 1)
+          const content = code.slice(openingEnd + 1, closingStart)
+          result += code.slice(cursor, scriptStart)
+
+          if (!shouldRemove(openingTag, content)) {
+            result += code.slice(scriptStart, closingStart + closingTag.length)
+          }
+
+          cursor = closingStart + closingTag.length
+          scriptStart = code.indexOf(openingTagPrefix, cursor)
+        }
+
+        return result + code.slice(cursor)
+      }
+      const isSetupScript = (openingTag: string): boolean => openingTag.split(/\s+/).includes('setup')
+      const codeWithoutMeta = removeScriptBlocks(source, (openingTag) => !isSetupScript(openingTag))
+      const codeWithoutImports = codeWithoutMeta.replace(
+        /^\s*import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]([^'"]+)['"];?\s*$/gm,
+        (statement, localName: string, specifier: string) => {
+          const componentName = getUiComponentNameFromImport(specifier, demoPath, componentsRoot)
+          if (!componentName) {
+            return statement
+          }
+
+          importedComponents.set(localName, `${componentPrefix}${componentName}`)
+
+          return ''
+        },
+      )
+
+      const codeWithPrefixedComponents = [...importedComponents.entries()].reduce(
+        (code, [localName, componentName]) =>
+          code.replace(new RegExp(`<(/?)${escapeRegExp(localName)}(?=[\\s>/])`, 'g'), `<$1${componentName}`),
+        codeWithoutImports,
+      )
+
+      return removeScriptBlocks(
+        codeWithPrefixedComponents,
+        (openingTag, content) => isSetupScript(openingTag) && !content.trim(),
+      )
+    }
 
     const loadUiConfig = async (): Promise<BrickflowUiConfig> => {
       const validateConfig = defineBrickflowUiConfig as (config: Partial<BrickflowUiConfig>) => BrickflowUiConfig
@@ -124,12 +381,121 @@ export default defineNuxtModule<ModuleOptions>({
         ].join('\n'),
     })
 
-    nuxt.options.runtimeConfig.public.brickflowUi = {
-      ...currentConfig,
-      message: currentConfig.message ?? 'Hello world',
-    }
+    const uiCatalogTemplate = addTemplate({
+      filename: 'brickflow/ui-catalog.ts',
+      getContents: async () => {
+        const files = await scanUiStyleFiles(componentsDirectory)
+        const styles = (await loadUiConfig()).uiStyles
+        const components = await Promise.all(
+          files
+            .filter((path) => UI_COMPONENT_FILE_PATTERN.test(path))
+            .sort()
+            .map(async (path) => {
+              const source = await readFile(path, 'utf8')
+              const relativePath = relative(componentsDirectory, path).replaceAll('\\', '/')
+              const demos = await Promise.all(
+                files
+                  .filter((file) => dirname(file) === dirname(path) && UI_DEMO_FILE_PATTERN.test(file))
+                  .sort()
+                  .map(async (demoPath) => ({
+                    code: createDemoCode(
+                      await readFile(demoPath, 'utf8'),
+                      demoPath,
+                      componentsDirectory,
+                      options.componentPrefix ?? 'Brick',
+                    ),
+                    id: toKebabCase(basename(demoPath).replace(UI_DEMO_FILE_PATTERN, '')),
+                    path: demoPath,
+                  })),
+              )
+
+              return {
+                demos,
+                id: toKebabCase(relativePath.replace(/[/\\]index\.vue$/, '')),
+                name: getComponentName(relativePath),
+                path,
+                props: collectComponentProps(source),
+                slots: collectComponentSlots(source),
+                styles: collectComponentStyleValues(source, path, styles),
+              }
+            }),
+        )
+
+        return [
+          "import type { Component } from 'vue'",
+          ...components.map(
+            (component, index) =>
+              `import Component${index} from ${JSON.stringify(component.path.replaceAll('\\', '/'))}`,
+          ),
+          ...components.flatMap((component, componentIndex) =>
+            component.demos.map(
+              (demo, demoIndex) =>
+                `import Demo${componentIndex}_${demoIndex}, { uiDemo as uiDemo${componentIndex}_${demoIndex} } from ${JSON.stringify(demo.path.replaceAll('\\', '/'))}`,
+            ),
+          ),
+          '',
+          'export interface BrickflowUiDemo {',
+          '  code: string',
+          '  component: Component',
+          '  description?: string',
+          '  id: string',
+          '  title: string',
+          '}',
+          '',
+          'export interface BrickflowUiDemoMeta {',
+          '  description?: string',
+          '  title?: string',
+          '}',
+          '',
+          'export interface BrickflowUiProp {',
+          '  name: string',
+          '  required: boolean',
+          '  type: string',
+          '}',
+          '',
+          'export interface BrickflowUiStyleValue {',
+          '  path: string',
+          '  value?: string',
+          '}',
+          '',
+          'export interface BrickflowUiComponent {',
+          '  component: Component',
+          '  demos: BrickflowUiDemo[]',
+          '  id: string',
+          '  name: string',
+          '  props: BrickflowUiProp[]',
+          '  slots: string[]',
+          '  styles: BrickflowUiStyleValue[]',
+          '}',
+          '',
+          'export const uiComponents = [',
+          ...components.map(
+            (component, componentIndex) =>
+              `  { component: Component${componentIndex}, demos: [${component.demos
+                .map(
+                  (demo, demoIndex) =>
+                    `{ code: ${JSON.stringify(demo.code)}, component: Demo${componentIndex}_${demoIndex}, description: uiDemo${componentIndex}_${demoIndex}.description, id: ${JSON.stringify(demo.id)}, title: uiDemo${componentIndex}_${demoIndex}.title ?? 'Demo' }`,
+                )
+                .join(
+                  ', ',
+                )}], id: ${JSON.stringify(component.id)}, name: ${JSON.stringify(component.name)}, props: ${JSON.stringify(component.props)}, slots: ${JSON.stringify(component.slots)}, styles: ${JSON.stringify(component.styles)} },`,
+          ),
+          '] satisfies BrickflowUiComponent[]',
+          '',
+        ].join('\n')
+      },
+    })
 
     nuxt.options.alias['#brickflow-ui-config'] = uiConfigTemplate.dst
+    nuxt.options.alias['#brickflow-ui-catalog'] = uiCatalogTemplate.dst
+
+    nuxt.hook('pages:extend', (pages) => {
+      pages.push({
+        file: resolver.resolve('./runtime/pages/ui.vue'),
+        name: 'brickflow-ui',
+        path: '/ui',
+      })
+    })
 
     await generateUiStyleTypes()
 
@@ -146,6 +512,13 @@ export default defineNuxtModule<ModuleOptions>({
       }
 
       await generateUiStyleTypes()
+
+      if (
+        !relative(componentsDirectory, absolutePath).startsWith('..') &&
+        (UI_COMPONENT_FILE_PATTERN.test(path) || UI_DEMO_FILE_PATTERN.test(path))
+      ) {
+        await updateTemplates({ filter: (template) => template.filename === uiCatalogTemplate.filename })
+      }
     })
 
     nuxt.hook('vite:extendConfig', (config) => {
@@ -162,6 +535,7 @@ export default defineNuxtModule<ModuleOptions>({
 
     addImportsDir(resolver.resolve('./runtime/composables'))
     addComponentsDir({
+      ignore: ['**/*.demo.vue'],
       path: resolver.resolve('./runtime/components'),
       pathPrefix: false,
       prefix: options.componentPrefix ?? 'Brick',
