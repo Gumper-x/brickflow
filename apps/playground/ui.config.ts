@@ -4,56 +4,64 @@ export default defineBrickflowUiConfig({
   uiStyles: {
     button: {
       animationTap: 'tap-animation',
-      base: 'relative inline-flex cursor-pointer items-center justify-center overflow-hidden font-sans font-medium whitespace-nowrap transition duration-200 ease-in focus-visible:outline-2 focus-visible:outline-offset-2 select-none active:scale-105',
+      base: 'relative inline-flex cursor-pointer items-center justify-center overflow-hidden font-sans font-medium whitespace-nowrap transition duration-150 ease-in focus-visible:outline-2 focus-visible:outline-offset-2 select-none active:scale-105',
       color: {
         alt: {
           ghost: 'text-alt-400 hover:bg-alt-950',
-          glass: 'backdrop-blur-xs backdrop-saturate-140 bg-alt-900/10 text-plain-200 border-gradient',
-          soft: 'bg-alt-950 text-alt-400',
-          solid: 'bg-linear-to-b from-alt-500 to-alt-700 text-plain-200 border-gradient',
-          subtle: 'border-alt-700 bg-alt-950 text-alt-400 border-gradient',
+          glass:
+            'hover:brightness-115 backdrop-blur-xs backdrop-saturate-140 bg-alt-900/10 text-plain-200 border-gradient',
+          soft: 'hover:brightness-115 bg-alt-950 text-alt-400',
+          solid: 'hover:brightness-115 bg-linear-to-b from-alt-500 to-alt-700 text-plain-200 border-gradient',
+          subtle: 'hover:brightness-115 border-alt-700 bg-alt-950 text-alt-400 border-gradient',
         },
         danger: {
           ghost: 'text-danger-500 hover:bg-danger-950',
-          glass: 'backdrop-blur-xs backdrop-saturate-140 bg-danger-900/10 text-plain-200 border-gradient',
-          soft: 'bg-danger-950 text-danger-500',
-          solid: 'bg-linear-to-b from-danger-500 to-danger-700 text-plain-200 border-gradient',
-          subtle: 'border-danger-800 bg-danger-950 text-danger-500 border-gradient',
+          glass:
+            'hover:brightness-115 backdrop-blur-xs backdrop-saturate-140 bg-danger-900/10 text-plain-200 border-gradient',
+          soft: 'hover:brightness-115 bg-danger-950 text-danger-500',
+          solid:
+            'hover:brightness-115 bg-linear-to-b from-danger-500 to-danger-700 text-plain-200 border-gradient',
+          subtle: 'hover:brightness-115 border-danger-800 bg-danger-950 text-danger-500 border-gradient',
         },
         info: {
           ghost: 'text-info-400 hover:bg-info-950',
-          glass: 'backdrop-blur-xs backdrop-saturate-140 bg-info-900/10 text-plain-200 border-gradient',
-          soft: 'bg-info-950 text-info-400',
-          solid: 'bg-linear-to-b from-info-500 to-info-700 text-plain-200 border-gradient',
-          subtle: 'border-info-700 bg-info-950 text-info-400 border-gradient',
+          glass:
+            'hover:brightness-115 backdrop-blur-xs backdrop-saturate-140 bg-info-900/10 text-plain-200 border-gradient',
+          soft: 'hover:brightness-115 bg-info-950 text-info-400',
+          solid: 'hover:brightness-115 bg-linear-to-b from-info-500 to-info-700 text-plain-200 border-gradient',
+          subtle: 'hover:brightness-115 border-info-700 bg-info-950 text-info-400 border-gradient',
         },
         main: {
           ghost: 'text-main-400 hover:bg-main-900',
-          glass: 'backdrop-blur-xs backdrop-saturate-140 bg-main-900/10 text-plain-200 border-gradient',
-          soft: 'bg-main-900 text-main-300',
-          solid: 'bg-linear-to-b from-main-500 to-main-700 text-plain-200 border-gradient',
-          subtle: 'border-main-400 bg-main-900 text-main-300 border-gradient',
+          glass:
+            'hover:brightness-115 backdrop-blur-xs backdrop-saturate-140 bg-main-900/10 text-plain-200 border-gradient',
+          soft: 'hover:brightness-115 bg-main-900 text-main-300',
+          solid: 'hover:brightness-115 bg-linear-to-b from-main-500 to-main-700 text-plain-200 border-gradient',
+          subtle: 'hover:brightness-115 border-main-400 bg-main-900 text-main-300 border-gradient',
         },
         plain: {
           ghost: 'text-plain-200 hover:bg-plain-800',
-          glass: 'backdrop-blur-xs backdrop-saturate-140 bg-plain-900/10 text-plain-200 border-gradient',
-          soft: 'bg-plain-800 text-plain-300',
-          solid: 'bg-linear-to-b from-plain-700 to-plain-800 text-plain-200 border-gradient',
-          subtle: 'border-plain-700 bg-plain-800 text-plain-300 border-gradient',
+          glass:
+            'hover:brightness-115 backdrop-blur-xs backdrop-saturate-140 bg-plain-900/10 text-plain-200 border-gradient',
+          soft: 'hover:brightness-115 bg-plain-800 text-plain-300',
+          solid: 'hover:brightness-115 bg-linear-to-b from-plain-700 to-plain-800 text-plain-200 border-gradient',
+          subtle: 'hover:brightness-115 border-plain-700 bg-plain-800 text-plain-300 border-gradient',
         },
         warn: {
           ghost: 'text-warn-500 hover:bg-warn-950',
-          glass: 'backdrop-blur-xs backdrop-saturate-140 bg-warn-900/10 text-plain-200 border-gradient',
-          soft: 'bg-warn-950 text-warn-500',
-          solid: 'bg-linear-to-b from-warn-500 to-warn-700 text-plain-200 border-gradient',
-          subtle: 'border-warn-700 bg-warn-950 text-warn-500 border-gradient',
+          glass:
+            'hover:brightness-115 backdrop-blur-xs backdrop-saturate-140 bg-warn-900/10 text-plain-200 border-gradient',
+          soft: 'hover:brightness-115 bg-warn-950 text-warn-500',
+          solid: 'hover:brightness-115 bg-linear-to-b from-warn-500 to-warn-700 text-plain-200 border-gradient',
+          subtle: 'hover:brightness-115 border-warn-700 bg-warn-950 text-warn-500 border-gradient',
         },
         win: {
           ghost: 'text-win-300 hover:bg-win-950',
-          glass: 'backdrop-blur-xs backdrop-saturate-140 bg-win-900/10 text-plain-200 border-gradient',
-          soft: 'bg-win-950 text-win-300',
-          solid: 'bg-linear-to-b from-win-500 to-win-700 text-plain-200 border-gradient',
-          subtle: 'border-win-800 bg-win-950 text-win-300 border-gradient',
+          glass:
+            'hover:brightness-115 backdrop-blur-xs backdrop-saturate-140 bg-win-900/10 text-plain-200 border-gradient',
+          soft: 'hover:brightness-115 bg-win-950 text-win-300',
+          solid: 'hover:brightness-115 bg-linear-to-b from-win-500 to-win-700 text-plain-200 border-gradient',
+          subtle: 'hover:brightness-115 border-win-800 bg-win-950 text-win-300 border-gradient',
         },
       },
       size: {
