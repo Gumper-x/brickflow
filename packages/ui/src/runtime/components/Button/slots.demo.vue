@@ -1,6 +1,5 @@
 <script lang="ts">
   export const uiDemo = {
-    description: 'Leading, default and trailing slots.',
     title: 'Slots',
   }
 </script>
@@ -16,11 +15,11 @@
 <template>
   <Button @click="clicks += 1">
     <template #leading>
-      <span aria-hidden="true">+</span>
+      <span class="text-xs">leading</span>
     </template>
     Added {{ clicks }} times
     <template #trailing>
-      <span aria-hidden="true">→</span>
+      <span class="text-xs">trailing</span>
     </template>
   </Button>
 </template>

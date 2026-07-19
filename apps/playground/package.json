@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt dev",
     "postinstall": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt prepare",
+    "start": "node .output/server/index.mjs",
     "build": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt build",
     "typecheck": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt prepare && vue-tsc --noEmit",
     "test": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt prepare && vitest run",

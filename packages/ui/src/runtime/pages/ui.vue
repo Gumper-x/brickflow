@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-  import { computed, ref, watch } from 'vue'
+  import { useHead, useRoute, useRouter } from 'nuxt/app'
+  import { computed, nextTick, ref, watch } from 'vue'
 
   import { uiComponents } from '#brickflow-ui-catalog'
 
@@ -16,6 +17,8 @@
   const route = useRoute()
   const router = useRouter()
   const expandedDemoCode = ref(new Set<string>())
+  const isNavigationOpen = ref(false)
+  const mobileNavigation = ref<HTMLElement>()
   const stylesExpanded = ref(false)
 
   const activeComponent = computed(() => {
@@ -374,9 +377,21 @@
     expandedDemoCode.value = next
   }
 
+  const closeNavigation = (): void => {
+    isNavigationOpen.value = false
+  }
+
+  watch(isNavigationOpen, async (isOpen) => {
+    if (isOpen) {
+      await nextTick()
+      mobileNavigation.value?.focus()
+    }
+  })
+
   watch(
     () => route.query.component,
     (component) => {
+      closeNavigation()
       window.scrollTo({ behavior: 'smooth', top: 0 })
       if (typeof component === 'string' && uiComponents.some((item) => item.id === component)) {
         return
@@ -408,8 +423,105 @@
 
 <template>
   <main class="min-h-screen bg-plain-950 text-plain-50">
+    <header
+      class="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-plain-800 bg-plain-950/95 px-4 py-3 backdrop-blur md:hidden"
+    >
+      <div class="min-w-0">
+        <p class="text-xs font-medium tracking-widest text-plain-500 uppercase">Components</p>
+        <p class="truncate text-sm font-medium text-plain-100">{{ activeComponent?.name }}</p>
+      </div>
+      <button
+        type="button"
+        class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-plain-700 text-plain-200 transition hover:border-main-700 hover:bg-main-900 hover:text-main-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-400"
+        aria-controls="ui-mobile-navigation"
+        :aria-expanded="isNavigationOpen"
+        aria-label="Open components menu"
+        @click="isNavigationOpen = true"
+      >
+        <svg
+          class="size-5"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
+    </header>
+
+    <div
+      v-if="isNavigationOpen"
+      class="fixed inset-0 z-40 md:hidden"
+      @keydown.esc="closeNavigation"
+    >
+      <button
+        class="absolute inset-0 cursor-default bg-black/60"
+        aria-label="Close components menu"
+        type="button"
+        @click="closeNavigation"
+      />
+      <aside
+        id="ui-mobile-navigation"
+        ref="mobileNavigation"
+        class="relative flex h-full w-[min(18rem,calc(100vw-3rem))] flex-col border-r border-plain-800 bg-plain-950 p-4 shadow-2xl"
+        aria-label="UI components"
+        tabindex="-1"
+      >
+        <div class="flex items-center justify-between gap-4 px-2 py-1">
+          <p class="text-xs font-medium tracking-widest text-plain-500 uppercase">Components</p>
+          <button
+            type="button"
+            class="flex size-8 cursor-pointer items-center justify-center rounded-lg text-plain-400 transition hover:bg-plain-900 hover:text-plain-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-400"
+            aria-label="Close components menu"
+            @click="closeNavigation"
+          >
+            <svg
+              class="size-5"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <nav
+          class="mt-3 space-y-1 overflow-y-auto"
+          aria-label="UI components"
+        >
+          <NuxtLink
+            v-for="component in uiComponents"
+            :key="component.id"
+            :aria-current="activeComponent?.id === component.id ? 'page' : undefined"
+            :class="[
+              'block rounded-lg px-3 py-2.5 text-sm transition',
+              activeComponent?.id === component.id
+                ? 'bg-main-900 text-main-100'
+                : 'text-plain-400 hover:bg-plain-900 hover:text-plain-100',
+            ]"
+            :to="{
+              path: '/ui',
+              query: {
+                ...route.query,
+                component: component.id,
+              },
+            }"
+            @click="closeNavigation"
+          >
+            {{ component.name }}
+          </NuxtLink>
+        </nav>
+      </aside>
+    </div>
+
     <div class="mx-auto flex min-h-screen max-w-7xl">
-      <aside class="w-64 shrink-0 border-r border-plain-800 px-4 py-6">
+      <aside class="hidden w-64 shrink-0 border-r border-plain-800 px-4 py-6 md:block">
         <p class="px-3 text-xs font-medium tracking-widest text-plain-500 uppercase">Components</p>
 
         <nav
@@ -439,16 +551,16 @@
         </nav>
       </aside>
 
-      <section class="min-w-0 flex-1 px-6 py-6 sm:px-10">
+      <section class="min-w-0 flex-1 px-4 py-6 sm:px-6 md:px-10">
         <template v-if="activeComponent">
-          <h1 class="text-3xl font-semibold">{{ activeComponent.name }}</h1>
+          <h1 class="text-2xl font-semibold sm:text-3xl">{{ activeComponent.name }}</h1>
           <section
             v-for="demo in activeComponent.demos"
             :key="demo.title"
             class="mt-6 overflow-hidden rounded-2xl border border-plain-800 bg-plain-900/50 first:mt-8"
           >
             <header
-              class="flex items-start justify-between gap-4 border-b border-plain-800 bg-plain-900 px-6 py-4 sm:px-8"
+              class="flex items-start justify-between gap-3 border-b border-plain-800 bg-plain-900 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4"
             >
               <div>
                 <h2 class="text-base font-medium text-plain-100">{{ demo.title }}</h2>
@@ -463,16 +575,16 @@
                 type="button"
                 :aria-label="isDemoCodeExpanded(demo.id) ? 'Hide code' : 'View code'"
                 :class="[
-                  'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-400',
+                  'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-400',
                   isDemoCodeExpanded(demo.id)
                     ? 'border-main-700 bg-main-900 text-main-200'
-                    : 'border-plain-700 text-plain-400 hover:border-main-700 hover:bg-main-900 hover:text-main-200',
+                    : 'border-plain-700 text-plain-400 hover:border-main-700 hover:text-main-200',
                 ]"
                 :title="isDemoCodeExpanded(demo.id) ? 'Hide code' : 'View code'"
                 @click="toggleDemoCode(demo.id)"
               >
                 <svg
-                  class="size-5"
+                  class="size-4"
                   aria-hidden="true"
                   fill="none"
                   stroke="currentColor"
@@ -487,16 +599,16 @@
                 </svg>
               </button>
             </header>
-            <div class="p-6 sm:p-8">
+            <div class="p-4 sm:p-8">
               <component :is="demo.component" />
             </div>
             <div
               v-if="isDemoCodeExpanded(demo.id)"
-              class="border-t border-plain-800 bg-plain-950/80 p-6 sm:p-8"
+              class="border-t border-plain-800 bg-plain-950/80 p-4 sm:p-8"
             >
               <pre
                 class="overflow-x-auto text-sm leading-6 text-plain-300"
-              ><code v-html="highlightDemoCode(demo.code)" /></pre>
+              ><code v-html="highlightDemoCode(demo.code.trim())" /></pre>
             </div>
           </section>
           <p
@@ -508,34 +620,37 @@
             file to this component folder.
           </p>
           <section class="mt-8 overflow-hidden rounded-2xl border border-plain-800 bg-plain-900/50">
-            <header class="border-b border-plain-800 bg-plain-900 px-6 py-4 sm:px-8">
+            <header class="border-b border-plain-800 bg-plain-900 px-4 py-3 sm:px-8 sm:py-4">
               <h2 class="text-base font-medium text-plain-100">Component API</h2>
             </header>
 
             <div class="grid divide-y divide-plain-800 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
-              <section class="py-5 px-6">
+              <section class="px-4 py-5 sm:px-6">
                 <h3 class="text-sm font-medium text-plain-200">Props</h3>
                 <div class="mt-4 overflow-x-auto">
-                  <table class="w-full min-w-96 text-left text-sm">
-                    <thead class="text-xs tracking-wider text-plain-500 uppercase">
+                  <table class="w-full min-w-80 text-left text-sm sm:min-w-96">
+                    <!-- <thead class="text-xs tracking-wider text-plain-500 uppercase">
                       <tr>
                         <th class="pb-3 font-medium">Name</th>
                         <th class="pb-3 font-medium">Type</th>
                         <th class="pb-3 text-right font-medium">Required</th>
                       </tr>
-                    </thead>
+                    </thead> -->
                     <tbody class="divide-y divide-plain-800 text-plain-300">
                       <tr
                         v-for="prop in activeComponent.props"
                         :key="prop.name"
                       >
-                        <td class="py-3 pr-4 font-mono text-main-300">{{ prop.name }}</td>
+                        <td class="py-3 pr-4 font-mono text-plain-400">{{ prop.name }}</td>
                         <td
                           class="py-3 pr-4 font-mono text-xs break-all"
                           v-html="highlightPropType(prop.type)"
                         />
-                        <td class="py-3 text-right text-xs">
-                          {{ prop.required ? 'yes' : 'no' }}
+                        <td
+                          class="py-3 text-right text-xs"
+                          :class="prop.required ? 'text-danger-600' : 'text-plain-500'"
+                        >
+                          {{ prop.required ? '*' : '-' }}
                         </td>
                       </tr>
                       <tr v-if="activeComponent.props.length === 0">
@@ -551,7 +666,7 @@
                 </div>
               </section>
 
-              <section class="py-5 px-6">
+              <section class="px-4 py-5 sm:px-6">
                 <h3 class="text-sm font-medium text-plain-200">Slots</h3>
                 <div
                   v-if="activeComponent.slots.length"
@@ -560,7 +675,8 @@
                   <code
                     v-for="slot in activeComponent.slots"
                     :key="slot"
-                    class="rounded-md border border-plain-700 bg-plain-950 px-2.5 py-1.5 text-xs text-main-300"
+                    class="rounded-md border border-plain-800 bg-plain-950 px-2.5 py-1.5 text-xs"
+                    :class="slot === 'default' ? 'text-plain-500' : 'text-plain-400'"
                   >
                     {{ slot }}
                   </code>
@@ -580,7 +696,7 @@
             class="mt-6 overflow-hidden rounded-2xl border border-plain-800 bg-plain-900/50"
           >
             <header
-              class="flex items-center justify-between gap-4 border-b border-plain-800 bg-plain-900 px-6 py-4 sm:px-8"
+              class="flex items-center justify-between gap-3 border-b border-plain-800 bg-plain-900 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4"
             >
               <div class="flex items-center gap-3">
                 <div>
@@ -592,7 +708,7 @@
               </span>
             </header>
 
-            <div class="px-6 py-2 sm:px-8">
+            <div class="px-4 py-2 sm:px-8">
               <div class="divide-y divide-plain-800">
                 <div
                   v-for="style in visibleStyles"
@@ -610,7 +726,7 @@
 
             <footer
               v-if="activeComponent.styles.length > 5"
-              class="sticky bottom-0 z-10 border-t border-plain-800 bg-plain-900/95 px-6 py-3 backdrop-blur sm:px-8"
+              class="sticky bottom-0 z-10 border-t border-plain-800 bg-plain-900/95 px-4 py-3 backdrop-blur sm:px-8"
             >
               <button
                 type="button"
@@ -644,11 +760,11 @@
   }
 
   .ui-code-string {
-    color: var(--color-win-300);
+    color: var(--color-win-400);
   }
 
   .ui-code-keyword {
-    color: var(--color-main-300);
+    color: var(--color-main-400);
   }
 
   .ui-code-number {
@@ -656,7 +772,7 @@
   }
 
   .ui-code-tag {
-    color: var(--color-info-300);
+    color: var(--color-info-500);
   }
 
   .ui-code-attribute {

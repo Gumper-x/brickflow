@@ -188,6 +188,9 @@ importers:
       '@tailwindcss/vite':
         specifier: 4.3.2
         version: 4.3.2(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0))
+      fantasticon:
+        specifier: 4.1.0
+        version: 4.1.0
       jiti:
         specifier: ^2.7.0
         version: 2.7.0

@@ -15,13 +15,13 @@
       to="/"
       class="text-main-300 hover:text-main-200"
     >
-      Go to playground
+      Go to Home
     </Link>
     <Link
       to="/ui?component=button"
       class="text-main-300 hover:text-main-200"
     >
-      Open Button demos
+      Open Button
     </Link>
   </div>
 </template>

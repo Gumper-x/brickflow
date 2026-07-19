@@ -14,6 +14,13 @@ import { basename, dirname, join, relative, resolve } from 'node:path'
 
 import { type BrickflowUiConfig, defineBrickflowUiConfig } from './runtime/tailwind'
 import {
+  brickflowUiIconFontPlugin,
+  createIconFontAssetsInlineLimit,
+  getIconFontCssPath,
+  getIconFontNames,
+  type ViteAssetsInlineLimit,
+} from './vite/icon-font'
+import {
   brickflowUiStylePlugin,
   collectUiStyleConfigPathsFromCode,
   collectUiStylePathsFromCode,
@@ -23,6 +30,7 @@ import {
 export interface ModuleOptions {
   componentPrefix?: string
   configPath?: string
+  iconsPath?: string
 }
 
 export type {
@@ -61,6 +69,13 @@ interface UiRouteRule {
 interface UiStyleValue {
   path: string
   value?: string
+}
+
+interface ViteConfig {
+  build?: {
+    assetsInlineLimit?: ViteAssetsInlineLimit
+  }
+  plugins?: unknown[]
 }
 
 const readObjectPath = (source: unknown, path: string[]): unknown =>
@@ -196,6 +211,7 @@ export default defineNuxtModule<ModuleOptions>({
   defaults: {
     componentPrefix: 'Brick',
     configPath: '~/ui.config.ts',
+    iconsPath: undefined,
   },
   meta: {
     compatibility: {
@@ -226,6 +242,18 @@ export default defineNuxtModule<ModuleOptions>({
     const resolvedConfigPath = await resolvePath(options.configPath ?? defaultConfigPath).catch(
       () => defaultConfigPath,
     )
+
+    const iconFont = options.iconsPath
+      ? {
+          inputDir: await resolvePath(options.iconsPath).catch(() => resolve(options.iconsPath as string)),
+          outputDir: resolve(nuxt.options.buildDir, 'brickflow/icons'),
+        }
+      : undefined
+
+    if (iconFont) {
+      nuxt.options.css.push(getIconFontCssPath(iconFont.outputDir))
+    }
+
     const loadConfig = createJiti(import.meta.url, {
       interopDefault: true,
       moduleCache: false,
@@ -304,7 +332,7 @@ export default defineNuxtModule<ModuleOptions>({
 
         return result + code.slice(cursor)
       }
-      const isSetupScript = (openingTag: string): boolean => openingTag.split(/\s+/).includes('setup')
+      const isSetupScript = (openingTag: string): boolean => /\bsetup(?:\s|>)/.test(openingTag)
       const codeWithoutMeta = removeScriptBlocks(source, (openingTag) => !isSetupScript(openingTag))
       const codeWithoutImports = codeWithoutMeta.replace(
         /^\s*import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]([^'"]+)['"];?\s*$/gm,
@@ -364,6 +392,19 @@ export default defineNuxtModule<ModuleOptions>({
         }),
       )
     }
+
+    const iconFontTemplate = addTemplate({
+      filename: 'brickflow/brickflow-ui-icons.mjs',
+      getContents: async () => {
+        const iconNames = iconFont ? await getIconFontNames(iconFont.inputDir) : []
+
+        return [
+          `export const iconNames = ${JSON.stringify(iconNames)}`,
+          `export const firstIconName = ${JSON.stringify(iconNames[0] ?? '')}`,
+          '',
+        ].join('\n')
+      },
+    })
 
     const uiConfigTemplate = addTemplate({
       filename: 'brickflow/brickflow-ui-config.mjs',
@@ -488,6 +529,7 @@ export default defineNuxtModule<ModuleOptions>({
 
     nuxt.options.alias['#brickflow-ui-config'] = uiConfigTemplate.dst
     nuxt.options.alias['#brickflow-ui-catalog'] = uiCatalogTemplate.dst
+    nuxt.options.alias['#brickflow-ui-icons'] = iconFontTemplate.dst
 
     nuxt.hook('pages:extend', (pages) => {
       pages.push({
@@ -522,8 +564,16 @@ export default defineNuxtModule<ModuleOptions>({
     })
 
     nuxt.hook('vite:extendConfig', (config) => {
-      const viteConfig = config as { plugins?: unknown[] }
+      const viteConfig = config as ViteConfig
       viteConfig.plugins ??= []
+      if (iconFont) {
+        viteConfig.build ??= {}
+        viteConfig.build.assetsInlineLimit = createIconFontAssetsInlineLimit(
+          iconFont.outputDir,
+          viteConfig.build.assetsInlineLimit,
+        )
+        viteConfig.plugins.push(brickflowUiIconFontPlugin(iconFont) as unknown)
+      }
       viteConfig.plugins.push(
         brickflowUiStylePlugin({
           configPath: resolvedConfigPath,
