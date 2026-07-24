@@ -19,7 +19,6 @@
 <template>
   <main class="mx-auto max-w-3xl space-y-10 p-6 sm:p-10">
     <section class="space-y-4">
-      <p class="text-sm font-medium text-gray-500">BrickButton</p>
       <div class="flex flex-wrap items-center gap-3">
         <BrickButton @click="clicks += 1">
           <template #leading><span aria-hidden="true">+</span></template>
@@ -27,16 +26,16 @@
         </BrickButton>
         <BrickButton
           color="plain"
-          variant="solid"
+          variant="glass"
         >
           Secondary
         </BrickButton>
         <BrickButton
           color="win"
           variant="soft"
-          to="/demo"
+          to="/"
         >
-          Link demo
+          Link home
         </BrickButton>
         <BrickButton
           color="danger"

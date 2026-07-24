@@ -2,7 +2,6 @@
 @import 'tailwindcss';
 @source "../../packages/ui/src/runtime";
 @source "./ui.config.ts";
-
 @theme {
   --font-sans: 'Noto Sans', ui-sans-serif, system-ui, sans-serif;
 
@@ -29,6 +28,18 @@
   --color-main-800: #400f7e;
   --color-main-900: #2f0f56;
   --color-main-950: #1f0a3a;
+
+  /* --color-main-50: #fff8eb;
+  --color-main-100: #ffedc6;
+  --color-main-200: #ffda88;
+  --color-main-300: #ffc24a;
+  --color-main-400: #ff9a08;
+  --color-main-500: #f47700;
+  --color-main-600: #d85200;
+  --color-main-700: #b33604;
+  --color-main-800: #91290b;
+  --color-main-900: #76230c;
+  --color-main-950: #441004; */
 
   --color-danger-50: #fef2f2;
   --color-danger-100: #ffe2e2;
@@ -92,9 +103,10 @@
 }
 
 body {
-  background: var(--color-plain-900);
-  color: var(--color-plain-50);
-  font-family: var(--font-sans);
+  @apply bg-plain-50 text-plain-950;
+  @variant dark {
+    @apply bg-plain-900 text-plain-50 font-sans;
+  }
 }
 
 .border-gradient::before {
@@ -136,7 +148,7 @@ body {
     transform: scale(1);
   }
   40% {
-    transform: scaleX(0.9) scaleY(0.95);
+    transform: scaleX(0.91) scaleY(0.96);
   }
   100% {
     transform: scale(1);

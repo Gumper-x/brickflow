@@ -20,6 +20,7 @@ import {
   getIconFontNames,
   type ViteAssetsInlineLimit,
 } from './vite/icon-font'
+import { brickflowUiTailwindVariantPlugin } from './vite/tailwind-variant'
 import {
   brickflowUiStylePlugin,
   collectUiStyleConfigPathsFromCode,
@@ -31,6 +32,7 @@ export interface ModuleOptions {
   componentPrefix?: string
   configPath?: string
   iconsPath?: string
+  theme?: boolean
 }
 
 export type {
@@ -42,6 +44,24 @@ export type {
 const UI_STYLE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?|vue)$/
 const UI_COMPONENT_FILE_PATTERN = /(?:^|[/\\])index\.vue$/
 const UI_DEMO_FILE_PATTERN = /\.demo\.vue$/
+const THEME_BOOTSTRAP_SCRIPT = `;(() => {
+  let storedTheme
+
+  try {
+    storedTheme = localStorage.getItem('ui-theme')
+  } catch {}
+
+  const theme =
+    storedTheme === 'dark' || storedTheme === 'light'
+      ? storedTheme
+      : window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
+  const root = document.documentElement
+
+  root.dataset.uiTheme = theme
+  root.style.colorScheme = theme
+})()`
 
 const toKebabCase = (value: string): string =>
   value
@@ -212,6 +232,7 @@ export default defineNuxtModule<ModuleOptions>({
     componentPrefix: 'Brick',
     configPath: '~/ui.config.ts',
     iconsPath: undefined,
+    theme: false,
   },
   meta: {
     compatibility: {
@@ -242,6 +263,14 @@ export default defineNuxtModule<ModuleOptions>({
     const resolvedConfigPath = await resolvePath(options.configPath ?? defaultConfigPath).catch(
       () => defaultConfigPath,
     )
+
+    if (options.theme) {
+      nuxt.options.app.head.script ??= []
+      nuxt.options.app.head.script.unshift({
+        innerHTML: THEME_BOOTSTRAP_SCRIPT,
+        key: 'ui-theme',
+      })
+    }
 
     const iconFont = options.iconsPath
       ? {
@@ -422,6 +451,11 @@ export default defineNuxtModule<ModuleOptions>({
         ].join('\n'),
     })
 
+    const uiOptionsTemplate = addTemplate({
+      filename: 'brickflow/brickflow-ui-options.mjs',
+      getContents: () => `export const uiThemeEnabled = ${JSON.stringify(options.theme === true)}\n`,
+    })
+
     const uiCatalogTemplate = addTemplate({
       filename: 'brickflow/ui-catalog.ts',
       getContents: async () => {
@@ -530,6 +564,7 @@ export default defineNuxtModule<ModuleOptions>({
     nuxt.options.alias['#brickflow-ui-config'] = uiConfigTemplate.dst
     nuxt.options.alias['#brickflow-ui-catalog'] = uiCatalogTemplate.dst
     nuxt.options.alias['#brickflow-ui-icons'] = iconFontTemplate.dst
+    nuxt.options.alias['#brickflow-ui-options'] = uiOptionsTemplate.dst
 
     nuxt.hook('pages:extend', (pages) => {
       pages.push({
@@ -580,6 +615,9 @@ export default defineNuxtModule<ModuleOptions>({
           getStyles: async () => (await loadUiConfig()).uiStyles,
         }) as unknown,
       )
+      if (options.theme) {
+        viteConfig.plugins.push(brickflowUiTailwindVariantPlugin() as unknown)
+      }
       viteConfig.plugins.push(tailwindcss() as unknown)
     })
 

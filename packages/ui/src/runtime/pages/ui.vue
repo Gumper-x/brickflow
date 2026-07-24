@@ -3,6 +3,9 @@
   import { computed, nextTick, ref, watch } from 'vue'
 
   import { uiComponents } from '#brickflow-ui-catalog'
+  import { uiThemeEnabled } from '#brickflow-ui-options'
+
+  import { useTheme } from '../composables/useTheme'
 
   useHead({
     meta: [
@@ -20,6 +23,9 @@
   const isNavigationOpen = ref(false)
   const mobileNavigation = ref<HTMLElement>()
   const stylesExpanded = ref(false)
+  const theme = uiThemeEnabled ? useTheme() : undefined
+  const isDark = computed(() => theme?.isDark.value ?? false)
+  const toggleTheme = (): void => theme?.toggleTheme()
 
   const activeComponent = computed(() => {
     const component = route.query.component
@@ -422,7 +428,7 @@
 </script>
 
 <template>
-  <main class="min-h-screen bg-plain-950 text-plain-50">
+  <main class="min-h-screen">
     <header
       class="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-plain-800 bg-plain-950/95 px-4 py-3 backdrop-blur md:hidden"
     >
@@ -553,7 +559,51 @@
 
       <section class="min-w-0 flex-1 px-4 py-6 sm:px-6 md:px-10">
         <template v-if="activeComponent">
-          <h1 class="text-2xl font-semibold sm:text-3xl">{{ activeComponent.name }}</h1>
+          <div class="flex items-center gap-3">
+            <h1 class="text-2xl leading-1 font-semibold sm:text-3xl">{{ activeComponent.name }}</h1>
+            <button
+              v-if="uiThemeEnabled"
+              type="button"
+              class="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-plain-700 text-plain-400 transition hover:border-main-700 hover:bg-main-900 hover:text-main-200 focus-visible:outline-2 focus-visible:outline-offset-2"
+              :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
+              :title="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
+              @click="toggleTheme"
+            >
+              <svg
+                v-if="isDark"
+                class="size-3"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="4"
+                />
+                <path
+                  d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+                />
+              </svg>
+              <svg
+                v-else
+                class="size-3"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+              </svg>
+            </button>
+          </div>
           <section
             v-for="demo in activeComponent.demos"
             :key="demo.title"
