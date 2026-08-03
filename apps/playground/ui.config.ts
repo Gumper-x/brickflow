@@ -1,6 +1,7 @@
 import { defineBrickflowUiConfig } from '../../packages/ui/src/runtime/tailwind'
 
-export default defineBrickflowUiConfig(({ value }) => ({
+const val = (s: string): string => s
+export default defineBrickflowUiConfig({
   uiStyles: {
     button: {
       animationTap: 'global-tap-animation',
@@ -89,11 +90,11 @@ export default defineBrickflowUiConfig(({ value }) => ({
       },
       state: {
         block: 'w-full',
-        disabled: 'pointer-events-none grid-cols-[auto_1fr] opacity-50',
+        disabled: 'pointer-events-none opacity-50',
         loading: 'animate-spin',
-        loadingIconName: value('loading'),
+        loadingIconName: val('loading'),
         square: 'aspect-square px-0',
       },
     },
   },
-}))
+})

@@ -181,7 +181,7 @@ const baseRules = {
   'promise/valid-params': 'error',
   'require-await': warn,
   'tailwindcss/no-arbitrary-value': warn,
-  'tailwindcss/no-custom-classname': [warn, { whitelist: ['global-.*'] }],
+  'tailwindcss/no-custom-classname': [warn, { whitelist: ['global.*'] }],
   'unicorn/name-replacements': 'off',
   yoda: 'error',
 }

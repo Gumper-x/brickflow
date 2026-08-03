@@ -18,7 +18,7 @@
 
 <template>
   <main class="mx-auto max-w-3xl space-y-10 p-6 sm:p-10">
-    <section class="space-y-4">
+    <section class="space-y-4 text-alt-400 hover:bg-alt-950">
       <p class="text-sm font-medium text-gray-500">BrickButton</p>
       <div class="flex flex-wrap items-center gap-3">
         <BrickButton @click="clicks += 1">
