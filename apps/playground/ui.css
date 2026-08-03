@@ -109,7 +109,7 @@ body {
   }
 }
 
-.border-gradient::before {
+.global-border-gradient::before {
   content: '';
   position: absolute;
   z-index: 0;
@@ -139,7 +139,7 @@ body {
   mask-composite: exclude;
 }
 
-.tap-animation {
+.global-tap-animation {
   animation: tap-scale 0.3s ease;
 }
 
