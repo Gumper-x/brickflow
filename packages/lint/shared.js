@@ -4,6 +4,8 @@ import perfectionist from 'eslint-plugin-perfectionist'
 import prettierRecommended from 'eslint-plugin-prettier/recommended'
 import pluginPromise from 'eslint-plugin-promise'
 import regexp from 'eslint-plugin-regexp'
+import tailwindcss from 'eslint-plugin-tailwindcss'
+// import unicorn from 'eslint-plugin-unicorn'
 import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
@@ -178,6 +180,9 @@ const baseRules = {
   'promise/prefer-await-to-then': warn,
   'promise/valid-params': 'error',
   'require-await': warn,
+  'tailwindcss/no-arbitrary-value': warn,
+  'tailwindcss/no-custom-classname': [warn, { whitelist: ['global-.*'] }],
+  'unicorn/name-replacements': 'off',
   yoda: 'error',
 }
 
@@ -280,7 +285,30 @@ const jsRules = {
   '@typescript-eslint/no-var-requires': 'off',
 }
 
-export function createLintConfig({ includeVue = false } = {}) {
+const defaultTailwindcssFunctions = [
+  'classnames',
+  'classNames',
+  'clsx',
+  'cn',
+  'ctl',
+  'cva',
+  'tv',
+  'tw',
+  'twMerge',
+  'twJoin',
+  'defineBrickflowUiConfig',
+]
+
+const defaultTailwindcssIgnoredKeys = ['defaultVariants', 'compoundVariants', 'compoundSlots']
+
+export function createLintConfig(options = {}) {
+  const {
+    includeVue = false,
+    tailwindcssConfigPath,
+    tailwindcssFunctions = [],
+    tailwindcssIgnoredKeys = [],
+    tsconfigRootDir: tsconfigRootDirectory = process.cwd(),
+  } = options
   const languageGlobals = includeVue ? { ...globals.browser, ...globals.node } : { ...globals.node }
 
   return [
@@ -290,11 +318,29 @@ export function createLintConfig({ includeVue = false } = {}) {
     perfectionist.configs['recommended-natural'],
     regexp.configs['flat/recommended'],
     pluginPromise.configs['flat/recommended'],
+    ...(tailwindcssConfigPath
+      ? [
+          {
+            ...tailwindcss.configs.recommended,
+            files: ['**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
+            settings: {
+              tailwindcss: {
+                cssConfigPath: tailwindcssConfigPath,
+                functions: [...defaultTailwindcssFunctions, ...tailwindcssFunctions],
+                ignoredKeys: [...defaultTailwindcssIgnoredKeys, ...tailwindcssIgnoredKeys],
+              },
+            },
+          },
+        ]
+      : []),
+    // unicorn.configs.recommended,
     prettierRecommended,
     configPrettier,
     {
       plugins: {
         brick,
+        tailwindcss,
+        // unicorn,
       },
     },
     {
@@ -303,6 +349,9 @@ export function createLintConfig({ includeVue = false } = {}) {
         ecmaVersion: 'latest',
         globals: languageGlobals,
         parser: tseslint.parser,
+        parserOptions: {
+          tsconfigRootDir: tsconfigRootDirectory,
+        },
         sourceType: 'module',
       },
       rules: baseRules,
@@ -317,6 +366,7 @@ export function createLintConfig({ includeVue = false } = {}) {
               parser: vueParser,
               parserOptions: {
                 parser: tseslint.parser,
+                tsconfigRootDir: tsconfigRootDirectory,
               },
               sourceType: 'module',
             },

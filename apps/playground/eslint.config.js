@@ -1,3 +1,7 @@
-import eslintConfig from '@brickflow/lint/nuxt'
+import { createLintConfig } from '@brickflow/lint'
 
-export default [...eslintConfig]
+export default createLintConfig({
+  includeVue: true,
+  tailwindcssConfigPath: new URL('ui.css', import.meta.url).pathname,
+  tailwindcssFunctions: ['defineBrickflowUiConfig'],
+})

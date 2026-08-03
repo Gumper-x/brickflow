@@ -33,7 +33,10 @@ const rule = {
   create: ({ report }) => ({
     VariableDeclaration: (node) => {
       if (node.kind === 'const') {
-        node.declarations.forEach(({ id: { name }, init }) => {
+        for (const {
+          id: { name },
+          init,
+        } of node.declarations) {
           if (!isUpperCase(name) && isLiteral(init)) {
             report({ message: messages.upper, node })
           }
@@ -41,15 +44,16 @@ const rule = {
           if (isUpperCase(name) && !isLiteral(init) && !isCalleeRequire(init) && !isSpecialChars(name)) {
             report({ message: messages.lower, node })
           }
-        })
-      }
-
-      if (node.kind === 'let') {
-        node.declarations.forEach(({ id: { name }, init }) => {
+        }
+      } else if (node.kind === 'let') {
+        for (const {
+          id: { name },
+          init,
+        } of node.declarations) {
           if (isUpperCase(name) && !isCalleeRequire(init) && !isSpecialChars(name)) {
             report({ message: messages.lower, node })
           }
-        })
+        }
       }
     },
   }),

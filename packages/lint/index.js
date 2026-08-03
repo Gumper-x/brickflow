@@ -1,3 +1,1 @@
-import { createLintConfig } from './shared.js'
-
-export default createLintConfig()
+export { createLintConfig } from './shared.js'

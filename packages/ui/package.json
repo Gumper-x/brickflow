@@ -29,20 +29,19 @@
     "access": "public"
   },
   "dependencies": {
-    "@brickflow/utils": "workspace:*",
-    "@tailwindcss/vite": "4.3.2",
+    "@tailwindcss/vite": "4.3.3",
     "fantasticon": "4.1.0",
-    "jiti": "^2.7.0",
-    "tailwindcss": "4.3.2"
+    "jiti": "2.7.0",
+    "tailwindcss": "4.3.3"
   },
   "devDependencies": {
     "@brickflow/lint": "workspace:*",
     "@brickflow/prettier": "workspace:*",
-    "@nuxt/kit": "4.4.8",
-    "@nuxt/module-builder": "1.0.2",
-    "nuxt": "4.4.8",
-    "vue": "3.5.39",
-    "vue-tsc": "3.3.5"
+    "@nuxt/kit": "4.5.1",
+    "@nuxt/module-builder": "1.0.3",
+    "nuxt": "4.5.1",
+    "vue": "3.5.40",
+    "vue-tsc": "3.3.9"
   },
   "author": "",
   "license": "ISC"

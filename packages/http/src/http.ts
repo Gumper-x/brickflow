@@ -75,7 +75,7 @@ type HttpSchema = keyof HttpEndpoint extends never ? Record<string, unknown> : H
 export function createHttp(options: CreateHttpOptions): HttpClient {
   const arrayMode = options.arrayMode ?? 'json'
   const clientFetch = options.fetch ?? fetch
-  const timeout = options.timeout ?? 80000
+  const timeout = options.timeout ?? 80_000
 
   return {
     get<T extends HttpKey, TConfig extends GetConfig<T> = GetConfig<T>>(url: T, config?: TConfig) {
@@ -110,9 +110,9 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
 
           await options.onResponse?.(response as HttpAnyResponse)
           return response
-        } catch (err) {
-          if (isAbortError(err) || attempt >= retries) {
-            throw err
+        } catch (error) {
+          if (isAbortError(error) || attempt >= retries) {
+            throw error
           }
 
           await wait(getRetryDelay(attempt, delay))

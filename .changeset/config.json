@@ -5,7 +5,6 @@
   "fixed": [
     [
       "@brickflow/ui",
-      "@brickflow/utils",
       "@brickflow/http",
       "@brickflow/i18n",
       "@brickflow/cli"

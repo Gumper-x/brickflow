@@ -472,7 +472,8 @@
       <aside
         id="ui-mobile-navigation"
         ref="mobileNavigation"
-        class="relative flex h-full w-[min(18rem,calc(100vw-3rem))] flex-col border-r border-plain-800 bg-plain-950 p-4 shadow-2xl"
+        class="relative flex h-full flex-col border-r border-plain-800 bg-plain-950 p-4 shadow-2xl"
+        :class="$style.mobileNavigation"
         aria-label="UI components"
         tabindex="-1"
       >
@@ -763,11 +764,13 @@
                 <div
                   v-for="style in visibleStyles"
                   :key="style.path"
-                  class="grid gap-2 py-4 sm:grid-cols-[minmax(12rem,0.8fr)_minmax(0,1.8fr)] sm:gap-6"
+                  class="grid gap-2 py-4 sm:gap-6"
+                  :class="$style.styleGrid"
                 >
                   <code class="font-mono text-xs text-main-300">{{ style.path }}</code>
                   <code
-                    class="ui-style-value font-mono text-xs text-plain-300 break-word"
+                    class="font-mono text-xs wrap-break-word text-plain-300"
+                    :class="$style.styleValue"
                     v-html="highlightStyleValue(style.value)"
                   />
                 </div>
@@ -804,36 +807,36 @@
   </main>
 </template>
 
-<style>
-  .ui-code-comment {
+<style module>
+  :global(.ui-code-comment) {
     color: var(--color-plain-500);
   }
 
-  .ui-code-string {
+  :global(.ui-code-string) {
     color: var(--color-win-400);
   }
 
-  .ui-code-keyword {
+  :global(.ui-code-keyword) {
     color: var(--color-main-400);
   }
 
-  .ui-code-number {
+  :global(.ui-code-number) {
     color: var(--color-warn-300);
   }
 
-  .ui-code-tag {
+  :global(.ui-code-tag) {
     color: var(--color-info-500);
   }
 
-  .ui-code-attribute {
+  :global(.ui-code-attribute) {
     color: var(--color-alt-300);
   }
 
-  .ui-code-punctuation {
+  :global(.ui-code-punctuation) {
     color: var(--color-plain-400);
   }
 
-  .ui-color-swatch {
+  :global(.ui-color-swatch) {
     display: inline-block;
     width: 0.65rem;
     height: 0.65rem;
@@ -846,23 +849,33 @@
     /* box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%); */
   }
 
-  .ui-style-value .ui-code-keyword {
+  .mobileNavigation {
+    width: min(18rem, calc(100vw - 3rem));
+  }
+
+  @media (width >= 40rem) {
+    .styleGrid {
+      grid-template-columns: minmax(12rem, 0.8fr) minmax(0, 1.8fr);
+    }
+  }
+
+  .styleValue :global(.ui-code-keyword) {
     color: var(--color-plain-500);
   }
 
-  .ui-style-value .ui-code-attribute {
+  .styleValue :global(.ui-code-attribute) {
     color: var(--color-plain-200);
   }
 
-  .ui-style-value .ui-code-string {
+  .styleValue :global(.ui-code-string) {
     color: var(--color-plain-300);
   }
 
-  .ui-style-value .ui-code-number {
+  .styleValue :global(.ui-code-number) {
     color: var(--color-plain-400);
   }
 
-  .ui-style-value .ui-code-punctuation {
+  .styleValue :global(.ui-code-punctuation) {
     color: var(--color-plain-500);
   }
 </style>

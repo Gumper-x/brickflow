@@ -25,7 +25,7 @@
       type="text"
     />
 
-    <div class="gap-4 flex items-center">
+    <div class="flex items-center gap-4">
       <Icon
         :name="iconName"
         class="text-2xl"

@@ -1,1 +1,2 @@
-export { default } from '@brickflow/lint'
+import { createLintConfig } from '@brickflow/lint'
+export default createLintConfig()

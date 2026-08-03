@@ -10,6 +10,10 @@ declare global {
   }
 }
 
+export interface BrickflowUiConfigContext {
+  value<const TValue extends string>(value: TValue): TValue
+}
+
 export type BrickflowUiConfigInput<TStyles extends BrickflowUiStyleObject = BrickflowUiStyles> = {
   readonly uiStyles?: TStyles
 }
@@ -40,11 +44,17 @@ export const emptyBrickflowUiConfig: BrickflowUiConfig<typeof emptyUiStyles> = {
 
 export function defineBrickflowUiConfig(): BrickflowUiConfig<typeof emptyUiStyles>
 export function defineBrickflowUiConfig<const TStyles extends BrickflowUiConfigStylePaths>(
-  config: BrickflowUiConfigInput<BrickflowUiStrictStyles<TStyles>>,
+  configOrFactory:
+    | ((context: BrickflowUiConfigContext) => BrickflowUiConfigInput<BrickflowUiStrictStyles<TStyles>>)
+    | BrickflowUiConfigInput<BrickflowUiStrictStyles<TStyles>>,
 ): BrickflowUiConfig<TStyles>
 export function defineBrickflowUiConfig(
-  config: BrickflowUiConfigInput<BrickflowUiStyleObject> = {},
+  configOrFactory:
+    | ((context: BrickflowUiConfigContext) => BrickflowUiConfigInput<BrickflowUiStyleObject>)
+    | BrickflowUiConfigInput<BrickflowUiStyleObject> = {},
 ): BrickflowUiConfig {
+  const config =
+    typeof configOrFactory === 'function' ? configOrFactory({ value: (value) => value }) : configOrFactory
   const uiStyles = config.uiStyles ?? emptyUiStyles
 
   validateUiStyles(uiStyles)
