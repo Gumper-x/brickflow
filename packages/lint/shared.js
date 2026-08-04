@@ -299,7 +299,7 @@ const defaultTailwindcssFunctions = [
   'defineBrickflowUiConfig',
 ]
 
-const defaultTailwindcssIgnoredKeys = ['defaultVariants', 'compoundVariants', 'compoundSlots']
+const defaultTailwindcssIgnoredKeys = ['defaultVariants', 'compoundVariants', 'compoundSlots', 'uiConfig']
 
 export function createLintConfig(options = {}) {
   const {
