@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.30
+
+### Patch Changes
+
+- Unlink lint tailwind if not path
+
 ## 0.0.29
 
 ### Patch Changes

@@ -180,10 +180,13 @@ const baseRules = {
   'promise/prefer-await-to-then': warn,
   'promise/valid-params': 'error',
   'require-await': warn,
-  'tailwindcss/no-arbitrary-value': warn,
-  'tailwindcss/no-custom-classname': [warn, { whitelist: ['global.*'] }],
   'unicorn/name-replacements': 'off',
   yoda: 'error',
+}
+
+const tailwindcssRules = {
+  'tailwindcss/no-arbitrary-value': warn,
+  'tailwindcss/no-custom-classname': [warn, { whitelist: ['global.*'] }],
 }
 
 const vueRules = {
@@ -323,6 +326,10 @@ export function createLintConfig(options = {}) {
           {
             ...tailwindcss.configs.recommended,
             files: ['**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
+            rules: {
+              ...tailwindcss.configs.recommended.rules,
+              ...tailwindcssRules,
+            },
             settings: {
               tailwindcss: {
                 cssConfigPath: tailwindcssConfigPath,
@@ -339,7 +346,7 @@ export function createLintConfig(options = {}) {
     {
       plugins: {
         brick,
-        tailwindcss,
+        ...(tailwindcssConfigPath ? { tailwindcss } : {}),
         // unicorn,
       },
     },
@@ -354,7 +361,10 @@ export function createLintConfig(options = {}) {
         },
         sourceType: 'module',
       },
-      rules: baseRules,
+      rules: {
+        ...baseRules,
+        ...(tailwindcssConfigPath ? tailwindcssRules : {}),
+      },
     },
     ...(includeVue
       ? [
@@ -372,6 +382,7 @@ export function createLintConfig(options = {}) {
             },
             rules: {
               ...baseRules,
+              ...(tailwindcssConfigPath ? tailwindcssRules : {}),
               ...vueRules,
             },
           },
