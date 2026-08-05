@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.29
+
+### Patch Changes
+
+- Lint tailwind file fix
+
 ## 0.0.28
 
 ### Patch Changes
