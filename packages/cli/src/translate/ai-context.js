@@ -176,15 +176,13 @@ function buildContextContents({ sampleEntries, samplePath, sourceCode, sourceFil
 }
 
 function buildContextSystemInstruction() {
-  const { productContext, terminology, tone } = getTranslateRuntimeConfig()
+  const { productContext, tone } = getTranslateRuntimeConfig()
 
   return [
     'You are generating translation context for a UI component.',
     'Write a compact but informative description for translators.',
     'Product context:',
     productContext,
-    'Terminology:',
-    terminology,
     'Tone:',
     tone,
     'Focus on:',

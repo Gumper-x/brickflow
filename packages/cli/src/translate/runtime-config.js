@@ -7,7 +7,6 @@ export function buildTranslateHelp(command = 'brick translate') {
 
 Required options:
   --product-context "<text>"
-  --terminology "<text>"
   --tone "<text>"
   --api-key "<key>"
 
@@ -17,7 +16,6 @@ Optional:
 Example:
   ${command} \\
     --product-context "Creators sell adult content packs with free previews and paid unlocks." \\
-    --terminology "Bundle=content pack; Unlock=paid access; VIP=premium content" \\
     --tone "Natural, modern, conversion-oriented, explicit when source is explicit." \\
     --api-key "your-gemini-api-key" \\
     --context-model "${DEFAULT_CONTEXT_MODEL}"`
@@ -26,7 +24,7 @@ Example:
 export function getTranslateRuntimeConfig() {
   if (!runtimeConfig) {
     throw new Error(
-      'Translate runtime config is not initialized. Pass --product-context, --terminology, --tone, and --api-key.',
+      'Translate runtime config is not initialized. Pass --product-context, --tone, and --api-key.',
     )
   }
 
@@ -38,7 +36,6 @@ export function parseTranslateRuntimeArgs(rawArgs) {
     apiKey: null,
     contextModel: DEFAULT_CONTEXT_MODEL,
     productContext: null,
-    terminology: null,
     tone: null,
   }
   const positional = []
@@ -48,12 +45,6 @@ export function parseTranslateRuntimeArgs(rawArgs) {
 
     if (value === '--product-context') {
       options.productContext = rawArgs[index + 1] ?? null
-      index += 1
-      continue
-    }
-
-    if (value === '--terminology') {
-      options.terminology = rawArgs[index + 1] ?? null
       index += 1
       continue
     }
@@ -98,10 +89,6 @@ export function validateTranslateRuntimeConfig(config) {
 
   if (!config.productContext) {
     missing.push('--product-context')
-  }
-
-  if (!config.terminology) {
-    missing.push('--terminology')
   }
 
   if (!config.tone) {
