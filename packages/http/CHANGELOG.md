@@ -1,5 +1,11 @@
 # @brickflow/http
 
+## 0.0.31
+
+### Patch Changes
+
+- Translation folders migration
+
 ## 0.0.30
 
 ### Patch Changes
