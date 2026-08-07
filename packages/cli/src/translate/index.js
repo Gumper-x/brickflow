@@ -1,9 +1,8 @@
 import fs from 'fs'
-import { globSync } from 'glob'
 import { dirname, join, relative } from 'path'
 
 import { resolveWorkspaceRoot } from '../shared/workspace-root.js'
-import { getAiContextState } from './ai-context.js'
+import { getContextFilePath, readAiContextDescription } from '../translate-context/ai-context.js'
 import { translateBatch } from './ai.js'
 import { buildTranslateHelp, parseTranslateRuntimeArgs, setTranslateRuntimeConfig } from './runtime-config.js'
 import { listTranslationTargets, sortObjectKeys, stringifySortedJson } from './utils.js'
@@ -17,9 +16,11 @@ if (rawArgs.includes('--help') || rawArgs.includes('-h')) {
 }
 
 const { options } = parseTranslateRuntimeArgs(rawArgs)
+let requestedLanguageCodes
 
 try {
   setTranslateRuntimeConfig(options)
+  requestedLanguageCodes = parseLanguageCodes(options.locales)
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error))
   console.error('')
@@ -27,45 +28,9 @@ try {
   process.exit(1)
 }
 
-const DEFAULT_LANGUAGE_CODES = [
-  'bn',
-  'cz',
-  'dk',
-  'de',
-  'en',
-  'es',
-  'fi',
-  'fr',
-  'hi',
-  'hu',
-  'it',
-  'ja',
-  'nl',
-  'no',
-  'pl',
-  'pt',
-  'ru',
-  'si',
-  'se',
-  'sk',
-]
 const BATCH_MAX_ITEMS = readPositiveInt('TRANSLATE_BATCH_MAX_ITEMS', 30)
 const BATCH_MAX_CHARS = readPositiveInt('TRANSLATE_BATCH_MAX_CHARS', 3500)
-const languagePaths = globSync(
-  '{packages/brick,apps/*}/{components/**/translate,pages-translate/*,layouts/**,global/*}/generated/*.json',
-  {
-    absolute: true,
-    cwd: workspaceRoot,
-    ignore: ['**/node_modules/**', '**/.nuxt/**', '**/dist/**', '**/.output/**', '**/coverage/**', '**/public/**'],
-  },
-).sort()
-
-const languageCodes = [
-  ...new Set([
-    ...languagePaths.map((filePath) => filePath.replace(/.*\/([^/]+)\.json$/, '$1')),
-    ...DEFAULT_LANGUAGE_CODES,
-  ]),
-].sort()
+const languageCodes = requestedLanguageCodes
 
 const tasks = listTranslationTargets(workspaceRoot).map(({ samplePath, sourceFilePath }) => ({
   sample: readJson(samplePath),
@@ -141,24 +106,51 @@ function normalizeEol(content) {
   return String(content).replace(/\r\n/g, '\n')
 }
 
-async function processSample({ sample, samplePath, sourceFilePath }) {
+function parseLanguageCodes(value) {
+  if (value === undefined || value === null) {
+    throw new Error('Missing required translate option: --locales')
+  }
+
+  const localeCodes = [
+    ...new Set(
+      String(value)
+        .split(/[\s,]+/)
+        .filter(Boolean),
+    ),
+  ].map((code) => code.toLowerCase())
+
+  if (localeCodes.length === 0 || localeCodes.some((code) => !/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/.test(code))) {
+    throw new Error(
+      'Invalid --locales value. Use comma-separated locale codes, for example: --locales en,pl,ru,de',
+    )
+  }
+
+  if (!localeCodes.includes('en')) {
+    throw new Error('Missing required locale: en. Add it to --locales, for example: --locales en,pl,ru,de')
+  }
+
+  return localeCodes.sort()
+}
+
+async function processSample({ sample, samplePath }) {
+  const componentContext = readAiContextDescription(samplePath)
+
+  if (!componentContext) {
+    throw new Error(
+      `Missing AI context: ${relative(workspaceRoot, getContextFilePath(samplePath))}. Run "brick translate-context" first.`,
+    )
+  }
+
   writeSortedJsonIfNeeded(samplePath, sample)
 
-  const generatedDir = join(dirname(samplePath), 'generated')
-  const enPath = join(generatedDir, 'en.json')
-  const currentEn = existsJson(enPath) ? readJson(enPath) : {}
+  const dataPath = join(dirname(samplePath), 'data.json')
+  const currentData = existsJson(dataPath) ? readJson(dataPath) : {}
+  const currentEn = currentData.en ?? {}
   const currentByLanguage = new Map(
-    languageCodes.map((languageCode) => [
-      languageCode,
-      existsJson(join(generatedDir, `${languageCode}.json`))
-        ? readJson(join(generatedDir, `${languageCode}.json`))
-        : {},
-    ]),
+    languageCodes.map((languageCode) => [languageCode, currentData[languageCode] ?? {}]),
   )
   const resultByLanguage = new Map(languageCodes.map((languageCode) => [languageCode, {}]))
   const pendingEntriesByLocales = new Map()
-
-  fs.mkdirSync(generatedDir, { recursive: true })
 
   for (const [key, sampleValue] of Object.entries(sample)) {
     const missingLocales = []
@@ -201,15 +193,6 @@ async function processSample({ sample, samplePath, sourceFilePath }) {
     }
   }
 
-  let componentContext = null
-
-  if (pendingEntriesByLocales.size > 0) {
-    componentContext = getAiContextState({
-      samplePath,
-      sourceFilePath,
-    }).description
-  }
-
   for (const [localeKey, entries] of pendingEntriesByLocales) {
     const targetLocales = localeKey.split(',').filter(Boolean)
     const chunks = splitIntoBatches(entries, BATCH_MAX_ITEMS, BATCH_MAX_CHARS)
@@ -243,11 +226,13 @@ async function processSample({ sample, samplePath, sourceFilePath }) {
     }
   }
 
+  const nextData = {}
+
   for (const languageCode of languageCodes) {
-    const generatedPath = join(generatedDir, `${languageCode}.json`)
-    const languageResult = sortObjectKeys(resultByLanguage.get(languageCode) ?? {})
-    writeTextPreservingEol(generatedPath, stringifySortedJson(languageResult))
+    nextData[languageCode] = sortObjectKeys(resultByLanguage.get(languageCode) ?? {})
   }
+
+  writeTextPreservingEol(dataPath, stringifySortedJson(nextData))
 }
 
 function readJson(filePath) {

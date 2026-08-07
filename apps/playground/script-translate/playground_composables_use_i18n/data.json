@@ -1,0 +1,14 @@
+{
+  "de": {
+    "playground_composables_use_i18n.comp_range_857d": "Vergütungsbereich",
+    "playground_composables_use_i18n.comp_range_b82f": "Vergütungsbereich2"
+  },
+  "en": {
+    "playground_composables_use_i18n.comp_range_857d": "COMP range",
+    "playground_composables_use_i18n.comp_range_b82f": "COMP range2"
+  },
+  "ru": {
+    "playground_composables_use_i18n.comp_range_857d": "Диапазон компенсации",
+    "playground_composables_use_i18n.comp_range_b82f": "Диапазон компенсации2"
+  }
+}

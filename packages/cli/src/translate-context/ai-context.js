@@ -1,27 +1,30 @@
 #!/usr/bin/env node
 
 import fs from 'fs'
+import { globSync } from 'glob'
 import { dirname, join, relative, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 import { resolveWorkspaceRoot } from '../shared/workspace-root.js'
-import { generateContentWithLimits } from './gemini.js'
+import { generateContentWithLimits } from '../translate/gemini.js'
 import {
   buildTranslateHelp,
   DEFAULT_CONTEXT_MODEL,
   getTranslateRuntimeConfig,
   parseTranslateRuntimeArgs,
   setTranslateRuntimeConfig,
-} from './runtime-config.js'
-import { listTranslationTargets, stringifySortedJson } from './utils.js'
+} from '../translate/runtime-config.js'
+import { listTranslationTargets, stringifySortedJson } from '../translate/utils.js'
 
 const workspaceRoot = resolveWorkspaceRoot()
 const CONTEXT_FILE_NAME = 'ai-context.json'
+const CONTEXT_FILE_GLOB =
+  '{packages/brick,apps/*}/{components/**/translate,pages-translate/*,layouts-translate/**,script-translate/*}/ai-context.json'
 const CHANGE_THRESHOLD = readFloat('TRANSLATE_CONTEXT_MIN_CHANGE', 0.3)
 const SOURCE_MAX_CHARS = readPositiveInt('TRANSLATE_CONTEXT_SOURCE_MAX_CHARS', 16000)
 
 export function buildAiContextHelp(command = 'brick translate-context') {
-  return `${buildTranslateHelp(command)}\n\nExtra:\n  --force`
+  return `${buildTranslateHelp(command, { includeLocales: false })}\n\nExtra:\n  --force`
 }
 
 export function calculateChangeRatio(previousSource, nextSource) {
@@ -55,13 +58,8 @@ export async function ensureAiContext({ force = false, sample, samplePath, sourc
   })
 
   const next = {
-    changeRatio: state.changeRatio,
     description,
-    samplePath: relative(workspaceRoot, samplePath),
-    sourceFilePath: relative(workspaceRoot, state.sourceFilePath),
     sourceSnapshot: state.sourceCode,
-    updatedAt: new Date().toISOString(),
-    version: 1,
   }
 
   writeTextPreservingEol(state.contextPath, stringifySortedJson(next))
@@ -116,6 +114,30 @@ export function getContextFilePath(samplePath) {
   return join(dirname(samplePath), CONTEXT_FILE_NAME)
 }
 
+export function readAiContextDescription(samplePath) {
+  const description = readContextFile(getContextFilePath(samplePath))?.description
+
+  return typeof description === 'string' && description.length > 0 ? description : null
+}
+
+export function removeObsoleteAiContexts(targets, rootDir = workspaceRoot) {
+  const activeContextPaths = new Set(targets.map(({ samplePath }) => getContextFilePath(samplePath)))
+  const contextPaths = globSync(CONTEXT_FILE_GLOB, {
+    absolute: true,
+    cwd: rootDir,
+    nodir: true,
+  }).sort()
+
+  for (const contextPath of contextPaths) {
+    if (activeContextPaths.has(contextPath)) {
+      continue
+    }
+
+    fs.rmSync(contextPath)
+    console.log(`🗑️  Context removed (sample not found): ${relative(rootDir, contextPath)}`)
+  }
+}
+
 export async function runAiContextCli(rawArgs = process.argv.slice(3), command = 'brick translate-context') {
   const helpText = buildAiContextHelp(command)
 
@@ -144,22 +166,41 @@ export async function runAiContextCli(rawArgs = process.argv.slice(3), command =
     ? targets.filter(({ samplePath }) => requestedSamplePaths.has(samplePath))
     : targets
 
+  if (!requestedSamplePaths) {
+    removeObsoleteAiContexts(targets)
+  }
+
+  const progress = createProgress(targetEntries.length)
+
   for (const { samplePath, sourceFilePath } of targetEntries) {
     if (!sourceFilePath || !fs.existsSync(samplePath)) {
+      console.warn(`⚠️  Context skipped (source not found): ${relative(workspaceRoot, samplePath)}`)
+      progress(samplePath, 'skipped')
       continue
     }
 
-    const description = await ensureAiContext({
+    const state = getAiContextState({ force, samplePath, sourceFilePath })
+
+    if (!state.shouldRegenerate) {
+      progress(samplePath, 'unchanged')
+      continue
+    }
+
+    await ensureAiContext({
       force,
       sample: JSON.parse(fs.readFileSync(samplePath, 'utf-8')),
       samplePath,
       sourceFilePath,
     })
 
-    if (description) {
-      console.log(`🧠 Context updated: ${relative(workspaceRoot, samplePath)}`)
-    }
+    progress(samplePath, 'updated')
   }
+
+  if (targetEntries.length > 0) {
+    process.stdout.write('\n')
+  }
+
+  console.log(`✅ Done: ${targetEntries.length} context files`)
 }
 
 function buildContextContents({ sampleEntries, samplePath, sourceCode, sourceFilePath }) {
@@ -176,21 +217,19 @@ function buildContextContents({ sampleEntries, samplePath, sourceCode, sourceFil
 }
 
 function buildContextSystemInstruction() {
-  const { productContext, tone } = getTranslateRuntimeConfig()
+  const { productContext } = getTranslateRuntimeConfig()
 
   return [
     'You are generating translation context for a UI component.',
     'Write a compact but informative description for translators.',
     'Product context:',
     productContext,
-    'Tone:',
-    tone,
     'Focus on:',
     '- what the component or page does',
     '- main user actions',
     '- important entities and domain meaning',
     '- what the shown strings likely refer to',
-    '- tone or UX intent if obvious',
+    '- UX intent if obvious',
     'Rules:',
     '- Return plain text only.',
     '- Write 4 to 8 short sentences.',
@@ -205,6 +244,28 @@ function cleanText(text) {
     .replace(/```text/gi, '')
     .replace(/```/g, '')
     .trim()
+}
+
+function createProgress(total) {
+  let done = 0
+  const start = Date.now()
+
+  return function update(samplePath, status) {
+    done += 1
+
+    const percent = total === 0 ? 100 : Math.round((done * 100) / total)
+    const filled = Math.round(percent / 5)
+    const empty = 20 - filled
+    const elapsed = ((Date.now() - start) / 1000).toFixed(1)
+    const shortName = shortenPath(relative(workspaceRoot, samplePath))
+
+    process.stdout.write(
+      `\r🧠 Context: [${'█'.repeat(filled)}${' '.repeat(empty)}] ` +
+        `${percent}% (${done}/${total}) ` +
+        `⏱ ${elapsed}s ` +
+        `\x1b[90m${status} ${shortName}\x1b[0m\x1b[K`,
+    )
+  }
 }
 
 function detectEol(filePath) {
@@ -299,6 +360,14 @@ function readPositiveInt(name, fallback) {
   return Number.isFinite(value) && value > 0 ? value : fallback
 }
 
+function shortenPath(filePath, maxLength = 72) {
+  if (filePath.length <= maxLength) {
+    return filePath
+  }
+
+  return `...${filePath.slice(-(maxLength - 3))}`
+}
+
 function writeTextPreservingEol(filePath, content) {
   const eol = detectEol(filePath)
   const normalized = String(content).replace(/\r?\n/g, eol)
@@ -306,5 +375,5 @@ function writeTextPreservingEol(filePath, content) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  await runAiContextCli(process.argv.slice(2), 'node packages/cli/src/translate/ai-context.js')
+  await runAiContextCli(process.argv.slice(2), 'node packages/cli/src/translate-context/ai-context.js')
 }

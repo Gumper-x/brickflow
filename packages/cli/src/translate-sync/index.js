@@ -26,11 +26,11 @@ if (args.length > 0) {
 }
 
 const workspaceRoot = resolveWorkspaceRoot()
-const activeGeneratedDirs = new Set()
+const activeTranslationDirs = new Set()
 const cleanupRoots = new Set()
 const staticCleanupRoots = [
-  path.resolve(workspaceRoot, 'packages/brick/global'),
-  ...globSync('apps/*/global', {
+  path.resolve(workspaceRoot, 'packages/brick/script-translate'),
+  ...globSync('apps/*/script-translate', {
     absolute: true,
     cwd: workspaceRoot,
   }),
@@ -52,12 +52,12 @@ for (const file of filtered) {
   progress(file)
 }
 
-cleanupGeneratedDirs()
+cleanupTranslationDirs()
 
 process.stdout.write('\n')
 console.log('✅ Done')
 
-function cleanupGeneratedDirs() {
+function cleanupTranslationDirs() {
   for (const rootDir of cleanupRoots) {
     if (!fs.existsSync(rootDir)) {
       continue
@@ -70,7 +70,7 @@ function cleanupGeneratedDirs() {
 
       const targetDir = path.resolve(rootDir, entry.name)
 
-      if (!activeGeneratedDirs.has(targetDir)) {
+      if (!activeTranslationDirs.has(targetDir)) {
         removeDir(targetDir)
       }
     }
@@ -127,16 +127,7 @@ function ensureSortedJsonFile(filePath) {
 }
 
 function ensureSortedTranslationJsons(baseDir, samplePath) {
-  const filesToCheck = [samplePath, path.resolve(baseDir, 'ai-context.json')]
-  const generatedDir = path.resolve(baseDir, 'generated')
-
-  if (fs.existsSync(generatedDir)) {
-    for (const entry of fs.readdirSync(generatedDir, { withFileTypes: true })) {
-      if (entry.isFile() && entry.name.endsWith('.json')) {
-        filesToCheck.push(path.resolve(generatedDir, entry.name))
-      }
-    }
-  }
+  const filesToCheck = [samplePath, path.resolve(baseDir, 'ai-context.json'), path.resolve(baseDir, 'data.json')]
 
   for (const filePath of filesToCheck) {
     try {
@@ -165,7 +156,7 @@ Usage:
 
 Notes:
   Scans source files and regenerates translation sample.json files
-  Removes obsolete generated translation directories
+  Removes obsolete translation directories
   Verifies and normalizes translation JSON key ordering`)
 }
 
@@ -241,7 +232,7 @@ function writeTranslations(id, strings) {
   }
 
   if (isPage || isLayout || isScript) {
-    activeGeneratedDirs.add(baseDir)
+    activeTranslationDirs.add(baseDir)
   }
 
   fs.mkdirSync(baseDir, { recursive: true })

@@ -1,0 +1,4 @@
+{
+  "description": "This component displays a testing dialog for creator-sold goods packs. The \"Hole\" terminology refers to a specific UI layout or placeholder area used during the creation or management of these product bundles. The \"Lay Test\" string represents a label for a button or menu item used to verify the layout or configuration of a goods pack. Translators should treat \"Lay\" as a technical action related to positioning or arranging items within the pack's display. Ensure the translation remains concise to fit within limited dialog UI space. The tone should be functional and clear for creators managing their digital offerings.",
+  "sourceSnapshot": "<template>\n  <div>test {{ t('Lay Test') }}</div>\n</template>\n"
+}

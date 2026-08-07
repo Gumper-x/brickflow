@@ -12,7 +12,10 @@
     "lint": "pnpm typecheck && eslint -v && NODE_ENV=deploy eslint --cache .",
     "lint:fix": "pnpm exec eslint . --fix",
     "format": "pnpm exec prettier . --ignore-path ../../.prettierignore --write",
-    "format:check": "pnpm exec prettier . --ignore-path ../../.prettierignore --check"
+    "format:check": "pnpm exec prettier . --ignore-path ../../.prettierignore --check",
+    "translate:sync": "node ../../packages/cli/index.mjs translate-sync",
+    "translate:context": "node ../../packages/cli/index.mjs translate-context --product-context \"Creators sell goods packs.\" --api-key \"AIzaSyDGjSqJ1yZ79B3E0L0DfIa_yQ0izyf9SjM\" --context-model \"gemini-3.1-flash-lite-preview\"",
+    "translate": "node ../../packages/cli/index.mjs translate --product-context \"Creators sell goods packs.\" --api-key \"AIzaSyDGjSqJ1yZ79B3E0L0DfIa_yQ0izyf9SjM\" --context-model \"gemini-3.1-flash-lite-preview\" --locales \"en,ru,de\""
   },
   "dependencies": {
     "@brickflow/ui": "workspace:*",

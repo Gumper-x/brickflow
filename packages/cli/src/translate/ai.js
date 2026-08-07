@@ -58,16 +58,13 @@ function buildContents(strings, sourceLocale, targetLocales, componentContext) {
 }
 
 function buildSystemInstruction() {
-  const { productContext, tone } = getTranslateRuntimeConfig()
+  const { productContext } = getTranslateRuntimeConfig()
 
   return [
     'You are a professional localization engine for a paid adult content platform.',
     '',
     'PRODUCT CONTEXT:',
     productContext,
-    '',
-    'TONE:',
-    tone,
     '',
     'RULES:',
     '- Return only raw JSON.',

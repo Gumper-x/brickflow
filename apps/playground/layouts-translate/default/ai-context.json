@@ -1,0 +1,4 @@
+{
+  "description": "This component serves as the default layout wrapper for the creator marketplace playground. It is used to render a foundational UI shell where creators display and manage their sellable goods packs. The current string is a placeholder intended to verify localization implementation within this specific layout structure. Future iterations will include navigation and dashboard elements for managing digital storefronts. Ensure the translation remains concise to fit potential header or sidebar design constraints. Keep the tone professional and consistent with creator-facing tools.",
+  "sourceSnapshot": "<template>\n  <div>test {{ t('Lay Test') }}</div>\n</template>\n"
+}

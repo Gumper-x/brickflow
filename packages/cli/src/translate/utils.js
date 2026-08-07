@@ -19,7 +19,7 @@ const IGNORED_GLOB_PATTERNS = [
 ]
 const IGNORED_SOURCE_SEGMENTS = ['/node_modules/', '/.nuxt/', '/dist/', '/.output/', '/coverage/', '/public/']
 const TRANSLATION_SAMPLE_GLOB =
-  '{packages/brick,apps/*}/{components/**/translate,pages-translate/*,layouts/**,global/*}/sample.json'
+  '{packages/brick,apps/*}/{components/**/translate,pages-translate/*,layouts-translate/**,script-translate/*}/sample.json'
 
 export function compileVueToJS(code, filePath) {
   const { descriptor } = parseSFC(code)
@@ -171,6 +171,10 @@ export function getTranslationPaths(id) {
     /\.(?:js|ts)$/.test(normalizedId) &&
     !normalizedId.endsWith('.d.ts')
 
+  if (isComponent && !normalizedId.endsWith('/index.vue')) {
+    return null
+  }
+
   if (!isComponent && !isPage && !isLayout && !isScript) {
     return null
   }
@@ -204,13 +208,9 @@ export function getTranslationPaths(id) {
   }
 
   if (isLayout) {
-    const layoutDir = normalizedId.split('/').slice(0, -1).join('/')
-    const fileName =
-      normalizedId
-        .split('/')
-        .pop()
-        ?.replace(/\.\w+$/, '') ?? ''
-    const baseDir = join(layoutDir, fileName)
+    const layoutsRoot = `${normalizedId.split('/layouts/')[0]}/layouts`
+    const layoutPath = normalizedId.split('/layouts/')[1].replace(/\.\w+$/, '')
+    const baseDir = join(layoutsRoot, '..', 'layouts-translate', layoutPath)
 
     return {
       baseDir,
@@ -222,7 +222,7 @@ export function getTranslationPaths(id) {
     }
   }
 
-  const baseDir = join(projectRoot, 'global', getComponentName(normalizedId))
+  const baseDir = join(projectRoot, 'script-translate', getComponentName(normalizedId))
 
   return {
     baseDir,

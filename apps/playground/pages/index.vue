@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+  const { t } = useI18n()
   const screen = useScreen()
   const clicks = ref(0)
   const screenReady = ref(false)
@@ -60,7 +61,7 @@
       <p class="text-sm font-medium text-gray-500">useScreen</p>
       <p class="text-sm text-gray-300">
         <template v-if="screenReady">
-          Active range:
+          {{ t('Active range') }}: {{ t('Active range2') }}:
           <strong>{{ activeScreen }}</strong>
         </template>
         <template v-else>Detecting screen size…</template>
