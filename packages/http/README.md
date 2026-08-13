@@ -213,6 +213,8 @@ export const createGet = defineGet(useHttp)
 
 `effect(data, config)` вызывается и для cache, и для fresh-response:
 
+`effect` должен быть синхронным: `async`-обработчики не поддерживаются и будут отклонены TypeScript.
+
 - `config.cached === true` для cache
 - `config.cached === false` для сети
 - `config.params` содержит уже применённые params

@@ -37,7 +37,7 @@ type CreateGetData<T extends string> = T extends HttpKey ? HttpResponseData<T> :
 type CreateGetEffect<T extends string, P extends HttpParam> = (
   data: CreateGetData<T>,
   config: CreateGetEffectConfig<P>,
-) => void
+) => undefined
 type CreateGetEffectConfig<P extends HttpParam> = {
   cached: boolean
   params: P

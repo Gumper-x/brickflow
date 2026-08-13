@@ -65,7 +65,7 @@ type BroadcastMessage = {
 type UseHttpEffect<T extends HttpKey, P extends HttpParam> = (
   data: HttpResponseData<T>,
   config: UseHttpEffectConfig<P>,
-) => void
+) => undefined
 type UseHttpEffectConfig<P extends HttpParam> = {
   cached: boolean
   params: P

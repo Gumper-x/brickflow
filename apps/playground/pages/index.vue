@@ -1,6 +1,7 @@
 <script lang="ts" setup>
   const { t } = useI18n()
   const screen = useScreen()
+  const { $di } = useNuxtApp()
   const clicks = ref(0)
   const screenReady = ref(false)
 
@@ -10,7 +11,11 @@
     return screens.find((key) => screen[key]) ?? 'unknown'
   })
   const { theme } = useTheme()
-
+  $di.product.productOne({
+    effect() {
+      console.log('Effect productOne')
+    },
+  })
   onMounted(async () => {
     await screen.ready
     screenReady.value = true

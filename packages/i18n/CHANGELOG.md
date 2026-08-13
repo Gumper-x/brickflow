@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.32
+
+### Patch Changes
+
+- Ban async effect
+
 ## 0.0.31
 
 ### Patch Changes
