@@ -15,7 +15,7 @@
     "pack:publish": "pnpm build && node ./scripts/publish-packages.mjs",
     "pack:publish:dry": "pnpm build && node ./scripts/publish-packages.mjs --dry-run",
     "lint:fix": "pnpm --filter \"./apps/**\" --filter \"./packages/**\" --parallel --stream lint:fix",
-    "lint": "pnpm --filter \"./apps/**\" --filter \"./packages/**\" --parallel --stream lint",
+    "lint": "pnpm --filter @brickflow/ui build && pnpm --filter \"./apps/**\" --filter \"./packages/**\" --parallel --stream lint",
     "format": "pnpm --filter \"./apps/**\" --filter \"./packages/**\" --parallel --stream format",
     "format:check": "pnpm --filter \"./apps/**\" --filter \"./packages/**\" --parallel --stream format:check",
     "latest": "node ./packages/cli/index.mjs latest",

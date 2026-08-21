@@ -3,12 +3,11 @@ import { onMounted, reactive } from 'vue'
 type ScreenKey = keyof ScreenState
 
 interface ScreenState {
-  base: boolean
-  lg: boolean
-  md: boolean
-  sm: boolean
-  xl: boolean
-  xxl: boolean
+  dk: boolean
+  lp: boolean
+  mb: boolean
+  mb2: boolean
+  tb: boolean
 }
 
 /**
@@ -18,21 +17,19 @@ interface ScreenState {
  * а неподходящие элементы сразу скрываются CSS-классами.
  */
 const state = reactive<ScreenState>({
-  base: true,
-  lg: true,
-  md: true,
-  sm: true,
-  xl: true,
-  xxl: true,
+  dk: true,
+  lp: true,
+  mb: true,
+  mb2: true,
+  tb: true,
 })
 
 const queries = {
-  base: '(width < 40rem)',
-  lg: '(64rem <= width < 80rem)',
-  md: '(48rem <= width < 64rem)',
-  sm: '(40rem <= width < 48rem)',
-  xl: '(80rem <= width < 96rem)',
-  xxl: '(width >= 96rem)',
+  dk: '(width >= 1440px)',
+  lp: '(1024px <= width < 1440px)',
+  mb: '(480px <= width < 768px)',
+  mb2: '(width < 480px)',
+  tb: '(768px <= width < 1024px)',
 } satisfies Record<ScreenKey, string>
 
 let initialized = false
@@ -66,38 +63,34 @@ function initialize(): void {
 }
 
 const screen = {
-  get base() {
-    return state.base
+  get dk() {
+    return state.dk
   },
 
-  baseClass: 'hidden mobile:block',
+  dkClass: 'hidden dk:block',
 
-  get lg() {
-    return state.lg
+  get lp() {
+    return state.lp
   },
 
-  lgClass: 'hidden desktop:block',
+  lpClass: 'hidden lp:block tb:hidden',
 
-  get md() {
-    return state.md
+  get mb() {
+    return state.mb
   },
-
-  mdClass: 'hidden tablet-lg:block',
+  get mb2() {
+    return state.mb2
+  },
+  mb2Class: 'hidden mb2:block',
+  mbClass: 'hidden mb:block mb2:hidden',
 
   ready,
-  get sm() {
-    return state.sm
-  },
-  smClass: 'hidden tablet:block',
-  get xl() {
-    return state.xl
-  },
-  xlClass: 'hidden desktop-lg:block',
-  get xxl() {
-    return state.xxl
+
+  get tb() {
+    return state.tb
   },
 
-  xxlClass: 'hidden desktop-xl:block',
+  tbClass: 'hidden tb:block mb:hidden',
 } as const
 
 export function useScreen(): typeof screen {

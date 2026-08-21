@@ -9,7 +9,7 @@
     "build": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt build",
     "typecheck": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt prepare && vue-tsc --noEmit",
     "test": "TMPDIR=/tmp NODE_OPTIONS='--conditions=development' nuxt prepare && vitest run",
-    "lint": "pnpm typecheck && eslint -v && NODE_ENV=deploy eslint --cache .",
+    "lint": "pnpm typecheck && eslint -v && NODE_ENV=deploy eslint .",
     "lint:fix": "pnpm exec eslint . --fix",
     "format": "pnpm exec prettier . --ignore-path ../../.prettierignore --write",
     "format:check": "pnpm exec prettier . --ignore-path ../../.prettierignore --check",

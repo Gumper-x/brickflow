@@ -4,8 +4,8 @@
 
 @custom-variant dk (@media (width >= 1440px));
 @custom-variant lp (@media (width < 1440px));
-@custom-variant tb (@media (width < 1024));
-@custom-variant mb (@media (width < 768));
-@custom-variant mb2 (@media (width < 480));
+@custom-variant tb (@media (width < 1024px));
+@custom-variant mb (@media (width < 768px));
+@custom-variant mb2 (@media (width < 480px));
 
 @source "./";

@@ -4,7 +4,7 @@
   const screenReady = ref(false)
 
   const activeScreen = computed(() => {
-    const screens = ['base', 'sm', 'md', 'lg', 'xl', 'xxl'] as const
+    const screens = ['dk', 'lp', 'tb', 'mb', 'mb2'] as const
 
     return screens.find((key) => screen[key]) ?? 'unknown'
   })
@@ -17,7 +17,7 @@
 </script>
 
 <template>
-  <main class="sm:p-10 mx-auto max-w-3xl space-y-10 p-6">
+  <main class="mx-auto max-w-3xl space-y-10 p-10 mb:p-6">
     <section class="space-y-4">
       <div class="flex flex-wrap items-center gap-3">
         <BrickButton @click="clicks += 1">
@@ -65,12 +65,11 @@
         <template v-else>Detecting screen size…</template>
       </p>
       <div class="grid gap-2 rounded-lg bg-gray-100 p-3 text-sm font-medium text-gray-700">
-        <p :class="screen.baseClass">base: under 40rem</p>
-        <p :class="screen.smClass">sm: 40rem–48rem</p>
-        <p :class="screen.mdClass">md: 48rem–64rem</p>
-        <p :class="screen.lgClass">lg: 64rem–80rem</p>
-        <p :class="screen.xlClass">xl: 80rem–96rem</p>
-        <p :class="screen.xxlClass">xxl: 96rem and up</p>
+        <p :class="screen.dkClass">dk: 1440px and up</p>
+        <p :class="screen.lpClass">lp: 1024px–1439px</p>
+        <p :class="screen.tbClass">tb: 768px–1023px</p>
+        <p :class="screen.mbClass">mb: 480px–767px</p>
+        <p :class="screen.mb2Class">mb2: under 480px</p>
       </div>
     </section>
   </main>

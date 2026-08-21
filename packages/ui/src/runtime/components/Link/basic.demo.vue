@@ -13,13 +13,13 @@
   <div class="flex flex-wrap items-center gap-4">
     <Link
       to="/"
-      class="text-main-300 hover:text-main-200"
+      class="text-blue-300 hover:text-blue-200"
     >
       Go to Home
     </Link>
     <Link
       to="/ui?component=button"
-      class="text-main-300 hover:text-main-200"
+      class="text-blue-300 hover:text-blue-200"
     >
       Open Button
     </Link>

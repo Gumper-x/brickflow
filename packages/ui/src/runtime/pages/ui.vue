@@ -442,7 +442,7 @@
 <template>
   <main class="min-h-screen bg-zinc-950 text-zinc-100">
     <header
-      class="md:hidden sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur"
+      class="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur dk:hidden"
     >
       <div class="min-w-0">
         <p class="text-xs font-medium tracking-widest text-zinc-500 uppercase">Components</p>
@@ -472,7 +472,7 @@
 
     <div
       v-if="isNavigationOpen"
-      class="md:hidden fixed inset-0 z-40"
+      class="fixed inset-0 z-40 dk:hidden"
       @keydown.esc="closeNavigation"
     >
       <button
@@ -540,7 +540,7 @@
     </div>
 
     <div class="mx-auto flex min-h-screen max-w-7xl">
-      <aside class="md:block hidden w-64 shrink-0 border-r border-zinc-800 px-4 py-6">
+      <aside class="hidden w-64 shrink-0 border-r border-zinc-800 px-4 py-6 dk:block">
         <p class="px-3 text-xs font-medium tracking-widest text-zinc-500 uppercase">Components</p>
 
         <nav
@@ -570,10 +570,10 @@
         </nav>
       </aside>
 
-      <section class="sm:px-6 md:px-10 min-w-0 flex-1 px-4 py-6">
+      <section class="min-w-0 flex-1 px-10 py-6 lp:px-6 mb:px-4">
         <template v-if="activeComponent">
           <div class="flex items-center gap-3">
-            <h1 class="sm:text-3xl text-2xl leading-tight font-semibold">{{ activeComponent.name }}</h1>
+            <h1 class="text-3xl leading-tight font-semibold mb:text-2xl">{{ activeComponent.name }}</h1>
             <button
               v-if="uiThemeEnabled"
               type="button"
@@ -623,7 +623,7 @@
             class="mt-6 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 first:mt-8"
           >
             <header
-              class="sm:gap-4 sm:px-8 sm:py-4 flex items-start justify-between gap-3 border-b border-zinc-800 bg-zinc-900 px-4 py-3"
+              class="flex items-start justify-between gap-4 border-b border-zinc-800 bg-zinc-900 px-8 py-4 mb:gap-3 mb:px-4 mb:py-3"
             >
               <div>
                 <h2 class="text-base font-medium text-zinc-100">{{ demo.title }}</h2>
@@ -662,12 +662,12 @@
                 </svg>
               </button>
             </header>
-            <div class="sm:p-8 p-4">
+            <div class="p-8 mb:p-4">
               <component :is="demo.component" />
             </div>
             <div
               v-if="isDemoCodeExpanded(demo.id)"
-              class="sm:p-8 border-t border-zinc-800 bg-zinc-950/80 p-4"
+              class="border-t border-zinc-800 bg-zinc-950/80 p-8 mb:p-4"
             >
               <pre
                 class="overflow-x-auto text-sm leading-6 text-zinc-300"
@@ -683,15 +683,17 @@
             file to this component folder.
           </p>
           <section class="mt-8 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50">
-            <header class="sm:px-8 sm:py-4 border-b border-zinc-800 bg-zinc-900 px-4 py-3">
+            <header class="border-b border-zinc-800 bg-zinc-900 px-8 py-4 mb:px-4 mb:py-3">
               <h2 class="text-base font-medium text-zinc-100">Component API</h2>
             </header>
 
-            <div class="lg:grid-cols-2 lg:divide-x lg:divide-y-0 grid divide-y divide-zinc-800">
-              <section class="sm:px-6 px-4 py-5">
+            <div
+              class="grid grid-cols-2 divide-x divide-y-0 divide-zinc-800 tb:grid-cols-1 tb:divide-x-0 tb:divide-y"
+            >
+              <section class="px-6 py-5 mb:px-4">
                 <h3 class="text-sm font-medium text-zinc-200">Props</h3>
                 <div class="mt-4 overflow-x-auto">
-                  <table class="sm:min-w-96 w-full min-w-80 text-left text-sm">
+                  <table class="w-full min-w-96 text-left text-sm mb:min-w-80">
                     <!-- <thead class="text-xs tracking-wider text-zinc-500 uppercase">
                       <tr>
                         <th class="pb-3 font-medium">Name</th>
@@ -729,7 +731,7 @@
                 </div>
               </section>
 
-              <section class="sm:px-6 px-4 py-5">
+              <section class="px-6 py-5 mb:px-4">
                 <h3 class="text-sm font-medium text-zinc-200">Slots</h3>
                 <div
                   v-if="activeComponent.slots.length"
@@ -759,7 +761,7 @@
             class="mt-6 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50"
           >
             <header
-              class="sm:gap-4 sm:px-8 sm:py-4 flex items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-900 px-4 py-3"
+              class="flex items-center justify-between gap-4 border-b border-zinc-800 bg-zinc-900 px-8 py-4 mb:gap-3 mb:px-4 mb:py-3"
             >
               <div class="flex items-center gap-3">
                 <div>
@@ -771,12 +773,12 @@
               </span>
             </header>
 
-            <div class="sm:px-8 px-4 py-2">
+            <div class="px-8 py-2 mb:px-4">
               <div class="divide-y divide-zinc-800">
                 <div
                   v-for="style in visibleStyles"
                   :key="style.path"
-                  class="sm:gap-6 grid gap-2 py-4"
+                  class="grid gap-6 py-4 mb:gap-2"
                   :class="$style.styleGrid"
                 >
                   <code class="font-mono text-xs text-blue-300">{{ style.path }}</code>
@@ -791,7 +793,7 @@
 
             <footer
               v-if="activeComponent.styles.length > 5"
-              class="sm:px-8 sticky bottom-0 z-10 border-t border-zinc-800 bg-zinc-900/95 px-4 py-3 backdrop-blur"
+              class="sticky bottom-0 z-10 border-t border-zinc-800 bg-zinc-900/95 px-8 py-3 backdrop-blur mb:px-4"
             >
               <button
                 type="button"
