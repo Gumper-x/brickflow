@@ -15,6 +15,10 @@
     "./tailwind": {
       "types": "./dist/runtime/tailwind.d.ts",
       "import": "./dist/runtime/tailwind.js"
+    },
+    "./ui.css": {
+      "development": "./src/runtime/ui.css",
+      "default": "./dist/runtime/ui.css"
     }
   },
   "scripts": {

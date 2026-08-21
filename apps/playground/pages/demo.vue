@@ -17,7 +17,7 @@
 </script>
 
 <template>
-  <main class="mx-auto max-w-3xl space-y-10 p-6 sm:p-10">
+  <main class="sm:p-10 mx-auto max-w-3xl space-y-10 p-6">
     <section class="space-y-4">
       <div class="flex flex-wrap items-center gap-3">
         <BrickButton @click="clicks += 1">
@@ -26,7 +26,7 @@
         </BrickButton>
         <BrickButton
           color="plain"
-          variant="glass"
+          variant="mist"
         >
           Secondary
         </BrickButton>

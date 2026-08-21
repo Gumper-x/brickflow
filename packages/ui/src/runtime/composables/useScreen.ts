@@ -70,34 +70,34 @@ const screen = {
     return state.base
   },
 
-  baseClass: 'sm:hidden',
+  baseClass: 'hidden mobile:block',
 
   get lg() {
     return state.lg
   },
 
-  lgClass: 'max-lg:hidden xl:hidden',
+  lgClass: 'hidden desktop:block',
 
   get md() {
     return state.md
   },
 
-  mdClass: 'max-md:hidden lg:hidden',
+  mdClass: 'hidden tablet-lg:block',
 
   ready,
   get sm() {
     return state.sm
   },
-  smClass: 'max-sm:hidden md:hidden',
+  smClass: 'hidden tablet:block',
   get xl() {
     return state.xl
   },
-  xlClass: 'max-xl:hidden 2xl:hidden',
+  xlClass: 'hidden desktop-lg:block',
   get xxl() {
     return state.xxl
   },
 
-  xxlClass: 'max-2xl:hidden',
+  xxlClass: 'hidden desktop-xl:block',
 } as const
 
 export function useScreen(): typeof screen {
