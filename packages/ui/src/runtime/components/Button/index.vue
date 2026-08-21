@@ -34,7 +34,7 @@
   )
   type ButtonColor = 'alt' | 'danger' | 'info' | 'main' | 'plain' | 'warn' | 'win'
   type ButtonSize = 'lg' | 'md' | 'sm' | 'xl' | 'xs'
-  type ButtonVariant = 'ghost' | 'glass' | 'soft' | 'solid' | 'subtle'
+  type ButtonVariant = 'ghost' | 'mist' | 'soft' | 'solid' | 'subtle'
 
   const sizeClasses = {
     lg: UI_STYLE.size.lg,
@@ -54,49 +54,49 @@
   const colorClasses = {
     alt: {
       ghost: UI_STYLE.color.alt.ghost,
-      glass: UI_STYLE.color.alt.glass,
+      mist: UI_STYLE.color.alt.mist,
       soft: UI_STYLE.color.alt.soft,
       solid: UI_STYLE.color.alt.solid,
       subtle: UI_STYLE.color.alt.subtle,
     },
     danger: {
       ghost: UI_STYLE.color.danger.ghost,
-      glass: UI_STYLE.color.danger.glass,
+      mist: UI_STYLE.color.danger.mist,
       soft: UI_STYLE.color.danger.soft,
       solid: UI_STYLE.color.danger.solid,
       subtle: UI_STYLE.color.danger.subtle,
     },
     info: {
       ghost: UI_STYLE.color.info.ghost,
-      glass: UI_STYLE.color.info.glass,
+      mist: UI_STYLE.color.info.mist,
       soft: UI_STYLE.color.info.soft,
       solid: UI_STYLE.color.info.solid,
       subtle: UI_STYLE.color.info.subtle,
     },
     main: {
       ghost: UI_STYLE.color.main.ghost,
-      glass: UI_STYLE.color.main.glass,
+      mist: UI_STYLE.color.main.mist,
       soft: UI_STYLE.color.main.soft,
       solid: UI_STYLE.color.main.solid,
       subtle: UI_STYLE.color.main.subtle,
     },
     plain: {
       ghost: UI_STYLE.color.plain.ghost,
-      glass: UI_STYLE.color.plain.glass,
+      mist: UI_STYLE.color.plain.mist,
       soft: UI_STYLE.color.plain.soft,
       solid: UI_STYLE.color.plain.solid,
       subtle: UI_STYLE.color.plain.subtle,
     },
     warn: {
       ghost: UI_STYLE.color.warn.ghost,
-      glass: UI_STYLE.color.warn.glass,
+      mist: UI_STYLE.color.warn.mist,
       soft: UI_STYLE.color.warn.soft,
       solid: UI_STYLE.color.warn.solid,
       subtle: UI_STYLE.color.warn.subtle,
     },
     win: {
       ghost: UI_STYLE.color.win.ghost,
-      glass: UI_STYLE.color.win.glass,
+      mist: UI_STYLE.color.win.mist,
       soft: UI_STYLE.color.win.soft,
       solid: UI_STYLE.color.win.solid,
       subtle: UI_STYLE.color.win.subtle,

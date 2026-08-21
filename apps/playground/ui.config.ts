@@ -9,8 +9,7 @@ export default defineBrickflowUiConfig({
       color: {
         alt: {
           ghost: 'text-alt-400 hover:bg-alt-950',
-          glass:
-            'global-border-gradient bg-alt-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
+          mist: 'global-border-gradient bg-alt-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
           soft: 'bg-alt-950 text-alt-400 hover:brightness-115',
           solid:
             'global-border-gradient bg-linear-to-b from-alt-500 to-alt-700 text-plain-200 hover:brightness-115',
@@ -18,8 +17,7 @@ export default defineBrickflowUiConfig({
         },
         danger: {
           ghost: 'text-danger-500 hover:bg-danger-950',
-          glass:
-            'global-border-gradient bg-danger-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
+          mist: 'global-border-gradient bg-danger-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
           soft: 'bg-danger-950 text-danger-500 hover:brightness-115',
           solid:
             'global-border-gradient bg-linear-to-b from-danger-500 to-danger-700 text-plain-200 hover:brightness-115',
@@ -27,8 +25,7 @@ export default defineBrickflowUiConfig({
         },
         info: {
           ghost: 'text-info-400 hover:bg-info-950',
-          glass:
-            'global-border-gradient bg-info-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
+          mist: 'global-border-gradient bg-info-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
           soft: 'bg-info-950 text-info-400 hover:brightness-115',
           solid:
             'global-border-gradient bg-linear-to-b from-info-500 to-info-700 text-plain-200 hover:brightness-115',
@@ -36,8 +33,7 @@ export default defineBrickflowUiConfig({
         },
         main: {
           ghost: 'text-main-400 hover:bg-main-900',
-          glass:
-            'global-border-gradient bg-main-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
+          mist: 'global-border-gradient bg-main-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
           soft: 'bg-main-900 text-main-300 hover:brightness-115',
           solid:
             'global-border-gradient bg-linear-to-b from-main-500 to-main-700 text-plain-200 hover:brightness-115',
@@ -45,8 +41,7 @@ export default defineBrickflowUiConfig({
         },
         plain: {
           ghost: 'text-plain-200 hover:bg-plain-800',
-          glass:
-            'global-border-gradient bg-plain-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
+          mist: 'global-border-gradient bg-plain-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
           soft: 'bg-plain-800 text-plain-300 hover:brightness-115',
           solid:
             'global-border-gradient bg-linear-to-b from-plain-700 to-plain-800 text-plain-200 hover:brightness-115',
@@ -54,8 +49,7 @@ export default defineBrickflowUiConfig({
         },
         warn: {
           ghost: 'text-warn-500 hover:bg-warn-950',
-          glass:
-            'global-border-gradient bg-warn-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
+          mist: 'global-border-gradient bg-warn-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
           soft: 'bg-warn-950 text-warn-500 hover:brightness-115',
           solid:
             'global-border-gradient bg-linear-to-b from-warn-500 to-warn-700 text-plain-200 hover:brightness-115',
@@ -63,8 +57,7 @@ export default defineBrickflowUiConfig({
         },
         win: {
           ghost: 'text-win-300 hover:bg-win-950',
-          glass:
-            'global-border-gradient bg-win-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
+          mist: 'global-border-gradient bg-win-900/10 text-plain-200 backdrop-blur-xs backdrop-saturate-140 hover:brightness-115',
           soft: 'bg-win-950 text-win-300 hover:brightness-115',
           solid:
             'global-border-gradient bg-linear-to-b from-win-500 to-win-700 text-plain-200 hover:brightness-115',

@@ -3,5 +3,8 @@
 </script>
 
 <template>
-  <div>test {{ t('Lay Test') }}</div>
+  <div>
+    test {{ t('Lay Test') }}
+    <NuxtPage />
+  </div>
 </template>

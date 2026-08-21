@@ -569,6 +569,9 @@ export default defineNuxtModule<ModuleOptions>({
     nuxt.hook('pages:extend', (pages) => {
       pages.push({
         file: resolver.resolve('./runtime/pages/ui.vue'),
+        meta: {
+          layout: false,
+        },
         name: 'brickflow-ui',
         path: '/ui',
       })

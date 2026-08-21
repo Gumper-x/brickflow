@@ -1,6 +1,6 @@
 <script lang="ts" setup>
   import { useHead, useRoute, useRouter } from 'nuxt/app'
-  import { computed, nextTick, ref, watch } from 'vue'
+  import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
   import { uiComponents } from '#brickflow-ui-catalog'
   import { uiThemeEnabled } from '#brickflow-ui-options'
@@ -22,6 +22,7 @@
   const expandedDemoCode = ref(new Set<string>())
   const isNavigationOpen = ref(false)
   const mobileNavigation = ref<HTMLElement>()
+  const colorSwatchesReady = ref(false)
   const stylesExpanded = ref(false)
   const theme = uiThemeEnabled ? useTheme() : undefined
   const isDark = computed(() => theme?.isDark.value ?? false)
@@ -291,19 +292,26 @@
   }
 
   const getTailwindColorSwatch = (utility: string): string => {
-    const themeColor = utility.match(
-      /(?:^|-)(alt|danger|info|main|plain|warn|win)-(50|100|200|300|400|500|600|700|800|900|950)(?:\/(\d{1,3}))?(?:$|-)/,
+    const match = utility.match(
+      /^(?:accent|bg|border|caret|decoration|divide|fill|from|outline|ring|shadow|stroke|text|to|via)-([a-z][a-z0-9-]*)(?:\/(\d{1,3}))?$/,
     )
-    const neutralColor = utility.match(/(?:^|-)(black|white)(?:\/(\d{1,3}))?$/)
-    const match = themeColor ?? neutralColor
 
-    if (!match) {
+    if (!colorSwatchesReady.value || !match || typeof window === 'undefined') {
       return ''
     }
 
-    const [, name, shade, opacity] = match
-    const color = shade ? `var(--color-${name}-${shade})` : `var(--color-${name})`
-    const background = opacity ? `color-mix(in srgb, ${color} ${opacity}%, transparent)` : color
+    const [, name, opacity] = match
+    const colorVariable = `--color-${name}`
+    const color = getComputedStyle(document.body).getPropertyValue(colorVariable).trim()
+
+    if (!color || !CSS.supports('color', color)) {
+      return ''
+    }
+
+    const opacityValue = opacity && Number(opacity) <= 100 ? Number(opacity) : undefined
+    const background = opacityValue
+      ? `color-mix(in srgb, var(${colorVariable}) ${opacityValue}%, transparent)`
+      : `var(${colorVariable})`
 
     return `<span aria-hidden="true" class="ui-color-swatch" style="--ui-color-swatch: ${background}"></span>`
   }
@@ -387,6 +395,10 @@
     isNavigationOpen.value = false
   }
 
+  onMounted(() => {
+    colorSwatchesReady.value = true
+  })
+
   watch(isNavigationOpen, async (isOpen) => {
     if (isOpen) {
       await nextTick()
@@ -428,17 +440,17 @@
 </script>
 
 <template>
-  <main class="min-h-screen">
+  <main class="min-h-screen bg-zinc-950 text-zinc-100">
     <header
-      class="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-plain-800 bg-plain-950/95 px-4 py-3 backdrop-blur md:hidden"
+      class="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur md:hidden"
     >
       <div class="min-w-0">
-        <p class="text-xs font-medium tracking-widest text-plain-500 uppercase">Components</p>
-        <p class="truncate text-sm font-medium text-plain-100">{{ activeComponent?.name }}</p>
+        <p class="text-xs font-medium tracking-widest text-zinc-500 uppercase">Components</p>
+        <p class="truncate text-sm font-medium text-zinc-100">{{ activeComponent?.name }}</p>
       </div>
       <button
         type="button"
-        class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-plain-700 text-plain-200 transition hover:border-main-700 hover:bg-main-900 hover:text-main-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-400"
+        class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-700 text-zinc-200 transition hover:border-blue-700 hover:bg-blue-900 hover:text-blue-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
         aria-controls="ui-mobile-navigation"
         :aria-expanded="isNavigationOpen"
         aria-label="Open components menu"
@@ -472,16 +484,16 @@
       <aside
         id="ui-mobile-navigation"
         ref="mobileNavigation"
-        class="relative flex h-full flex-col border-r border-plain-800 bg-plain-950 p-4 shadow-2xl"
+        class="relative flex h-full flex-col border-r border-zinc-800 bg-zinc-950 p-4 shadow-2xl"
         :class="$style.mobileNavigation"
         aria-label="UI components"
         tabindex="-1"
       >
         <div class="flex items-center justify-between gap-4 px-2 py-1">
-          <p class="text-xs font-medium tracking-widest text-plain-500 uppercase">Components</p>
+          <p class="text-xs font-medium tracking-widest text-zinc-500 uppercase">Components</p>
           <button
             type="button"
-            class="flex size-8 cursor-pointer items-center justify-center rounded-lg text-plain-400 transition hover:bg-plain-900 hover:text-plain-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-400"
+            class="flex size-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-900 hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
             aria-label="Close components menu"
             @click="closeNavigation"
           >
@@ -509,8 +521,8 @@
             :class="[
               'block rounded-lg px-3 py-2.5 text-sm transition',
               activeComponent?.id === component.id
-                ? 'bg-main-900 text-main-100'
-                : 'text-plain-400 hover:bg-plain-900 hover:text-plain-100',
+                ? 'bg-blue-900 text-blue-100'
+                : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100',
             ]"
             :to="{
               path: '/ui',
@@ -528,8 +540,8 @@
     </div>
 
     <div class="mx-auto flex min-h-screen max-w-7xl">
-      <aside class="hidden w-64 shrink-0 border-r border-plain-800 px-4 py-6 md:block">
-        <p class="px-3 text-xs font-medium tracking-widest text-plain-500 uppercase">Components</p>
+      <aside class="hidden w-64 shrink-0 border-r border-zinc-800 px-4 py-6 md:block">
+        <p class="px-3 text-xs font-medium tracking-widest text-zinc-500 uppercase">Components</p>
 
         <nav
           class="sticky top-2 mt-4 space-y-1"
@@ -542,8 +554,8 @@
             :class="[
               'block rounded-lg px-3 py-2 text-sm transition',
               activeComponent?.id === component.id
-                ? 'bg-main-900 text-main-100'
-                : 'text-plain-400 hover:bg-plain-900 hover:text-plain-100',
+                ? 'bg-blue-900 text-blue-100'
+                : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100',
             ]"
             :to="{
               path: '/ui',
@@ -561,11 +573,11 @@
       <section class="min-w-0 flex-1 px-4 py-6 sm:px-6 md:px-10">
         <template v-if="activeComponent">
           <div class="flex items-center gap-3">
-            <h1 class="text-2xl leading-1 font-semibold sm:text-3xl">{{ activeComponent.name }}</h1>
+            <h1 class="text-2xl leading-tight font-semibold sm:text-3xl">{{ activeComponent.name }}</h1>
             <button
               v-if="uiThemeEnabled"
               type="button"
-              class="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-plain-700 text-plain-400 transition hover:border-main-700 hover:bg-main-900 hover:text-main-200 focus-visible:outline-2 focus-visible:outline-offset-2"
+              class="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 transition hover:border-blue-700 hover:bg-blue-900 hover:text-blue-200 focus-visible:outline-2 focus-visible:outline-offset-2"
               :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
               :title="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
               @click="toggleTheme"
@@ -608,16 +620,16 @@
           <section
             v-for="demo in activeComponent.demos"
             :key="demo.title"
-            class="mt-6 overflow-hidden rounded-2xl border border-plain-800 bg-plain-900/50 first:mt-8"
+            class="mt-6 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 first:mt-8"
           >
             <header
-              class="flex items-start justify-between gap-3 border-b border-plain-800 bg-plain-900 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4"
+              class="flex items-start justify-between gap-3 border-b border-zinc-800 bg-zinc-900 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4"
             >
               <div>
-                <h2 class="text-base font-medium text-plain-100">{{ demo.title }}</h2>
+                <h2 class="text-base font-medium text-zinc-100">{{ demo.title }}</h2>
                 <p
                   v-if="demo.description"
-                  class="mt-1 text-sm text-plain-400"
+                  class="mt-1 text-sm text-zinc-400"
                 >
                   {{ demo.description }}
                 </p>
@@ -626,10 +638,10 @@
                 type="button"
                 :aria-label="isDemoCodeExpanded(demo.id) ? 'Hide code' : 'View code'"
                 :class="[
-                  'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-400',
+                  'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400',
                   isDemoCodeExpanded(demo.id)
-                    ? 'border-main-700 bg-main-900 text-main-200'
-                    : 'border-plain-700 text-plain-400 hover:border-main-700 hover:text-main-200',
+                    ? 'border-blue-700 bg-blue-900 text-blue-200'
+                    : 'border-zinc-700 text-zinc-400 hover:border-blue-700 hover:text-blue-200',
                 ]"
                 :title="isDemoCodeExpanded(demo.id) ? 'Hide code' : 'View code'"
                 @click="toggleDemoCode(demo.id)"
@@ -655,51 +667,51 @@
             </div>
             <div
               v-if="isDemoCodeExpanded(demo.id)"
-              class="border-t border-plain-800 bg-plain-950/80 p-4 sm:p-8"
+              class="border-t border-zinc-800 bg-zinc-950/80 p-4 sm:p-8"
             >
               <pre
-                class="overflow-x-auto text-sm leading-6 text-plain-300"
+                class="overflow-x-auto text-sm leading-6 text-zinc-300"
               ><code v-html="highlightDemoCode(demo.code.trim())" /></pre>
             </div>
           </section>
           <p
             v-if="activeComponent.demos.length === 0"
-            class="mt-8 text-plain-400"
+            class="mt-8 text-zinc-400"
           >
             Add a
-            <code class="text-plain-200">*.demo.vue</code>
+            <code class="text-zinc-200">*.demo.vue</code>
             file to this component folder.
           </p>
-          <section class="mt-8 overflow-hidden rounded-2xl border border-plain-800 bg-plain-900/50">
-            <header class="border-b border-plain-800 bg-plain-900 px-4 py-3 sm:px-8 sm:py-4">
-              <h2 class="text-base font-medium text-plain-100">Component API</h2>
+          <section class="mt-8 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50">
+            <header class="border-b border-zinc-800 bg-zinc-900 px-4 py-3 sm:px-8 sm:py-4">
+              <h2 class="text-base font-medium text-zinc-100">Component API</h2>
             </header>
 
-            <div class="grid divide-y divide-plain-800 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+            <div class="grid divide-y divide-zinc-800 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
               <section class="px-4 py-5 sm:px-6">
-                <h3 class="text-sm font-medium text-plain-200">Props</h3>
+                <h3 class="text-sm font-medium text-zinc-200">Props</h3>
                 <div class="mt-4 overflow-x-auto">
                   <table class="w-full min-w-80 text-left text-sm sm:min-w-96">
-                    <!-- <thead class="text-xs tracking-wider text-plain-500 uppercase">
+                    <!-- <thead class="text-xs tracking-wider text-zinc-500 uppercase">
                       <tr>
                         <th class="pb-3 font-medium">Name</th>
                         <th class="pb-3 font-medium">Type</th>
                         <th class="pb-3 text-right font-medium">Required</th>
                       </tr>
                     </thead> -->
-                    <tbody class="divide-y divide-plain-800 text-plain-300">
+                    <tbody class="divide-y divide-zinc-800 text-zinc-300">
                       <tr
                         v-for="prop in activeComponent.props"
                         :key="prop.name"
                       >
-                        <td class="py-3 pr-4 font-mono text-plain-400">{{ prop.name }}</td>
+                        <td class="py-3 pr-4 font-mono text-zinc-400">{{ prop.name }}</td>
                         <td
                           class="py-3 pr-4 font-mono text-xs break-all"
                           v-html="highlightPropType(prop.type)"
                         />
                         <td
                           class="py-3 text-right text-xs"
-                          :class="prop.required ? 'text-danger-600' : 'text-plain-500'"
+                          :class="prop.required ? 'text-red-600' : 'text-zinc-500'"
                         >
                           {{ prop.required ? '*' : '-' }}
                         </td>
@@ -707,7 +719,7 @@
                       <tr v-if="activeComponent.props.length === 0">
                         <td
                           colspan="3"
-                          class="py-3 text-plain-500"
+                          class="py-3 text-zinc-500"
                         >
                           No props declared.
                         </td>
@@ -718,7 +730,7 @@
               </section>
 
               <section class="px-4 py-5 sm:px-6">
-                <h3 class="text-sm font-medium text-plain-200">Slots</h3>
+                <h3 class="text-sm font-medium text-zinc-200">Slots</h3>
                 <div
                   v-if="activeComponent.slots.length"
                   class="mt-4 flex flex-wrap gap-2"
@@ -726,15 +738,15 @@
                   <code
                     v-for="slot in activeComponent.slots"
                     :key="slot"
-                    class="rounded-md border border-plain-800 bg-plain-950 px-2.5 py-1.5 text-xs"
-                    :class="slot === 'default' ? 'text-plain-500' : 'text-plain-400'"
+                    class="rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-xs"
+                    :class="slot === 'default' ? 'text-zinc-500' : 'text-zinc-400'"
                   >
                     {{ slot }}
                   </code>
                 </div>
                 <p
                   v-else
-                  class="mt-4 text-sm text-plain-500"
+                  class="mt-4 text-sm text-zinc-500"
                 >
                   No slots detected.
                 </p>
@@ -744,32 +756,32 @@
 
           <section
             v-if="activeComponent.styles.length"
-            class="mt-6 overflow-hidden rounded-2xl border border-plain-800 bg-plain-900/50"
+            class="mt-6 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50"
           >
             <header
-              class="flex items-center justify-between gap-3 border-b border-plain-800 bg-plain-900 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4"
+              class="flex items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-900 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4"
             >
               <div class="flex items-center gap-3">
                 <div>
-                  <h2 class="text-base font-medium text-plain-100">UI styles</h2>
+                  <h2 class="text-base font-medium text-zinc-100">UI styles</h2>
                 </div>
               </div>
-              <span class="rounded-full border border-plain-700 px-2.5 py-1 text-xs text-plain-400">
+              <span class="rounded-full border border-zinc-700 px-2.5 py-1 text-xs text-zinc-400">
                 {{ activeComponent.styles.length }} fields
               </span>
             </header>
 
             <div class="px-4 py-2 sm:px-8">
-              <div class="divide-y divide-plain-800">
+              <div class="divide-y divide-zinc-800">
                 <div
                   v-for="style in visibleStyles"
                   :key="style.path"
                   class="grid gap-2 py-4 sm:gap-6"
                   :class="$style.styleGrid"
                 >
-                  <code class="font-mono text-xs text-main-300">{{ style.path }}</code>
+                  <code class="font-mono text-xs text-blue-300">{{ style.path }}</code>
                   <code
-                    class="font-mono text-xs wrap-break-word text-plain-300"
+                    class="font-mono text-xs wrap-break-word text-zinc-300"
                     :class="$style.styleValue"
                     v-html="highlightStyleValue(style.value)"
                   />
@@ -779,11 +791,11 @@
 
             <footer
               v-if="activeComponent.styles.length > 5"
-              class="sticky bottom-0 z-10 border-t border-plain-800 bg-plain-900/95 px-4 py-3 backdrop-blur sm:px-8"
+              class="sticky bottom-0 z-10 border-t border-zinc-800 bg-zinc-900/95 px-4 py-3 backdrop-blur sm:px-8"
             >
               <button
                 type="button"
-                class="flex w-full cursor-pointer items-center justify-center text-sm font-medium text-info-500 transition hover:text-info-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info-400"
+                class="flex w-full cursor-pointer items-center justify-center text-sm font-medium text-cyan-500 transition hover:text-cyan-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
                 @click="stylesExpanded = !stylesExpanded"
               >
                 {{ stylesExpanded ? 'Collapse styles' : `Show all ${activeComponent.styles.length} styles` }}
@@ -794,12 +806,12 @@
 
         <p
           v-else
-          class="text-plain-400"
+          class="text-zinc-400"
         >
           Add
-          <code class="text-plain-200">Component/index.vue</code>
+          <code class="text-zinc-200">Component/index.vue</code>
           and a
-          <code class="text-plain-200">*.demo.vue</code>
+          <code class="text-zinc-200">*.demo.vue</code>
           file to show it here.
         </p>
       </section>
@@ -809,31 +821,31 @@
 
 <style module>
   :global(.ui-code-comment) {
-    color: var(--color-plain-500);
+    color: var(--color-zinc-500);
   }
 
   :global(.ui-code-string) {
-    color: var(--color-win-400);
+    color: var(--color-emerald-400);
   }
 
   :global(.ui-code-keyword) {
-    color: var(--color-main-400);
+    color: var(--color-blue-400);
   }
 
   :global(.ui-code-number) {
-    color: var(--color-warn-300);
+    color: var(--color-amber-300);
   }
 
   :global(.ui-code-tag) {
-    color: var(--color-info-500);
+    color: var(--color-cyan-500);
   }
 
   :global(.ui-code-attribute) {
-    color: var(--color-alt-300);
+    color: var(--color-violet-300);
   }
 
   :global(.ui-code-punctuation) {
-    color: var(--color-plain-400);
+    color: var(--color-zinc-400);
   }
 
   :global(.ui-color-swatch) {
@@ -860,22 +872,22 @@
   }
 
   .styleValue :global(.ui-code-keyword) {
-    color: var(--color-plain-500);
+    color: var(--color-zinc-500);
   }
 
   .styleValue :global(.ui-code-attribute) {
-    color: var(--color-plain-200);
+    color: var(--color-zinc-200);
   }
 
   .styleValue :global(.ui-code-string) {
-    color: var(--color-plain-300);
+    color: var(--color-zinc-300);
   }
 
   .styleValue :global(.ui-code-number) {
-    color: var(--color-plain-400);
+    color: var(--color-zinc-400);
   }
 
   .styleValue :global(.ui-code-punctuation) {
-    color: var(--color-plain-500);
+    color: var(--color-zinc-500);
   }
 </style>

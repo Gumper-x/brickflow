@@ -16,11 +16,11 @@
 </script>
 
 <template>
-  <div class="flex flex-col flex-wrap items-start gap-4 text-plain-100">
+  <div class="flex flex-col flex-wrap items-start gap-4 text-zinc-100">
     <input
       v-model="iconName"
       aria-label="Icon name"
-      class="rounded-lg border border-plain-700 bg-plain-900 px-3 py-2 text-sm text-plain-100 outline-none focus:border-main-400"
+      class="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-blue-400"
       placeholder="Icon name"
       type="text"
     />
@@ -36,7 +36,7 @@
       />
       <Icon
         :name="iconName"
-        class="text-2xl text-win-400"
+        class="text-2xl text-green-400"
       />
       <Icon
         :name="iconName"

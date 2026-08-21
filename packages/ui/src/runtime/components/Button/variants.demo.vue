@@ -16,15 +16,15 @@
         class="top-0 z-0 size-full rounded-xl object-cover opacity-50"
       />
     </div>
-    <div class="flex w-full flex-wrap items-center justify-around gap-3 text-xs text-plain-600">
+    <div class="flex w-full flex-wrap items-center justify-around gap-3 text-xs text-slate-600">
       <span>solid</span>
       <span>ghost</span>
-      <span>glass</span>
+      <span>mist</span>
       <span>soft</span>
       <span>subtle</span>
     </div>
     <div
-      class="absolute top-0 left-0 flex h-full flex-col items-center justify-around gap-3 pt-7 text-xs text-plain-600"
+      class="absolute top-0 left-0 flex h-full flex-col items-center justify-around gap-3 pt-7 text-xs text-slate-600"
     >
       <span>main</span>
       <span>plain</span>
@@ -37,7 +37,7 @@
     <div class="flex flex-wrap items-center gap-3 p-2">
       <Button>Button</Button>
       <Button variant="ghost">Button</Button>
-      <Button variant="glass">Button</Button>
+      <Button variant="mist">Button</Button>
       <Button variant="soft">Button</Button>
       <Button variant="subtle">Button</Button>
     </div>
@@ -51,7 +51,7 @@
       </Button>
       <Button
         color="plain"
-        variant="glass"
+        variant="mist"
       >
         Button
       </Button>
@@ -78,7 +78,7 @@
       </Button>
       <Button
         color="alt"
-        variant="glass"
+        variant="mist"
       >
         Button
       </Button>
@@ -105,7 +105,7 @@
       </Button>
       <Button
         color="danger"
-        variant="glass"
+        variant="mist"
       >
         Button
       </Button>
@@ -132,7 +132,7 @@
       </Button>
       <Button
         color="info"
-        variant="glass"
+        variant="mist"
       >
         Button
       </Button>
@@ -159,7 +159,7 @@
       </Button>
       <Button
         color="warn"
-        variant="glass"
+        variant="mist"
       >
         Button
       </Button>
@@ -186,7 +186,7 @@
       </Button>
       <Button
         color="win"
-        variant="glass"
+        variant="mist"
       >
         Button
       </Button>
