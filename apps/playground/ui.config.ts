@@ -5,7 +5,7 @@ export default defineBrickflowUiConfig({
   uiStyles: {
     button: {
       animationTap: 'global-tap-animation',
-      base: 'relative inline-flex cursor-pointer items-center justify-center overflow-hidden font-sans font-medium whitespace-nowrap transition duration-150 ease-in select-none focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-105 dk:bg-red-400',
+      base: 'relative inline-flex cursor-pointer items-center justify-center overflow-hidden font-sans font-medium whitespace-nowrap transition duration-150 ease-in select-none focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-105',
       color: {
         alt: {
           ghost: 'text-alt-400 hover:bg-alt-950',

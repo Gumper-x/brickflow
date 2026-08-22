@@ -8,4 +8,18 @@
 @custom-variant mb (@media (width < 768px));
 @custom-variant ms (@media (width < 480px));
 
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover {
+      @slot;
+    }
+  }
+
+  @media (hover: none) {
+    &:active {
+      @slot;
+    }
+  }
+}
+
 @source "./";

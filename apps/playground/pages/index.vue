@@ -48,7 +48,6 @@
           color="danger"
           variant="ghost"
           square
-          aria-label="Delete"
         >
           ×
         </BrickButton>
