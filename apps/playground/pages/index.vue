@@ -6,7 +6,7 @@
   const screenReady = ref(false)
 
   const activeScreen = computed(() => {
-    const screens = ['dk', 'lp', 'tb', 'mb', 'mb2'] as const
+    const screens = ['dk', 'lp', 'tb', 'mb', 'ms'] as const
 
     return screens.find((key) => screen[key]) ?? 'unknown'
   })
@@ -76,7 +76,7 @@
         <p :class="screen.lpClass">lp: 1024px–1439px</p>
         <p :class="screen.tbClass">tb: 768px–1023px</p>
         <p :class="screen.mbClass">mb: 480px–767px</p>
-        <p :class="screen.mb2Class">mb2: under 480px</p>
+        <p :class="screen.msClass">ms: under 480px</p>
       </div>
     </section>
   </main>

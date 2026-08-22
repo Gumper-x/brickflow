@@ -6,7 +6,7 @@ interface ScreenState {
   dk: boolean
   lp: boolean
   mb: boolean
-  mb2: boolean
+  ms: boolean
   tb: boolean
 }
 
@@ -20,7 +20,7 @@ const state = reactive<ScreenState>({
   dk: true,
   lp: true,
   mb: true,
-  mb2: true,
+  ms: true,
   tb: true,
 })
 
@@ -28,7 +28,7 @@ const queries = {
   dk: '(width >= 1440px)',
   lp: '(1024px <= width < 1440px)',
   mb: '(480px <= width < 768px)',
-  mb2: '(width < 480px)',
+  ms: '(width < 480px)',
   tb: '(768px <= width < 1024px)',
 } satisfies Record<ScreenKey, string>
 
@@ -78,11 +78,13 @@ const screen = {
   get mb() {
     return state.mb
   },
-  get mb2() {
-    return state.mb2
+  mbClass: 'hidden mb:block ms:hidden',
+
+  get ms() {
+    return state.ms
   },
-  mb2Class: 'hidden mb2:block',
-  mbClass: 'hidden mb:block mb2:hidden',
+
+  msClass: 'hidden ms:block',
 
   ready,
 
