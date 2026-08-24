@@ -139,6 +139,10 @@ const baseRules = {
       message: 'defineSlots is forbidden. Use props or alternative pattern.',
       selector: "CallExpression[callee.name='defineSlots']",
     },
+    {
+      message: 'Assign useScreen() only to a variable named screen.',
+      selector: "VariableDeclarator[init.type='CallExpression'][init.callee.name='useScreen'][id.name!='screen']",
+    },
   ],
   'no-return-assign': 'error',
   'no-script-url': 'error',
@@ -188,6 +192,16 @@ const tailwindcssRules = {
   'tailwindcss/no-arbitrary-value': warn,
   'tailwindcss/no-custom-classname': [warn, { whitelist: ['global.*'] }],
 }
+
+const screenClassRequiresCondition = (screen) => ({
+  message: `Elements using screen.${screen}Class must also set v-if="screen.${screen}".`,
+  selector: `VStartTag:has(VAttribute[directive=true]:has(VDirectiveKey[name.name='bind'][argument.name='class']):has(VExpressionContainer MemberExpression[object.name='screen'][property.name='${screen}Class'])):not(:has(VAttribute[directive=true]:has(VDirectiveKey[name.name='if']):has(VExpressionContainer MemberExpression[object.name='screen'][property.name='${screen}'])))`,
+})
+
+const screenConditionRequiresClass = (screen) => ({
+  message: `Elements using v-if="screen.${screen}" must also set :class="screen.${screen}Class".`,
+  selector: `VStartTag:has(VAttribute[directive=true]:has(VDirectiveKey[name.name='if']):has(VExpressionContainer MemberExpression[object.name='screen'][property.name='${screen}'])):not(:has(VAttribute[directive=true]:has(VDirectiveKey[name.name='bind'][argument.name='class']):has(VExpressionContainer MemberExpression[object.name='screen'][property.name='${screen}Class'])))`,
+})
 
 const vueRules = {
   'vue/attribute-hyphenation': [
@@ -248,6 +262,8 @@ const vueRules = {
       message: 'Use "@" symbol for Event|Emit.',
       selector: 'VIdentifier[rawName=/^on/]',
     },
+    ...['dk', 'lp', 'tb', 'mb', 'ms'].map(screenClassRequiresCondition),
+    ...['dk', 'lp', 'tb', 'mb', 'ms'].map(screenConditionRequiresClass),
   ],
   'vue/no-template-target-blank': [
     'error',

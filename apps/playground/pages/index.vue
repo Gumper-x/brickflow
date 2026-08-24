@@ -71,11 +71,36 @@
         <template v-else>Detecting screen size…</template>
       </p>
       <div class="grid gap-2 rounded-lg bg-gray-100 p-3 text-sm font-medium text-gray-700">
-        <p :class="screen.dkClass">dk: 1440px and up</p>
-        <p :class="screen.lpClass">lp: 1024px–1439px</p>
-        <p :class="screen.tbClass">tb: 768px–1023px</p>
-        <p :class="screen.mbClass">mb: 480px–767px</p>
-        <p :class="screen.msClass">ms: under 480px</p>
+        <p
+          v-if="screen.dk"
+          :class="screen.dkClass"
+        >
+          dk: 1440px and up
+        </p>
+        <p
+          v-if="screen.lp"
+          :class="screen.lpClass"
+        >
+          lp: 1024px–1439px
+        </p>
+        <p
+          v-if="screen.tb"
+          :class="screen.tbClass"
+        >
+          tb: 768px–1023px
+        </p>
+        <p
+          v-if="screen.mb"
+          :class="screen.mbClass"
+        >
+          mb: 480px–767px
+        </p>
+        <p
+          v-if="screen.ms"
+          :class="screen.msClass"
+        >
+          ms: under 480px
+        </p>
       </div>
     </section>
   </main>
