@@ -67,24 +67,24 @@ const screen = {
     return state.dk
   },
 
-  dkClass: 'hidden dk:block',
+  dkClass: 'dkHidden',
 
   get lp() {
     return state.lp
   },
 
-  lpClass: 'hidden lp:block tb:hidden',
+  lpClass: 'lpHidden',
 
   get mb() {
     return state.mb
   },
-  mbClass: 'hidden mb:block ms:hidden',
+  mbClass: 'mbHidden',
 
   get ms() {
     return state.ms
   },
 
-  msClass: 'hidden ms:block',
+  msClass: 'msHidden',
 
   ready,
 
@@ -92,7 +92,7 @@ const screen = {
     return state.tb
   },
 
-  tbClass: 'hidden tb:block mb:hidden',
+  tbClass: 'tbHidden',
 } as const
 
 export function useScreen(): typeof screen {
