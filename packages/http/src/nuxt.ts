@@ -133,13 +133,15 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
         const response = await httpClient.get<T>(options.url, {
           params: mappedParams,
         } as GetConfig<T>)
-        serverData.value = response.data as HttpResponseData<T>
+        const responsePayload = response.data as HttpResponseData<T>
 
-        effect?.(serverData.value, {
+        serverData.value = responsePayload
+
+        effect?.(responsePayload, {
           cached: false,
           params: mappedParams,
         })
-        syncResult(serverData.value)
+        syncResult(responsePayload)
         result.hasFirstData = true
         result.hasFreshData = true
       } catch (error) {
