@@ -11,10 +11,11 @@
     return screens.find((key) => screen[key]) ?? 'unknown'
   })
   const { theme } = useTheme()
-  $di.product.productOne({
+  const product = await $di.product.productOne({
     effect() {
       console.log('Effect productOne')
     },
+    server: true,
   })
   onMounted(async () => {
     await screen.ready
@@ -25,7 +26,7 @@
 <template>
   <main class="mx-auto max-w-3xl space-y-10 p-6">
     <section class="space-y-4 text-alt-400 hover:bg-alt-950">
-      <p class="text-sm font-medium text-gray-500">BrickButton</p>
+      <p class="text-sm font-medium text-gray-500">{{ product.data }}</p>
       <div class="flex flex-wrap items-center gap-3">
         <BrickButton @click="clicks += 1">
           <template #leading><span aria-hidden="true">+</span></template>

@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.33
+
+### Patch Changes
+
+- Remove useLazyAsyncData
+
 ## 0.0.32
 
 ### Patch Changes

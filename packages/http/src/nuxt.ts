@@ -1,5 +1,5 @@
-import { useLazyAsyncData, useState } from 'nuxt/app'
-import { onScopeDispose, shallowReactive, shallowRef } from 'vue'
+import { useState } from 'nuxt/app'
+import { onScopeDispose, shallowReactive } from 'vue'
 
 import type { GetConfig, HttpClient, HttpErrorGuard, HttpKey, HttpParam, HttpResponseData } from './http'
 
@@ -91,8 +91,6 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
     const initFullUrl = buildUrl(options.url, resolveParams(options.initParams))
     const httpClient = dependencies.getHttpClient()
     const cache = import.meta.client ? (dependencies.getCache?.() ?? null) : null
-    let hasDataFromServer = false
-
     const result = shallowReactive({
       data: null as null | unknown,
       error: null as null | unknown,
@@ -129,36 +127,26 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
     const serverData = useState<null | unknown>(`http-${initFullUrl}`, () => null)
 
     if (options.server && import.meta.server) {
-      const paramsReactive = shallowRef(resolveParams(options.initParams))
-      const ssr = await useLazyAsyncData(initFullUrl, async () => {
-        return await httpClient.get<T>(options.url, {
-          params: paramsReactive.value,
+      const mappedParams = resolveParams(options.initParams)
+
+      try {
+        const response = await httpClient.get<T>(options.url, {
+          params: mappedParams,
         } as GetConfig<T>)
-      })
+        serverData.value = response.data as HttpResponseData<T>
 
-      result.fetch = async (params?: P) => {
-        paramsReactive.value = resolveParams(params)
-        await ssr.refresh()
-      }
-
-      serverData.value = ssr.data.value?.data ?? null
-      const serverPayload = serverData.value as HttpResponseData<T>
-      syncResult(serverPayload)
-
-      result.pending = false
-      result.pendingCache = false
-      result.hasFirstData = true
-      result.hasFreshData = true
-
-      if (serverData.value) {
-        effect?.(serverData.value as HttpResponseData<T>, {
+        effect?.(serverData.value, {
           cached: false,
-          params: resolveParams(options.initParams),
+          params: mappedParams,
         })
-      }
-
-      if (result.data) {
-        hasDataFromServer = true
+        syncResult(serverData.value)
+        result.hasFirstData = true
+        result.hasFreshData = true
+      } catch (error) {
+        console.error(error)
+      } finally {
+        result.pending = false
+        result.pendingCache = false
       }
     }
 
@@ -290,7 +278,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
 
       result.fetch = runFetch
 
-      if (!hasDataFromServer && options.lazy !== true) {
+      if (options.lazy !== true) {
         runFetch(options.initParams)
       }
 
