@@ -1,13 +1,4 @@
-@theme {
-  --breakpoint-*: initial;
-}
-
-@custom-variant dk (@media (width >= 1440px));
-@custom-variant lp (@media (width < 1440px));
-@custom-variant tb (@media (width < 1024px));
-@custom-variant mb (@media (width < 768px));
-@custom-variant ms (@media (width < 480px));
-
+@import './ui-breakpoint.css';
 
 @media (width < 1440px) {
   .dkHidden {

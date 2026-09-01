@@ -1,5 +1,11 @@
 # @brickflow/ui
 
+## 0.0.37
+
+### Patch Changes
+
+- Fix: style
+
 ## 0.0.36
 
 ### Patch Changes
