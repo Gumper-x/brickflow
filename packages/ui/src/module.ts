@@ -197,22 +197,32 @@ const toComponentStyleKey = (path: string): string => {
 const collectComponentStyleValues = (
   source: string,
   componentPath: string,
-  styles: BrickflowUiConfig['uiStyles'],
+  config: BrickflowUiConfig,
 ): UiStyleValue[] =>
-  [...new Set(collectUiStylePathsFromCode(source).map((path) => path.join('.')))].sort().map((path) => {
-    const segments = path.split('.')
-    const componentValue = readObjectPath(styles, [toComponentStyleKey(componentPath), ...segments])
-    const globalValue = readObjectPath(styles, segments)
+  [
+    ...collectUiStylePathsFromCode(source),
+    ...collectUiConfigStyleReferencePaths(config.uiConfig)
+      .filter(([component]) => component === toComponentStyleKey(componentPath))
+      .map((path) => path.slice(1)),
+  ]
+    .map((path) => path.join('.'))
+    .filter(Boolean)
+    .filter((path, index, paths) => paths.indexOf(path) === index)
+    .sort()
+    .map((path) => {
+      const segments = path.split('.')
+      const componentValue = readObjectPath(config.uiStyles, [toComponentStyleKey(componentPath), ...segments])
+      const globalValue = readObjectPath(config.uiStyles, segments)
 
-    let value: string | undefined
-    if (typeof componentValue === 'string') {
-      value = componentValue
-    } else if (typeof globalValue === 'string') {
-      value = globalValue
-    }
+      let value: string | undefined
+      if (typeof componentValue === 'string') {
+        value = componentValue
+      } else if (typeof globalValue === 'string') {
+        value = globalValue
+      }
 
-    return { path, value }
-  })
+      return { path, value }
+    })
 
 const scanUiStyleFiles = async (directory: string): Promise<string[]> => {
   const entries = await readdir(directory, { withFileTypes: true }).catch(() => [])
@@ -505,7 +515,7 @@ export default defineNuxtModule<ModuleOptions>({
       filename: 'brickflow/ui-catalog.ts',
       getContents: async () => {
         const files = await scanUiStyleFiles(componentsDirectory)
-        const styles = (await loadUiConfig()).uiStyles
+        const config = await loadUiConfig()
         const components = await Promise.all(
           files
             .filter((path) => UI_COMPONENT_FILE_PATTERN.test(path))
@@ -536,7 +546,7 @@ export default defineNuxtModule<ModuleOptions>({
                 path,
                 props: collectComponentProps(source),
                 slots: collectComponentSlots(source),
-                styles: collectComponentStyleValues(source, path, styles),
+                styles: collectComponentStyleValues(source, path, config),
               }
             }),
         )
@@ -624,8 +634,11 @@ export default defineNuxtModule<ModuleOptions>({
 
     nuxt.hook('builder:watch', async (_event, path) => {
       const absolutePath = resolve(nuxt.options.srcDir, path)
+      const isConfigFile = absolutePath === resolvedConfigPath
+      const isRuntimeFile =
+        !relative(runtimePath, absolutePath).startsWith('..') && UI_STYLE_FILE_PATTERN.test(path)
 
-      if (relative(runtimePath, absolutePath).startsWith('..') || !UI_STYLE_FILE_PATTERN.test(path)) {
+      if (!isConfigFile && !isRuntimeFile) {
         return
       }
 
@@ -637,8 +650,9 @@ export default defineNuxtModule<ModuleOptions>({
       })
 
       if (
-        !relative(componentsDirectory, absolutePath).startsWith('..') &&
-        (UI_COMPONENT_FILE_PATTERN.test(path) || UI_DEMO_FILE_PATTERN.test(path))
+        isConfigFile ||
+        (!relative(componentsDirectory, absolutePath).startsWith('..') &&
+          (UI_COMPONENT_FILE_PATTERN.test(path) || UI_DEMO_FILE_PATTERN.test(path)))
       ) {
         await updateTemplates({ filter: (template) => template.filename === uiCatalogTemplate.filename })
       }

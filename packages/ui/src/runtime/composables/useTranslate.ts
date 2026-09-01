@@ -37,5 +37,5 @@ export function provideBrickflowConfig<T extends BrickflowConfig>(app: App, conf
 }
 
 export function useTranslate(): BrickflowI18n {
-  return inject(brickflowConfigKey)?.i18n ?? useTranslateFallback()
+  return inject(brickflowConfigKey, undefined)?.i18n ?? useTranslateFallback()
 }

@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.40
+
+### Patch Changes
+
+- Fix class parse
+
 ## 0.0.39
 
 ### Patch Changes

@@ -519,7 +519,7 @@
             :key="component.id"
             :aria-current="activeComponent?.id === component.id ? 'page' : undefined"
             :class="[
-              'block rounded-lg px-3 py-2.5 text-sm transition',
+              'block rounded-lg px-3 py-2.5 text-sm font-semibold tracking-wide transition',
               activeComponent?.id === component.id
                 ? 'bg-blue-900 text-blue-100'
                 : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100',
@@ -552,7 +552,7 @@
             :key="component.id"
             :aria-current="activeComponent?.id === component.id ? 'page' : undefined"
             :class="[
-              'block rounded-lg px-3 py-2 text-sm transition',
+              'block rounded-lg px-3 py-2 text-sm font-semibold tracking-wide transition',
               activeComponent?.id === component.id
                 ? 'bg-blue-900 text-blue-100'
                 : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100',
@@ -825,31 +825,31 @@
 
 <style module>
   :global(.ui-code-comment) {
-    color: var(--color-zinc-500);
+    color: var(--color-zinc-500, #71717a);
   }
 
   :global(.ui-code-string) {
-    color: var(--color-emerald-400);
+    color: var(--color-emerald-400, #34d399);
   }
 
   :global(.ui-code-keyword) {
-    color: var(--color-blue-400);
+    color: var(--color-blue-400, #60a5fa);
   }
 
   :global(.ui-code-number) {
-    color: var(--color-amber-300);
+    color: var(--color-amber-300, #fcd34d);
   }
 
   :global(.ui-code-tag) {
-    color: var(--color-cyan-500);
+    color: var(--color-cyan-500, #22d3ee);
   }
 
   :global(.ui-code-attribute) {
-    color: var(--color-violet-300);
+    color: var(--color-violet-300, #c4b5fd);
   }
 
   :global(.ui-code-punctuation) {
-    color: var(--color-zinc-400);
+    color: var(--color-zinc-400, #a1a1aa);
   }
 
   :global(.ui-color-swatch) {
@@ -876,22 +876,22 @@
   }
 
   .styleValue :global(.ui-code-keyword) {
-    color: var(--color-zinc-500);
+    color: var(--color-zinc-500, #71717a);
   }
 
   .styleValue :global(.ui-code-attribute) {
-    color: var(--color-zinc-200);
+    color: var(--color-zinc-200, #e4e4e7);
   }
 
   .styleValue :global(.ui-code-string) {
-    color: var(--color-zinc-300);
+    color: var(--color-zinc-300, #d4d4d8);
   }
 
   .styleValue :global(.ui-code-number) {
-    color: var(--color-zinc-400);
+    color: var(--color-zinc-400, #a1a1aa);
   }
 
   .styleValue :global(.ui-code-punctuation) {
-    color: var(--color-zinc-500);
+    color: var(--color-zinc-500, #71717a);
   }
 </style>
