@@ -1,8 +1,4 @@
 <script lang="ts">
-  const UI_CONFIG = defineUiConfig<{
-    colorClasses: Record<string, Record<string, string>>
-  }>()
-
   export const uiDemo = {
     title: 'Color & Variants',
   }
@@ -11,9 +7,16 @@
 <script lang="ts" setup>
   import Button from './index.vue'
 
+  const UI_CONFIG = defineUiConfig<{
+    colorClasses: Record<string, Record<string, string>>
+  }>()
+
+  type ButtonColor = Extract<keyof typeof UI_CONFIG.colorClasses, string>
+  type ButtonVariant = Extract<keyof (typeof UI_CONFIG.colorClasses)[ButtonColor], string>
+
   const colors = Object.entries(UI_CONFIG.colorClasses).map(([name, classes]) => ({
-    name,
-    variants: Object.keys(classes),
+    name: name as ButtonColor,
+    variants: Object.keys(classes) as ButtonVariant[],
   }))
   const variants = colors[0]?.variants ?? []
 </script>

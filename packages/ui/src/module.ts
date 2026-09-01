@@ -13,7 +13,7 @@ import { createJiti } from 'jiti'
 import { readdir, readFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 
-import { type BrickflowUiConfig, defineBrickflowUiConfig } from './runtime/tailwind'
+import { type BrickflowUiConfig, defineBrickflowUi } from './runtime/tailwind'
 import {
   brickflowUiIconFontPlugin,
   createIconFontAssetsInlineLimit,
@@ -397,7 +397,7 @@ export default defineNuxtModule<ModuleOptions>({
     }
 
     const loadUiConfig = async (): Promise<BrickflowUiConfig> => {
-      const validateConfig = defineBrickflowUiConfig as (config: Partial<BrickflowUiConfig>) => BrickflowUiConfig
+      const validateConfig = defineBrickflowUi as (config: Partial<BrickflowUiConfig>) => BrickflowUiConfig
 
       return validateConfig(
         (await loadConfig.import(resolvedConfigPath).catch(() => ({}))) as Partial<BrickflowUiConfig>,
@@ -482,10 +482,10 @@ export default defineNuxtModule<ModuleOptions>({
       filename: 'brickflow/brickflow-ui-config.mjs',
       getContents: () =>
         [
-          `import { defineBrickflowUiConfig } from ${JSON.stringify(resolver.resolve('./runtime/tailwind').replaceAll('\\', '/'))}`,
+          `import { defineBrickflowUi } from ${JSON.stringify(resolver.resolve('./runtime/tailwind').replaceAll('\\', '/'))}`,
           `import rawConfig from ${JSON.stringify(resolvedConfigPath.replaceAll('\\', '/'))}`,
           '',
-          'const config = defineBrickflowUiConfig(rawConfig)',
+          'const config = defineBrickflowUi(rawConfig)',
           '',
           'export const UI_STYLE = config.uiStyles',
           'export const UI_CONFIG = config.uiConfig',

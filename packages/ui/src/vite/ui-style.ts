@@ -188,27 +188,25 @@ const replaceUiConfigMacros = (
     }
 
     const genericStart = start + UI_CONFIG_MACRO.length
-    if (code[genericStart] !== '<') {
-      result += code.slice(cursor, genericStart)
-      cursor = genericStart
-      continue
+    let callStart = genericStart
+    if (code[genericStart] === '<') {
+      let depth = 0
+      let index = genericStart
+      for (; index < code.length; index += 1) {
+        if (code[index] === '<') {
+          depth += 1
+        }
+        if (code[index] === '>') {
+          depth -= 1
+        }
+        if (depth === 0) {
+          break
+        }
+      }
+
+      callStart = index + 1
     }
 
-    let depth = 0
-    let index = genericStart
-    for (; index < code.length; index += 1) {
-      if (code[index] === '<') {
-        depth += 1
-      }
-      if (code[index] === '>') {
-        depth -= 1
-      }
-      if (depth === 0) {
-        break
-      }
-    }
-
-    let callStart = index + 1
     while (/\s/u.test(code[callStart] ?? '')) {
       callStart += 1
     }
@@ -519,7 +517,18 @@ export const brickflowUiStylePlugin = (options: BrickflowUiStylePluginOptions): 
   },
   name: 'brickflow-ui-style',
   async transform(code, id) {
+    const cleanId = id.split('?')[0] ?? id
+    const isVirtualModule = cleanId.startsWith('\0') || cleanId.startsWith('virtual:')
+    // After the source SFC is transformed, Vue splits it into virtual script/template modules.
+    // Do not reprocess those modules: it would replace `typeof UI_CONFIG.foo` with an object
+    // literal, which is invalid TypeScript and also duplicates the generated config object.
+    // In some Vite paths Vue processes the SFC first; in that case its script module still
+    // contains `defineUiConfig()` (without its erased TypeScript generic), which we handle.
+    const isVueSubmodule = cleanId.endsWith('.vue') && id.includes('?vue')
+
     if (
+      isVirtualModule ||
+      (isVueSubmodule && !code.includes(UI_CONFIG_MACRO)) ||
       !SCRIPT_FILE_PATTERN.test(id) ||
       (!code.includes('UI_STYLE.') && !code.includes('UI_CONFIG.') && !code.includes(UI_CONFIG_MACRO))
     ) {
@@ -530,8 +539,8 @@ export const brickflowUiStylePlugin = (options: BrickflowUiStylePluginOptions): 
 
     const styles = await options.getStyles()
     const config = await options.getConfig()
-    const isConfigFile = normalizePath(id.split('?')[0] ?? id) === normalizePath(options.configPath)
-    const hasUiConfigMacro = code.includes(UI_CONFIG_MACRO)
+    const isConfigFile = normalizePath(cleanId) === normalizePath(options.configPath)
+    const hasUiConfigMacro = cleanId.endsWith('.vue') && code.includes(UI_CONFIG_MACRO)
     let changed = false
 
     const codeWithUiConfigMacros = hasUiConfigMacro

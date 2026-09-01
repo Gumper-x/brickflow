@@ -15,6 +15,13 @@ export interface BrickflowUiStyleReference {
   readonly [UI_STYLE_REFERENCE]: readonly string[]
 }
 
+/** A chainable compile-time reference to a string in `uiStyles`. */
+export type BrickflowUiStyleReferenceValue = string & {
+  // `UI_STYLE` is intentionally open-ended: consumers can define arbitrary paths.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readonly [key: string]: any
+}
+
 declare global {
   interface BrickflowUiConfigSchema {}
 
@@ -72,8 +79,8 @@ export const emptyBrickflowUiConfig: BrickflowUiConfig<typeof emptyUiStyles, typ
   uiStyles: emptyUiStyles,
 }
 
-export function defineBrickflowUiConfig(): BrickflowUiConfig<typeof emptyUiStyles, typeof emptyUiConfig>
-export function defineBrickflowUiConfig<
+export function defineBrickflowUi(): BrickflowUiConfig<typeof emptyUiStyles, typeof emptyUiConfig>
+export function defineBrickflowUi<
   const TStyles extends BrickflowUiConfigStylePaths,
   const TConfig extends BrickflowUiConfigObject,
 >(
@@ -81,7 +88,7 @@ export function defineBrickflowUiConfig<
     BrickflowUiConfigInput<BrickflowUiStrictStyles<TStyles>, TConfig> &
     BrickflowUiConfigValidation<TConfig>,
 ): BrickflowUiConfig<TStyles, TConfig>
-export function defineBrickflowUiConfig(
+export function defineBrickflowUi(
   config: BrickflowUiConfigInput<BrickflowUiStyleObject, BrickflowUiConfigObject> = {} as BrickflowUiConfigInput<
     BrickflowUiStyleObject,
     BrickflowUiConfigObject
@@ -117,7 +124,7 @@ const createUiStyleReference = (path: readonly string[] = []): BrickflowUiStyleR
   ) as BrickflowUiStyleReference
 
 /** A compile-time reference to a value in `uiStyles`, for use inside `uiConfig`. */
-export const UI_STYLE = createUiStyleReference()
+export const UI_STYLE = createUiStyleReference() as unknown as BrickflowUiStyleReferenceValue
 
 export const isBrickflowUiStyleReference = (value: unknown): value is BrickflowUiStyleReference =>
   Boolean(value && typeof value === 'object' && UI_STYLE_REFERENCE in value)

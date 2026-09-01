@@ -315,7 +315,7 @@ const defaultTailwindcssFunctions = [
   'tw',
   'twMerge',
   'twJoin',
-  'defineBrickflowUiConfig',
+  'defineBrickflowUi',
 ]
 
 const defaultTailwindcssIgnoredKeys = ['defaultVariants', 'compoundVariants', 'compoundSlots', 'uiConfig']

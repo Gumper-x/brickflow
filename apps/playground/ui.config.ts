@@ -1,6 +1,6 @@
-import { defineBrickflowUiConfig } from '../../packages/ui/src/runtime/tailwind'
+import { defineBrickflowUi, UI_STYLE } from '../../packages/ui/src/runtime/tailwind'
 
-export default defineBrickflowUiConfig({
+export default defineBrickflowUi({
   uiConfig: {
     button: {
       colorClasses: {
