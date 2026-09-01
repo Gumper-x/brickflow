@@ -1,5 +1,11 @@
 # @brickflow/cli
 
+## 0.0.36
+
+### Patch Changes
+
+- Test css class styles
+
 ## 0.0.35
 
 ### Patch Changes

@@ -821,6 +821,8 @@
   </main>
 </template>
 
+<style src="../ui-page.css"></style>
+
 <style module>
   :global(.ui-code-comment) {
     color: var(--color-zinc-500);
