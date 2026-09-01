@@ -2,6 +2,7 @@ import {
   addComponentsDir,
   addImportsDir,
   addTemplate,
+  addTypeTemplate,
   createResolver,
   defineNuxtModule,
   resolvePath,
@@ -9,7 +10,7 @@ import {
 } from '@nuxt/kit'
 import tailwindcss from '@tailwindcss/vite'
 import { createJiti } from 'jiti'
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 
 import { type BrickflowUiConfig, defineBrickflowUiConfig } from './runtime/tailwind'
@@ -23,8 +24,14 @@ import {
 import { brickflowUiTailwindVariantPlugin } from './vite/tailwind-variant'
 import {
   brickflowUiStylePlugin,
+  collectUiConfigComponentPathsFromCode,
+  collectUiConfigPathsFromCode,
+  collectUiConfigSchemaEntriesFromCode,
+  collectUiConfigStyleReferencePaths,
   collectUiStyleConfigPathsFromCode,
   collectUiStylePathsFromCode,
+  createUiConfigLiteralTypeDeclaration,
+  createUiConfigSchemaTypeDeclaration,
   createUiStyleTypeDeclaration,
 } from './vite/ui-style'
 
@@ -398,8 +405,7 @@ export default defineNuxtModule<ModuleOptions>({
     }
 
     const _uiConfig = await loadUiConfig()
-    const uiStyleTypePath = resolve(nuxt.options.buildDir, 'types/brickflow-ui-style.d.ts')
-    const generateUiStyleTypes = async (): Promise<void> => {
+    const getUiStyleTypeContents = async (): Promise<string> => {
       const files = await scanUiStyleFiles(runtimePath)
       const fileContents = await Promise.all(
         files.map(async (file) => ({
@@ -407,20 +413,57 @@ export default defineNuxtModule<ModuleOptions>({
           file,
         })),
       )
-      const paths = fileContents.flatMap(({ content }) => collectUiStylePathsFromCode(content))
+      const uiConfig = (await loadUiConfig()).uiConfig
+      const uiConfigStyleReferencePaths = collectUiConfigStyleReferencePaths(uiConfig)
+      const paths = [
+        ...fileContents.flatMap(({ content }) => collectUiStylePathsFromCode(content)),
+        ...uiConfigStyleReferencePaths.map((path) => path.slice(1)),
+      ]
       const configPaths = fileContents.flatMap(({ content, file }) =>
         collectUiStyleConfigPathsFromCode(content, file),
       )
-
-      await mkdir(resolve(nuxt.options.buildDir, 'types'), { recursive: true })
-      await writeFile(
-        uiStyleTypePath,
-        createUiStyleTypeDeclaration({
-          configPaths,
-          paths,
-        }),
+      configPaths.push(...uiConfigStyleReferencePaths)
+      const uiConfigPaths = fileContents.flatMap(({ content, file }) =>
+        collectUiConfigPathsFromCode(content, file, uiConfig),
       )
+      return createUiStyleTypeDeclaration({
+        configPaths,
+        paths,
+        uiConfigPaths,
+      })
     }
+
+    const uiStyleTypeTemplate = addTypeTemplate({
+      filename: 'types/brickflow-ui-style.d.ts',
+      getContents: getUiStyleTypeContents,
+    })
+    const uiConfigLiteralTypeTemplate = addTypeTemplate({
+      filename: 'types/brickflow-ui-config-literals.d.ts',
+      getContents: async () => {
+        const files = await scanUiStyleFiles(runtimePath)
+        const uiConfig = (await loadUiConfig()).uiConfig
+        const paths = await Promise.all(
+          files.map(async (file) =>
+            collectUiConfigComponentPathsFromCode(await readFile(file, 'utf8'), file, uiConfig),
+          ),
+        )
+        return createUiConfigLiteralTypeDeclaration(paths.flat(), uiConfig)
+      },
+    })
+    const uiConfigSchemaTypeTemplate = addTypeTemplate({
+      filename: 'types/brickflow-ui-config-contract.d.ts',
+      getContents: async () => {
+        const files = await scanUiStyleFiles(componentsDirectory)
+        const entries = await Promise.all(
+          files.map(async (file) => collectUiConfigSchemaEntriesFromCode(await readFile(file, 'utf8'), file)),
+        )
+
+        return createUiConfigSchemaTypeDeclaration(entries.flat())
+      },
+    })
+    nuxt.hook('prepare:types', ({ references }) => {
+      references.push({ path: resolver.resolve('./runtime/config.d.ts') })
+    })
 
     const iconFontTemplate = addTemplate({
       filename: 'brickflow/brickflow-ui-icons.mjs',
@@ -439,12 +482,14 @@ export default defineNuxtModule<ModuleOptions>({
       filename: 'brickflow/brickflow-ui-config.mjs',
       getContents: () =>
         [
-          `import rawConfig from ${JSON.stringify(resolvedConfigPath.replaceAll('\\', '/'))}`,
           `import { defineBrickflowUiConfig } from ${JSON.stringify(resolver.resolve('./runtime/tailwind').replaceAll('\\', '/'))}`,
+          `import rawConfig from ${JSON.stringify(resolvedConfigPath.replaceAll('\\', '/'))}`,
           '',
           'const config = defineBrickflowUiConfig(rawConfig)',
           '',
           'export const UI_STYLE = config.uiStyles',
+          'export const UI_CONFIG = config.uiConfig',
+          'export const uiConfig = config.uiConfig',
           'export const uiStyles = config.uiStyles',
           'export default config',
           '',
@@ -577,13 +622,6 @@ export default defineNuxtModule<ModuleOptions>({
       })
     })
 
-    await generateUiStyleTypes()
-
-    nuxt.hook('prepare:types', async ({ references }) => {
-      await generateUiStyleTypes()
-      references.push({ path: uiStyleTypePath })
-    })
-
     nuxt.hook('builder:watch', async (_event, path) => {
       const absolutePath = resolve(nuxt.options.srcDir, path)
 
@@ -591,7 +629,12 @@ export default defineNuxtModule<ModuleOptions>({
         return
       }
 
-      await generateUiStyleTypes()
+      await updateTemplates({
+        filter: (template) =>
+          template.filename === uiStyleTypeTemplate.filename ||
+          template.filename === uiConfigLiteralTypeTemplate.filename ||
+          template.filename === uiConfigSchemaTypeTemplate.filename,
+      })
 
       if (
         !relative(componentsDirectory, absolutePath).startsWith('..') &&
@@ -615,6 +658,7 @@ export default defineNuxtModule<ModuleOptions>({
       viteConfig.plugins.push(
         brickflowUiStylePlugin({
           configPath: resolvedConfigPath,
+          getConfig: async () => (await loadUiConfig()).uiConfig,
           getStyles: async () => (await loadUiConfig()).uiStyles,
         }) as unknown,
       )

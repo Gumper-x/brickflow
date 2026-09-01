@@ -48,6 +48,7 @@
         <BrickButton
           color="danger"
           variant="ghost"
+          size="lg"
           square
         >
           ×

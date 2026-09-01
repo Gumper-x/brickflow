@@ -1,4 +1,8 @@
 <script lang="ts">
+  const UI_CONFIG = defineUiConfig<{
+    colorClasses: Record<string, Record<string, string>>
+  }>()
+
   export const uiDemo = {
     title: 'Color & Variants',
   }
@@ -6,199 +10,43 @@
 
 <script lang="ts" setup>
   import Button from './index.vue'
+
+  const colors = Object.entries(UI_CONFIG.colorClasses).map(([name, classes]) => ({
+    name,
+    variants: Object.keys(classes),
+  }))
+  const variants = colors[0]?.variants ?? []
 </script>
 
 <template>
-  <div class="relative flex w-fit flex-col flex-wrap items-start gap-3 pl-13">
+  <div class="relative flex w-fit flex-col items-start gap-3 pl-13">
     <div class="absolute top-0 left-0 z-0 size-full object-cover pt-7 pl-13">
       <img
-        src="https://picsum.photos/1000/1000"
+        src="https://images.unsplash.com/photo-1545346315-f4c47e3e1b55?ixid=M3w4MjcwNjd8MHwxfHNlYXJjaHwyfHxzdHJvbmclMjBtYW58ZW58MHx8fHwxNzg4MjIyNTU1fDA&ixlib=rb-4.1.0&w=1000&h=1000&fit=max&q=80"
         class="top-0 z-0 size-full rounded-xl object-cover opacity-50"
       />
     </div>
     <div class="flex w-full flex-wrap items-center justify-around gap-3 text-xs text-slate-600">
-      <span>solid</span>
-      <span>ghost</span>
-      <span>mist</span>
-      <span>soft</span>
-      <span>subtle</span>
+      <span
+        v-for="variant in variants"
+        :key="variant"
+      >
+        {{ variant }}
+      </span>
     </div>
     <div
-      class="absolute top-0 left-0 flex h-full flex-col items-center justify-around gap-3 pt-7 text-xs text-slate-600"
+      v-for="color in colors"
+      :key="color.name"
+      class="relative flex w-full flex-wrap items-center gap-3 p-2"
     >
-      <span>main</span>
-      <span>plain</span>
-      <span>alt</span>
-      <span>danger</span>
-      <span>info</span>
-      <span>warn</span>
-      <span>win</span>
-    </div>
-    <div class="flex flex-wrap items-center gap-3 p-2">
-      <Button>Button</Button>
-      <Button variant="ghost">Button</Button>
-      <Button variant="mist">Button</Button>
-      <Button variant="soft">Button</Button>
-      <Button variant="subtle">Button</Button>
-    </div>
-    <div class="flex flex-wrap items-center gap-3 p-2">
-      <Button color="plain">Button</Button>
+      <span class="absolute top-1/2 right-full mr-3 -translate-y-1/2 text-xs text-slate-600">
+        {{ color.name }}
+      </span>
       <Button
-        color="plain"
-        variant="ghost"
-      >
-        Button
-      </Button>
-      <Button
-        color="plain"
-        variant="mist"
-      >
-        Button
-      </Button>
-      <Button
-        color="plain"
-        variant="soft"
-      >
-        Button
-      </Button>
-      <Button
-        color="plain"
-        variant="subtle"
-      >
-        Button
-      </Button>
-    </div>
-    <div class="flex flex-wrap items-center gap-3 p-2">
-      <Button color="alt">Button</Button>
-      <Button
-        color="alt"
-        variant="ghost"
-      >
-        Button
-      </Button>
-      <Button
-        color="alt"
-        variant="mist"
-      >
-        Button
-      </Button>
-      <Button
-        color="alt"
-        variant="soft"
-      >
-        Button
-      </Button>
-      <Button
-        color="alt"
-        variant="subtle"
-      >
-        Button
-      </Button>
-    </div>
-    <div class="flex flex-wrap items-center gap-3 p-2">
-      <Button color="danger">Button</Button>
-      <Button
-        color="danger"
-        variant="ghost"
-      >
-        Button
-      </Button>
-      <Button
-        color="danger"
-        variant="mist"
-      >
-        Button
-      </Button>
-      <Button
-        color="danger"
-        variant="soft"
-      >
-        Button
-      </Button>
-      <Button
-        color="danger"
-        variant="subtle"
-      >
-        Button
-      </Button>
-    </div>
-    <div class="flex flex-wrap items-center gap-3 p-2">
-      <Button color="info">Button</Button>
-      <Button
-        color="info"
-        variant="ghost"
-      >
-        Button
-      </Button>
-      <Button
-        color="info"
-        variant="mist"
-      >
-        Button
-      </Button>
-      <Button
-        color="info"
-        variant="soft"
-      >
-        Button
-      </Button>
-      <Button
-        color="info"
-        variant="subtle"
-      >
-        Button
-      </Button>
-    </div>
-    <div class="flex flex-wrap items-center gap-3 p-2">
-      <Button color="warn">Button</Button>
-      <Button
-        color="warn"
-        variant="ghost"
-      >
-        Button
-      </Button>
-      <Button
-        color="warn"
-        variant="mist"
-      >
-        Button
-      </Button>
-      <Button
-        color="warn"
-        variant="soft"
-      >
-        Button
-      </Button>
-      <Button
-        color="warn"
-        variant="subtle"
-      >
-        Button
-      </Button>
-    </div>
-    <div class="flex flex-wrap items-center gap-3 p-2">
-      <Button color="win">Button</Button>
-      <Button
-        color="win"
-        variant="ghost"
-      >
-        Button
-      </Button>
-      <Button
-        color="win"
-        variant="mist"
-      >
-        Button
-      </Button>
-      <Button
-        color="win"
-        variant="soft"
-      >
-        Button
-      </Button>
-      <Button
-        color="win"
-        variant="subtle"
+        v-for="variant in color.variants"
+        :key="variant"
+        :color="color.name"
+        :variant="variant"
       >
         Button
       </Button>

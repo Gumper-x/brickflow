@@ -1,3 +1,14 @@
+<script lang="ts">
+  const UI_CONFIG = defineUiConfig<{
+    colorClasses: Record<string, Record<string, string>>
+    colorDefault: string
+    loadingIconName: string
+    sizeClasses: Record<string, string>
+    sizeDefault: string
+    variantDefault: string
+  }>()
+</script>
+
 <script setup lang="ts">
   import type { RouteLocationRaw } from 'vue-router'
 
@@ -5,7 +16,6 @@
 
   import Icon from '../Icon/index.vue'
   import BaseLink from '../Link/index.vue'
-
   const props = withDefaults(
     defineProps<{
       block?: boolean
@@ -22,86 +32,30 @@
       variant?: ButtonVariant
     }>(),
     {
-      color: 'main',
+      color: UI_CONFIG.colorDefault,
       icon: undefined,
       rounded: false,
-      size: 'md',
+      size: UI_CONFIG.sizeDefault,
       to: undefined,
       trailingIcon: undefined,
       type: 'button',
-      variant: 'solid',
+      variant: UI_CONFIG.variantDefault,
     },
   )
-  type ButtonColor = 'alt' | 'danger' | 'info' | 'main' | 'plain' | 'warn' | 'win'
-  type ButtonSize = 'lg' | 'md' | 'sm' | 'xl' | 'xs'
-  type ButtonVariant = 'ghost' | 'mist' | 'soft' | 'solid' | 'subtle'
 
-  const sizeClasses = {
-    lg: UI_STYLE.size.lg,
-    md: UI_STYLE.size.md,
-    sm: UI_STYLE.size.sm,
-    xl: UI_STYLE.size.xl,
-    xs: UI_STYLE.size.xs,
-  } satisfies Record<ButtonSize, string>
+  const colorClasses = UI_CONFIG.colorClasses
+  const sizeClasses = UI_CONFIG.sizeClasses
+  type ButtonColor = Extract<keyof typeof colorClasses, string>
+  type ButtonSize = Extract<keyof typeof sizeClasses, string>
+  type ButtonVariant = Extract<keyof (typeof colorClasses)[ButtonColor], string>
+
   const sizeIconClasses = {
     lg: UI_STYLE.size.lgIcon,
     md: UI_STYLE.size.mdIcon,
     sm: UI_STYLE.size.smIcon,
     xl: UI_STYLE.size.xlIcon,
     xs: UI_STYLE.size.xsIcon,
-  } satisfies Record<ButtonSize, string>
-
-  const colorClasses = {
-    alt: {
-      ghost: UI_STYLE.color.alt.ghost,
-      mist: UI_STYLE.color.alt.mist,
-      soft: UI_STYLE.color.alt.soft,
-      solid: UI_STYLE.color.alt.solid,
-      subtle: UI_STYLE.color.alt.subtle,
-    },
-    danger: {
-      ghost: UI_STYLE.color.danger.ghost,
-      mist: UI_STYLE.color.danger.mist,
-      soft: UI_STYLE.color.danger.soft,
-      solid: UI_STYLE.color.danger.solid,
-      subtle: UI_STYLE.color.danger.subtle,
-    },
-    info: {
-      ghost: UI_STYLE.color.info.ghost,
-      mist: UI_STYLE.color.info.mist,
-      soft: UI_STYLE.color.info.soft,
-      solid: UI_STYLE.color.info.solid,
-      subtle: UI_STYLE.color.info.subtle,
-    },
-    main: {
-      ghost: UI_STYLE.color.main.ghost,
-      mist: UI_STYLE.color.main.mist,
-      soft: UI_STYLE.color.main.soft,
-      solid: UI_STYLE.color.main.solid,
-      subtle: UI_STYLE.color.main.subtle,
-    },
-    plain: {
-      ghost: UI_STYLE.color.plain.ghost,
-      mist: UI_STYLE.color.plain.mist,
-      soft: UI_STYLE.color.plain.soft,
-      solid: UI_STYLE.color.plain.solid,
-      subtle: UI_STYLE.color.plain.subtle,
-    },
-    warn: {
-      ghost: UI_STYLE.color.warn.ghost,
-      mist: UI_STYLE.color.warn.mist,
-      soft: UI_STYLE.color.warn.soft,
-      solid: UI_STYLE.color.warn.solid,
-      subtle: UI_STYLE.color.warn.subtle,
-    },
-    win: {
-      ghost: UI_STYLE.color.win.ghost,
-      mist: UI_STYLE.color.win.mist,
-      soft: UI_STYLE.color.win.soft,
-      solid: UI_STYLE.color.win.solid,
-      subtle: UI_STYLE.color.win.subtle,
-    },
-  }
+  } as const
 
   const component = computed(() => (props.to === undefined ? 'button' : BaseLink))
   const disabled = computed(() => props.disabled || props.loading)
@@ -150,14 +104,14 @@
       <slot name="leading">
         <Icon
           v-if="props.loading"
-          :name="UI_STYLE.state.loadingIconName"
+          :name="UI_CONFIG.loadingIconName"
           :class="UI_STYLE.state.loading"
           aria-hidden="true"
         />
         <Icon
           v-else
           :name="props.icon!"
-          :class="sizeIconClasses[props.size]"
+          :class="sizeIconClasses[props.size as keyof typeof sizeIconClasses]"
           aria-hidden="true"
         />
       </slot>
@@ -177,7 +131,7 @@
       <slot name="trailing">
         <Icon
           :name="props.trailingIcon!"
-          :class="sizeIconClasses[props.size]"
+          :class="sizeIconClasses[props.size as keyof typeof sizeIconClasses]"
           aria-hidden="true"
         />
       </slot>

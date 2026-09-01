@@ -1,5 +1,11 @@
 # @brickflow/ui
 
+## 0.0.34
+
+### Patch Changes
+
+- UI kit first iteration
+
 ## 0.0.33
 
 ### Patch Changes

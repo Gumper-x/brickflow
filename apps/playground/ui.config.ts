@@ -1,7 +1,72 @@
 import { defineBrickflowUiConfig } from '../../packages/ui/src/runtime/tailwind'
 
-const val = (s: string): string => s
 export default defineBrickflowUiConfig({
+  uiConfig: {
+    button: {
+      colorClasses: {
+        alt: {
+          ghost: UI_STYLE.color.alt.ghost,
+          mist: UI_STYLE.color.alt.mist,
+          soft: UI_STYLE.color.alt.soft,
+          solid: UI_STYLE.color.alt.solid,
+          subtle: UI_STYLE.color.alt.subtle,
+        },
+        danger: {
+          ghost: UI_STYLE.color.danger.ghost,
+          mist: UI_STYLE.color.danger.mist,
+          soft: UI_STYLE.color.danger.soft,
+          solid: UI_STYLE.color.danger.solid,
+          subtle: UI_STYLE.color.danger.subtle,
+        },
+        info: {
+          ghost: UI_STYLE.color.info.ghost,
+          mist: UI_STYLE.color.info.mist,
+          soft: UI_STYLE.color.info.soft,
+          solid: UI_STYLE.color.info.solid,
+          subtle: UI_STYLE.color.info.subtle,
+        },
+        main: {
+          ghost: UI_STYLE.color.main.ghost,
+          mist: UI_STYLE.color.main.mist,
+          soft: UI_STYLE.color.main.soft,
+          solid: UI_STYLE.color.main.solid,
+          subtle: UI_STYLE.color.main.subtle,
+        },
+        plain: {
+          ghost: UI_STYLE.color.plain.ghost,
+          mist: UI_STYLE.color.plain.mist,
+          soft: UI_STYLE.color.plain.soft,
+          solid: UI_STYLE.color.plain.solid,
+          subtle: UI_STYLE.color.plain.subtle,
+        },
+        warn: {
+          ghost: UI_STYLE.color.warn.ghost,
+          mist: UI_STYLE.color.warn.mist,
+          soft: UI_STYLE.color.warn.soft,
+          solid: UI_STYLE.color.warn.solid,
+          subtle: UI_STYLE.color.warn.subtle,
+        },
+        win: {
+          ghost: UI_STYLE.color.win.ghost,
+          mist: UI_STYLE.color.win.mist,
+          soft: UI_STYLE.color.win.soft,
+          solid: UI_STYLE.color.win.solid,
+          subtle: UI_STYLE.color.win.subtle,
+        },
+      },
+      colorDefault: 'main',
+      loadingIconName: 'loading',
+      sizeClasses: {
+        lg: UI_STYLE.size.lg,
+        md: UI_STYLE.size.md,
+        sm: UI_STYLE.size.sm,
+        xl: UI_STYLE.size.xl,
+        xs: UI_STYLE.size.xs,
+      },
+      sizeDefault: 'md',
+      variantDefault: 'solid',
+    },
+  },
   uiStyles: {
     button: {
       animationTap: 'global-tap-animation',
@@ -85,7 +150,6 @@ export default defineBrickflowUiConfig({
         block: 'w-full',
         disabled: 'pointer-events-none opacity-50',
         loading: 'animate-spin',
-        loadingIconName: val('loading'),
         square: 'aspect-square px-0',
       },
     },
