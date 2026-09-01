@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.39
+
+### Patch Changes
+
+- Fix style fonts
+
 ## 0.0.38
 
 ### Patch Changes
