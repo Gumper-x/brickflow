@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.38
+
+### Patch Changes
+
+- Fix ui size demo
+
 ## 0.0.37
 
 ### Patch Changes
