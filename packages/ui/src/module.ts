@@ -481,6 +481,9 @@ export default defineNuxtModule<ModuleOptions>({
         const iconNames = iconFont ? await getIconFontNames(iconFont.inputDir) : []
 
         return [
+          "import { uiConfig } from '#brickflow-ui-config'",
+          '',
+          'export const buttonConfig = uiConfig.button',
           `export const iconNames = ${JSON.stringify(iconNames)}`,
           `export const firstIconName = ${JSON.stringify(iconNames[0] ?? '')}`,
           '',

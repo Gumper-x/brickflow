@@ -64,6 +64,13 @@ export default defineBrickflowUi({
         xs: UI_STYLE.size.xs,
       },
       sizeDefault: 'md',
+      sizeIconClasses: {
+        lg: UI_STYLE.size.lgIcon,
+        md: UI_STYLE.size.mdIcon,
+        sm: UI_STYLE.size.smIcon,
+        xl: UI_STYLE.size.xlIcon,
+        xs: UI_STYLE.size.xsIcon,
+      },
       variantDefault: 'solid',
     },
   },

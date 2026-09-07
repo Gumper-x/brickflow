@@ -5,20 +5,11 @@
 </script>
 
 <script lang="ts" setup>
+  import { buttonConfig } from '#brickflow-ui-icons'
+
   import Button from './index.vue'
 
-  const UI_CONFIG = defineUiConfig<{
-    colorClasses: Record<string, Record<string, string>>
-  }>()
-
-  type ButtonColor = Extract<keyof typeof UI_CONFIG.colorClasses, string>
-  type ButtonVariant = Extract<keyof (typeof UI_CONFIG.colorClasses)[ButtonColor], string>
-
-  const colors = Object.entries(UI_CONFIG.colorClasses).map(([name, classes]) => ({
-    name: name as ButtonColor,
-    variants: Object.keys(classes) as ButtonVariant[],
-  }))
-  const variants = colors[0]?.variants ?? []
+  const firstColorClasses = Object.values(buttonConfig.colorClasses)[0] ?? {}
 </script>
 
 <template>
@@ -29,26 +20,26 @@
         class="top-0 z-0 size-full rounded-xl object-cover opacity-50"
       />
     </div>
-    <div class="flex w-full flex-wrap items-center justify-around gap-3 text-xs text-slate-600">
+    <div class="flex w-full items-center justify-around gap-3 text-xs text-slate-600">
       <span
-        v-for="variant in variants"
+        v-for="(_, variant) in firstColorClasses"
         :key="variant"
       >
         {{ variant }}
       </span>
     </div>
     <div
-      v-for="color in colors"
-      :key="color.name"
-      class="relative flex w-full flex-wrap items-center gap-3 p-2"
+      v-for="(variants, color) in buttonConfig.colorClasses"
+      :key="color"
+      class="relative flex w-full items-center gap-3 p-2"
     >
       <span class="absolute top-1/2 right-full mr-3 -translate-y-1/2 text-xs text-slate-600">
-        {{ color.name }}
+        {{ color }}
       </span>
       <Button
-        v-for="variant in color.variants"
+        v-for="(_, variant) in variants"
         :key="variant"
-        :color="color.name"
+        :color="color"
         :variant="variant"
       >
         Button

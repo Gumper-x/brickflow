@@ -5,8 +5,11 @@
     loadingIconName: string
     sizeClasses: Record<string, string>
     sizeDefault: string
+    sizeIconClasses: Record<string, string>
     variantDefault: string
   }>()
+
+  export type ButtonConfig = typeof UI_CONFIG
 </script>
 
 <script setup lang="ts">
@@ -45,17 +48,10 @@
 
   const colorClasses = UI_CONFIG.colorClasses
   const sizeClasses = UI_CONFIG.sizeClasses
+  const sizeIconClasses = UI_CONFIG.sizeIconClasses
   type ButtonColor = Extract<keyof typeof colorClasses, string>
   type ButtonSize = Extract<keyof typeof sizeClasses, string>
   type ButtonVariant = Extract<keyof (typeof colorClasses)[ButtonColor], string>
-
-  const sizeIconClasses = {
-    lg: UI_STYLE.size.lgIcon,
-    md: UI_STYLE.size.mdIcon,
-    sm: UI_STYLE.size.smIcon,
-    xl: UI_STYLE.size.xlIcon,
-    xs: UI_STYLE.size.xsIcon,
-  } as const
 
   const component = computed(() => (props.to === undefined ? 'button' : BaseLink))
   const disabled = computed(() => props.disabled || props.loading)
@@ -111,7 +107,7 @@
         <Icon
           v-else
           :name="props.icon!"
-          :class="sizeIconClasses[props.size as keyof typeof sizeIconClasses]"
+          :class="sizeIconClasses[props.size]"
           aria-hidden="true"
         />
       </slot>
@@ -131,7 +127,7 @@
       <slot name="trailing">
         <Icon
           :name="props.trailingIcon!"
-          :class="sizeIconClasses[props.size as keyof typeof sizeIconClasses]"
+          :class="sizeIconClasses[props.size]"
           aria-hidden="true"
         />
       </slot>

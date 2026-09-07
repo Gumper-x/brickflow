@@ -5,7 +5,7 @@
 </script>
 
 <script lang="ts" setup>
-  import { firstIconName } from '#brickflow-ui-icons'
+  import { buttonConfig, firstIconName } from '#brickflow-ui-icons'
 
   import Button from './index.vue'
 </script>
@@ -13,67 +13,35 @@
 <template>
   <div class="flex flex-col gap-3">
     <div class="flex flex-wrap items-center gap-3">
-      <Button
-        :icon="firstIconName"
-        size="xs"
+      <div
+        v-for="(_, size) in buttonConfig.sizeClasses"
+        :key="size"
+        class="flex flex-col items-center gap-1"
       >
-        Button
-      </Button>
-      <Button
-        :icon="firstIconName"
-        size="sm"
-      >
-        Button
-      </Button>
-      <Button :icon="firstIconName">Button</Button>
-      <Button
-        :icon="firstIconName"
-        size="lg"
-      >
-        Button
-      </Button>
-      <Button
-        :icon="firstIconName"
-        size="xl"
-      >
-        Button
-      </Button>
+        <span class="text-xs text-zinc-500">{{ size }}</span>
+        <Button
+          :icon="firstIconName"
+          :size="size"
+        >
+          Button
+        </Button>
+      </div>
     </div>
     <div class="flex flex-wrap items-center gap-3">
-      <Button
-        :icon="firstIconName"
-        size="xs"
-        rounded
+      <div
+        v-for="(_, size) in buttonConfig.sizeClasses"
+        :key="size"
+        class="flex flex-col items-center gap-1"
       >
-        Button
-      </Button>
-      <Button
-        :icon="firstIconName"
-        size="sm"
-        rounded
-      >
-        Button
-      </Button>
-      <Button
-        :icon="firstIconName"
-        rounded
-      >
-        Button
-      </Button>
-      <Button
-        :icon="firstIconName"
-        size="lg"
-        rounded
-      >
-        Button
-      </Button>
-      <Button
-        :icon="firstIconName"
-        size="xl"
-        rounded
-      >
-        Button
-      </Button>
+        <span class="text-xs text-zinc-500">{{ size }}</span>
+        <Button
+          :icon="firstIconName"
+          :size="size"
+          rounded
+        >
+          Button
+        </Button>
+      </div>
     </div>
   </div>
 </template>

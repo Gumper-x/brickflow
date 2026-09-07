@@ -18,7 +18,6 @@
     <Button
       :icon="firstIconName"
       :trailingIcon="firstIconName"
-      variant="soft"
     >
       View profile
     </Button>

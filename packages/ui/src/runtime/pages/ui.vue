@@ -662,7 +662,7 @@
                 </svg>
               </button>
             </header>
-            <div class="p-8 mb:p-4">
+            <div class="overflow-auto p-8 mb:p-4">
               <component :is="demo.component" />
             </div>
             <div
