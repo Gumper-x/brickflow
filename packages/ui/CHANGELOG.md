@@ -1,5 +1,11 @@
 # @brickflow/ui
 
+## 0.0.42
+
+### Patch Changes
+
+- Fix file and type generate
+
 ## 0.0.41
 
 ### Patch Changes

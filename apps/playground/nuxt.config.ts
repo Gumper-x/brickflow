@@ -8,5 +8,5 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true,
   },
-  modules: ['../../packages/ui/src/module.ts'],
+  modules: ['@brickflow/ui'],
 })
