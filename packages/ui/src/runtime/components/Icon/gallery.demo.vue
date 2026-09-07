@@ -1,24 +1,44 @@
 <script lang="ts">
   export const uiDemo = {
-    description: 'Browse every icon available in the project and filter the list by name.',
+    description: 'Browse every icon available in the project, filter by name, and click to copy its name.',
     title: 'Icon gallery',
   }
 </script>
 
 <script lang="ts" setup>
-  import { computed, ref } from 'vue'
+  import { computed, onBeforeUnmount, ref } from 'vue'
 
   import { iconNames } from '#brickflow-ui-icons'
 
   import Icon from './index.vue'
 
   const search = ref('')
+  const copiedIconName = ref('')
+  const copyError = ref('')
+  let copiedTimeout: ReturnType<typeof setTimeout> | undefined
 
   const filteredIconNames = computed(() => {
     const query = search.value.trim().toLocaleLowerCase()
 
     return query ? iconNames.filter((name) => name.toLocaleLowerCase().includes(query)) : iconNames
   })
+
+  const copyIconName = async (name: string): Promise<void> => {
+    copyError.value = ''
+
+    try {
+      await navigator.clipboard.writeText(name)
+      clearTimeout(copiedTimeout)
+      copiedIconName.value = name
+      copiedTimeout = setTimeout(() => {
+        copiedIconName.value = ''
+      }, 2000)
+    } catch {
+      copyError.value = 'Could not copy the icon name. Please try again.'
+    }
+  }
+
+  onBeforeUnmount(() => clearTimeout(copiedTimeout))
 </script>
 
 <template>
@@ -59,6 +79,20 @@
       </p>
     </div>
 
+    <p
+      class="sr-only"
+      role="status"
+    >
+      {{ copiedIconName ? `Copied ${copiedIconName}` : '' }}
+    </p>
+    <p
+      v-if="copyError"
+      class="text-sm text-red-400"
+      role="alert"
+    >
+      {{ copyError }}
+    </p>
+
     <ul
       v-if="filteredIconNames.length"
       class="grid grid-cols-6 gap-3 lp:grid-cols-5 tb:grid-cols-4 mb:grid-cols-3 ms:grid-cols-2"
@@ -66,19 +100,34 @@
       <li
         v-for="name in filteredIconNames"
         :key="name"
-        class="flex min-w-0 flex-col items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/50 px-3 py-5"
+        class="min-w-0"
       >
-        <Icon
-          :aria-label="name"
-          :name="name"
-          class="text-3xl text-zinc-100"
-        />
-        <span
-          class="w-full truncate text-center font-mono text-xs text-zinc-400"
-          :title="name"
+        <button
+          type="button"
+          :aria-label="`Copy ${name}`"
+          :class="[
+            'group flex w-full cursor-pointer flex-col items-center gap-3 rounded-xl border px-3 py-5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400',
+            copiedIconName === name
+              ? 'border-green-500/50 bg-green-500/10'
+              : 'border-zinc-900 bg-zinc-950/50 hover:border-zinc-700 hover:bg-zinc-900/70',
+          ]"
+          :title="`Copy ${name}`"
+          @click="copyIconName(name)"
         >
-          {{ name }}
-        </span>
+          <Icon
+            :name="name"
+            aria-hidden="true"
+            class="text-3xl text-zinc-100"
+          />
+          <span
+            :class="[
+              'w-full truncate text-center font-mono text-xs transition-colors',
+              copiedIconName === name ? 'text-green-400' : 'text-zinc-400 group-hover:text-zinc-100',
+            ]"
+          >
+            {{ copiedIconName === name ? 'Copied' : name }}
+          </span>
+        </button>
       </li>
     </ul>
 
