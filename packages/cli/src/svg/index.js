@@ -70,7 +70,7 @@ for (let i = 0; i < svgList.length; i++) {
       'removeUnknownsAndDefaults', // remove unknown elements content and attributes, remove attributes with default values Yes
       'removeUnusedNS', // remove unused namespaces declaration Yes
       'removeUselessDefs', // remove elements of <defs> without id Yes
-      'removeUselessStrokeAndFill', // remove useless stroke and fill attributes Yes
+      { name: 'removeUselessStrokeAndFill', params: { removeNone: true } },
       // "removeViewBox", // remove viewBox attribute when possible Yes
       // "removeXMLNS", // removes the xmlns attribute (for inline SVG)
       'removeXMLProcInst', // remove XML processing instructions Yes

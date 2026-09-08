@@ -75,7 +75,9 @@ async function main() {
     return
   }
 
-  const { default: svgFixer } = await import('oslllo-svg-fixer')
+  const { convertSvg } = await import('./convert.js')
+  let changed = 0
+  let failed = 0
 
   console.log(`Fixing ${svgFiles.length} SVG file(s) in place`)
 
@@ -83,22 +85,36 @@ async function main() {
     const relativePath = path.relative(process.cwd(), source)
 
     try {
-      const fixed = await svgFixer.fixString(await readFile(source))
+      const original = await readFile(source, 'utf8')
+      const fixed = convertSvg(original)
+      if (fixed === original) {
+        console.log(`[${index + 1}/${svgFiles.length}] unchanged: ${relativePath}`)
+        continue
+      }
       await writeFile(source, fixed)
+      changed += 1
     } catch (error) {
-      throw new Error(`${relativePath}: ${error.message}`, { cause: error })
+      failed += 1
+      console.error(`[${index + 1}/${svgFiles.length}] failed: ${relativePath}: ${error.message}`)
+      continue
     }
 
     console.log(`[${index + 1}/${svgFiles.length}] ${relativePath}`)
   }
 
-  console.log(`Fixed ${svgFiles.length} SVG file(s)`)
+  console.log(
+    `Fixed ${changed} SVG file(s); unchanged ${svgFiles.length - changed - failed}${failed ? `; failed ${failed}` : ''}`,
+  )
+  if (failed > 0) {
+    process.exitCode = 1
+  }
 }
 
 function printHelp() {
   console.log(`brick svg-fix <path...>
 
 Usage:
+  brick svg-fix ./icons/logo.svg
   brick svg-fix ./icons
   brick svg-fix ./icons ./assets/icons ./logo.svg
   brick svg-fix --path ./icons --path ./assets/icons
@@ -108,9 +124,13 @@ Options:
   -h, --help   Show this help
 
 Notes:
-  Recursively converts SVG strokes to fills using oslllo-svg-fixer
+  Recursively converts monochrome SVG strokes to filled paths using Skia
   Paths are resolved from the current working directory
   SVG files are overwritten in place; no output directory is needed
   Each SVG is processed once, even when supplied paths overlap
+  Already compatible filled paths are left unchanged, including formatting and modification time
+  Missing width and height attributes are never added
+  Unsupported SVG features are reported without rewriting that file; processing continues
+  Exits with code 1 if any file fails
   Other files and symbolic links discovered inside directories are skipped`)
 }

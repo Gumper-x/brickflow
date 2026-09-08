@@ -19,13 +19,15 @@
     "@babel/traverse": "8.0.4",
     "@babel/types": "8.0.4",
     "@google/genai": "2.21.0",
+    "@napi-rs/canvas": "1.0.8",
     "@vue/compiler-sfc": "3.5.42",
     "fantasticon": "4.1.0",
     "glob": "13.0.6",
     "looks-same": "10.0.1",
-    "oslllo-svg-fixer": "6.0.1",
     "sharp": "0.35.4",
-    "svgo": "4.1.0"
+    "svgo": "4.1.0",
+    "svgpath": "2.6.0",
+    "transformation-matrix": "3.1.0"
   },
   "publishConfig": {
     "access": "public"
