@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.43
+
+### Patch Changes
+
+- Add svg-fix script
+
 ## 0.0.42
 
 ### Patch Changes
