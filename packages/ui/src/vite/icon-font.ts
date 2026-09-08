@@ -32,7 +32,7 @@ const normalizeGeneratedCss = (css: string): string =>
     .replace(/src: ([^\n]+),\n([^\n]+),\n([^\n]+);/, 'src:\n    $1,\n    $2,\n    $3;')
     .replace(
       /i\[class\^='icon-'\]:before, i\[class\*=' icon-'\]:before \{/,
-      "@layer base {\n  i[class^='icon-'],\n  i[class*=' icon-'] {\n    container-type: inline-size;\n    display: inline-flex;\n    width: 1em;\n  }\n}\n\ni[class^='icon-']:before,\ni[class*=' icon-']:before {\n  font-size: 100cqw;",
+      "@layer base {\n  i[class^='icon-'],\n  i[class*=' icon-'] {\n    container-type: inline-size;\n    display: inline-flex;justify-content: center;align-items: center;\n    width: 1em;\n  }\n}\n\ni[class^='icon-']:before,\ni[class*=' icon-']:before {\n  font-size: 100cqw;",
     )
     .replace(/\n{3,}/g, '\n\n')
     .trim()}\n`

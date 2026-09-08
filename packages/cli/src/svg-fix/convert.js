@@ -1,17 +1,12 @@
-import { FillType, Path2D, PathOp, StrokeCap, StrokeJoin } from '@napi-rs/canvas'
+import { Path2D, StrokeCap, StrokeJoin } from '@napi-rs/canvas'
 import { optimize } from 'svgo'
 import svgpath from 'svgpath'
-import { compose, fromDefinition, fromTransformAttribute, identity, scale, translate } from 'transformation-matrix'
+import { scale } from 'transformation-matrix'
 
-// Skia's curve-offset tolerance uses coordinate units. Working at a larger
-// scale keeps small icon strokes accurate before returning to SVG coordinates.
-const STROKE_PRECISION_SCALE = 64
-
-const DEFAULT_STYLE = {
+const DEFAULT_STYLE = Object.freeze({
   color: '#000',
   fill: '#000',
   'fill-opacity': '1',
-  'fill-rule': 'nonzero',
   stroke: 'none',
   'stroke-dasharray': 'none',
   'stroke-dashoffset': '0',
@@ -20,28 +15,27 @@ const DEFAULT_STYLE = {
   'stroke-miterlimit': '4',
   'stroke-opacity': '1',
   'stroke-width': '1',
-  visibility: 'visible',
-}
-const IGNORED_ELEMENTS = new Set(['defs', 'desc', 'metadata', 'title'])
-const ALLOWED_ATTRIBUTES = new Set([
-  ...Object.keys(DEFAULT_STYLE),
-  'class',
-  'clip-rule',
+})
+const INHERITED_STYLE = new Set(Object.keys(DEFAULT_STYLE))
+const SHAPES = new Set(['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect'])
+const STROKE_ATTRIBUTES = new Set([
+  'stroke',
+  'stroke-dasharray',
+  'stroke-dashoffset',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'stroke-miterlimit',
+  'stroke-opacity',
+  'stroke-width',
+])
+const GEOMETRY_ATTRIBUTES = new Set([
   'cx',
   'cy',
-  'd',
-  'display',
   'height',
-  'id',
-  'opacity',
   'points',
   'r',
-  'role',
   'rx',
   'ry',
-  'transform',
-  'version',
-  'viewBox',
   'width',
   'x',
   'x1',
@@ -50,386 +44,734 @@ const ALLOWED_ATTRIBUTES = new Set([
   'y1',
   'y2',
 ])
-const READY_ATTRIBUTES = new Set([
-  'clip-rule',
-  'color',
-  'd',
-  'fill',
-  'fill-opacity',
-  'fill-rule',
-  'height',
-  'id',
+const OUTLINE_CONTEXT_ATTRIBUTES = new Set([
+  'clip-path',
+  'display',
+  'filter',
+  'mask',
   'opacity',
-  'stroke',
-  'stroke-opacity',
-  'stroke-width',
-  'version',
-  'viewBox',
-  'width',
-  'xmlns',
+  'transform',
+  'visibility',
 ])
+const STROKE_SCALE = 128
 
-// Already usable paths keep their original bytes. Only SVG features that need
-// conversion go through Skia; its output also passes this readiness check.
-export function convertSvg(source) {
-  const originalRoot = parseSvg(source)
-  const root = parseSvg(source, true)
-  const viewBox = root.attributes.viewBox
-    ? numberList(root.attributes.viewBox, 'viewBox')
-    : [0, 0, length(root.attributes.width, 'width'), length(root.attributes.height, 'height')]
-
-  if (viewBox.length !== 4 || viewBox[2] <= 0 || viewBox[3] <= 0) {
-    throw new Error('SVG must have a valid viewBox or positive width and height.')
+export class SvgFixError extends Error {
+  constructor(code, message) {
+    super(`${code}: ${message}`)
+    this.code = code
+    this.name = 'SvgFixError'
   }
+}
 
-  const dimensions = {
-    height: root.attributes.height === undefined ? undefined : svgSize(root.attributes.height),
-    viewBox: [0, 0, viewBox[2], viewBox[3]],
-    width: root.attributes.width === undefined ? undefined : svgSize(root.attributes.width),
-  }
-
-  const context = { color: null }
-  const outline = renderNode(root, DEFAULT_STYLE, translate(-viewBox[0], -viewBox[1]), context, true)
-
-  if (viewBox[0] === 0 && viewBox[1] === 0 && isFontReady(originalRoot, outline)) {
+/**
+ * Expand visible strokes and leave every stroke-free SVG byte-for-byte intact.
+ * Nodes without a computed stroke are never structurally or geometrically changed.
+ */
+export function convertSvg(source, options = {}) {
+  const diagnostics = createDiagnostics(options.onDiagnostic)
+  const descriptors = analyzeShapes(source)
+  if (!descriptors.some(({ convert }) => convert)) {
     return source
   }
 
-  const data = outline.simplify().asWinding().toSVGString()
-
-  if (!data) {
-    throw new Error('SVG has no visible geometry for an icon font.')
+  const sourceShapes = collectSourceShapes(source)
+  const tokens = scanShapeTokens(source)
+  if (sourceShapes.length !== descriptors.length || tokens.length !== descriptors.length) {
+    fatal('INVALID_SVG', 'Could not correlate parsed SVG elements with source tags.')
   }
 
-  return serializeIcon(dimensions, data)
+  const replacements = []
+  for (let index = 0; index < descriptors.length; index += 1) {
+    const descriptor = descriptors[index]
+    if (!descriptor.convert) {
+      continue
+    }
+    const nodes = expandStrokeNode(sourceShapes[index], descriptor, diagnostics)
+    replacements.push({
+      end: tokens[index].end,
+      start: tokens[index].start,
+      value: nodes.map(serializeElement).join(''),
+    })
+  }
+  return applyReplacements(source, replacements)
 }
 
-function appendFontPaths(node, paths) {
-  if (node.type !== 'element') {
+function analyzeShapes(source) {
+  let document
+  try {
+    optimize(source, {
+      plugins: [
+        { name: 'inlineStyles', params: { onlyMatchedOnce: false } },
+        'convertStyleToAttrs',
+        {
+          fn(root) {
+            document = root
+          },
+          name: 'collect-computed-svg',
+        },
+      ],
+    })
+  } catch (error) {
+    fatal('INVALID_SVG', error.message)
+  }
+
+  const descriptors = []
+  collectShapeDescriptors(document, createStyleState(), descriptors)
+  return descriptors
+}
+
+function applyReplacements(source, replacements) {
+  let result = source
+  for (const replacement of replacements.sort((first, second) => second.start - first.start)) {
+    result = `${result.slice(0, replacement.start)}${replacement.value}${result.slice(replacement.end)}`
+  }
+  return result
+}
+
+function collectElements(node, callback) {
+  if (node.type === 'element') {
+    callback(node)
+  }
+  for (const child of node.children ?? []) {
+    collectElements(child, callback)
+  }
+}
+
+function collectShapeDescriptors(node, parentState, descriptors) {
+  if (node.type !== 'element' && node.type !== 'root') {
     return
   }
-  // svgicons2svgfont concatenates path data and skips an explicit fill="none".
-  // It does not apply inherited fill="none", opacity or evenodd winding.
-  if (node.name === 'path' && node.attributes.d && node.attributes.fill !== 'none') {
-    const data = node.attributes.d
-    validatePath(data)
-    // Reset the initial moveto between paths, preserving all other commands.
-    // Expanding relative coordinates introduces rounding differences in arcs
-    // that can make identical outlines appear different to Skia's XOR.
-    paths.push(data.replace(/^\s*m/, 'M'))
+  const state = node.type === 'element' ? computeStyle(node, parentState) : parentState
+  if (node.type === 'element' && SHAPES.has(node.name)) {
+    const strokeWidth = length(state.style['stroke-width'], 'stroke-width')
+    const strokeOpacity = opacity(state.style['stroke-opacity'], 'stroke-opacity')
+    const stroke = resolveVariables(state.style.stroke, state.variables).trim()
+    descriptors.push({
+      convert: strokeWidth > 0 && strokeOpacity > 0 && !['none', 'transparent'].includes(stroke.toLowerCase()),
+      node,
+      state,
+      stroke,
+      strokeOpacity,
+      strokeWidth,
+    })
   }
-  for (const child of node.children) {
-    appendFontPaths(child, paths)
+  for (const child of node.children ?? []) {
+    collectShapeDescriptors(child, state, descriptors)
   }
 }
 
-function createPath(node) {
-  const attrs = node.attributes
-  const num = (name, fallback = 0) => length(attrs[name] ?? fallback, name)
+function collectSourceShapes(source) {
+  let document
+  try {
+    optimize(source, {
+      plugins: [
+        {
+          fn(root) {
+            document = root
+          },
+          name: 'collect-source-svg',
+        },
+      ],
+    })
+  } catch (error) {
+    fatal('INVALID_SVG', error.message)
+  }
+  const shapes = []
+  collectElements(document, (node) => {
+    if (SHAPES.has(node.name)) {
+      shapes.push(node)
+    }
+  })
+  return shapes
+}
+
+function computeStyle(node, parentState) {
+  const state = createStyleState(parentState)
+  const declarations = parseStyle(node.attributes.style)
+  for (const [name, value] of Object.entries(declarations)) {
+    if (name.startsWith('--')) {
+      state.variables[name] = resolveVariables(value, state.variables)
+    }
+  }
+  for (const [name, value] of Object.entries(node.attributes)) {
+    if (name.startsWith('--')) {
+      state.variables[name] = resolveVariables(value, state.variables)
+    }
+  }
+  for (const name of INHERITED_STYLE) {
+    const rawValue = declarations[name] ?? node.attributes[name]
+    if (rawValue !== undefined && rawValue !== 'inherit') {
+      state.style[name] = resolveVariables(rawValue, state.variables)
+    }
+  }
+  return state
+}
+
+function convertNodeToOutline(node, descriptor, data) {
+  node.name = 'path'
+  for (const name of GEOMETRY_ATTRIBUTES) {
+    delete node.attributes[name]
+  }
+  removeStrokeAttributes(node)
+  node.attributes.d = data
+  node.attributes.style = outlineStyle(node.attributes.style, descriptor, false)
+}
+
+function createDiagnostics(callback) {
+  return {
+    emit(code, message, level = 'fix') {
+      callback?.({ code, level, message })
+    },
+  }
+}
+
+function createOutlineNode(sourceNode, descriptor, data) {
+  const attributes = { d: data }
+  for (const [name, value] of Object.entries(descriptor.node.attributes)) {
+    if (OUTLINE_CONTEXT_ATTRIBUTES.has(name)) {
+      attributes[name] = value
+    }
+  }
+  attributes.style = outlineStyle(undefined, descriptor, true)
+  return { attributes, children: [], name: 'path', type: 'element' }
+}
+
+function createStyleState(parent) {
+  return {
+    style: { ...(parent?.style ?? DEFAULT_STYLE) },
+    variables: { ...(parent?.variables ?? {}) },
+  }
+}
+
+function curveFlatness([start, first, second, end]) {
+  return Math.max(pointLineDistance(first, start, end), pointLineDistance(second, start, end))
+}
+
+function dashPath(path, pattern, offset) {
+  const contours = flattenPath(path.toSVGString())
   const result = new Path2D()
-  if (node.children.some((child) => child.type === 'element' && !IGNORED_ELEMENTS.has(child.name))) {
-    throw new Error(`Unsupported child element inside <${node.name}>. Use static SVG paths.`)
+  const cycle = pattern.reduce((sum, value) => sum + value, 0)
+  let normalizedOffset = ((offset % cycle) + cycle) % cycle
+  let patternIndex = 0
+  while (normalizedOffset >= pattern[patternIndex] && pattern[patternIndex] > 0) {
+    normalizedOffset -= pattern[patternIndex]
+    patternIndex = (patternIndex + 1) % pattern.length
   }
-
-  switch (node.name) {
-    case 'circle':
-    case 'ellipse': {
-      const rx = node.name === 'circle' ? num('r') : num('rx')
-      const ry = node.name === 'circle' ? rx : num('ry')
-      if (rx < 0 || ry < 0) {
-        throw new Error('Ellipse radii must be non-negative.')
-      }
-      if (rx > 0 && ry > 0) {
-        result.ellipse(num('cx'), num('cy'), rx, ry, 0, 0, Math.PI * 2)
-        result.closePath()
-      }
-      return result
-    }
-    case 'line':
-      result.moveTo(num('x1'), num('y1'))
-      result.lineTo(num('x2'), num('y2'))
-      return result
-    case 'path':
-      validatePath(attrs.d ?? '')
-      return new Path2D(attrs.d ?? '')
-    case 'polygon':
-    case 'polyline': {
-      const points = numberList(attrs.points ?? '', 'points')
-      if (points.length % 2 !== 0) {
-        throw new Error('Polygon/polyline points must be coordinate pairs.')
-      }
-      for (let index = 0; index < points.length; index += 2) {
-        if (index === 0) {
-          result.moveTo(points[index], points[index + 1])
-        } else {
-          result.lineTo(points[index], points[index + 1])
+  for (const points of contours) {
+    let remaining = pattern[patternIndex] - normalizedOffset
+    let drawing = patternIndex % 2 === 0
+    let started = false
+    for (let index = 1; index < points.length; index += 1) {
+      let [x, y] = points[index - 1]
+      const [endX, endY] = points[index]
+      let distance = Math.hypot(endX - x, endY - y)
+      while (distance > 1e-10) {
+        if (remaining <= 1e-10) {
+          patternIndex = (patternIndex + 1) % pattern.length
+          remaining = pattern[patternIndex]
+          drawing = patternIndex % 2 === 0
+          started = false
+          continue
         }
+        const step = Math.min(distance, remaining)
+        const ratio = step / distance
+        const nextX = x + (endX - x) * ratio
+        const nextY = y + (endY - y) * ratio
+        if (drawing) {
+          if (!started) {
+            result.moveTo(x, y)
+          }
+          result.lineTo(nextX, nextY)
+          started = true
+        } else {
+          started = false
+        }
+        x = nextX
+        y = nextY
+        distance -= step
+        remaining -= step
       }
-      if (node.name === 'polygon') {
-        result.closePath()
-      }
-      return result
     }
-    case 'rect': {
-      const x = num('x')
-      const y = num('y')
-      const width = num('width')
-      const height = num('height')
-      const rx = Math.min(num('rx', attrs.ry ?? 0), width / 2)
-      const ry = Math.min(num('ry', attrs.rx ?? 0), height / 2)
-      if (Math.min(width, height, rx, ry) < 0) {
-        throw new Error('Rectangle dimensions and corner radii must be non-negative.')
+  }
+  return result
+}
+
+function disableStroke(node) {
+  removeStrokeAttributes(node)
+  node.attributes.style = setStyleProperties(node.attributes.style, { stroke: 'none!important' })
+  return node
+}
+
+function enumValue(value, values, name) {
+  if (!Object.hasOwn(values, value)) {
+    fatal('INVALID_STYLE', `Unsupported ${name}: ${value}.`)
+  }
+  return values[value]
+}
+
+function escapeAttribute(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+}
+
+function expandStrokeNode(node, descriptor, diagnostics) {
+  if (node.children.length > 0) {
+    fatal('INVALID_SVG', `Stroked <${node.name}> must not contain child content.`)
+  }
+  if (descriptor.node.attributes['vector-effect'] === 'non-scaling-stroke') {
+    fatal('UNSUPPORTED_VECTOR_EFFECT', 'non-scaling-stroke cannot be converted without changing transforms.')
+  }
+  const geometry = shapePath(descriptor.node)
+  const outline = strokeToPath(geometry, descriptor)
+  const outlineData = normalizePathData(outline.toSVGString())
+  if (!outlineData) {
+    return [disableStroke(node)]
+  }
+
+  const fillVisible =
+    !['none', 'transparent'].includes(descriptor.state.style.fill.toLowerCase()) &&
+    opacity(descriptor.state.style['fill-opacity'], 'fill-opacity') > 0
+  diagnostics.emit('STROKE_TO_PATH', `Expanded stroke on <${node.name}> without changing stroke-free elements.`)
+
+  if (!fillVisible) {
+    convertNodeToOutline(node, descriptor, outlineData)
+    return [node]
+  }
+
+  disableStroke(node)
+  return [node, createOutlineNode(node, descriptor, outlineData)]
+}
+
+function fatal(code, message) {
+  throw new SvgFixError(code, message)
+}
+
+function findTagEnd(source, start) {
+  let quote
+  for (let index = start + 1; index < source.length; index += 1) {
+    const character = source[index]
+    if (quote) {
+      if (character === quote) {
+        quote = undefined
       }
-      if (width === 0 || height === 0) {
-        return result
-      }
-      if (rx === 0 || ry === 0) {
-        result.rect(x, y, width, height)
-        return result
-      }
-      return new Path2D(
-        `M${x + rx} ${y}H${x + width - rx}A${rx} ${ry} 0 0 1 ${x + width} ${y + ry}V${y + height - ry}A${rx} ${ry} 0 0 1 ${x + width - rx} ${y + height}H${x + rx}A${rx} ${ry} 0 0 1 ${x} ${y + height - ry}V${y + ry}A${rx} ${ry} 0 0 1 ${x + rx} ${y}Z`,
-      )
+    } else if (character === '"' || character === "'") {
+      quote = character
+    } else if (character === '>') {
+      return index
     }
-    default:
-      throw new Error(`Unsupported <${node.name}>. Convert it to plain paths before building an icon font.`)
   }
+  fatal('INVALID_SVG', `Unclosed tag at source offset ${start}.`)
 }
 
-function enumValue(value, options, name) {
-  if (!Object.hasOwn(options, value)) {
-    throw new Error(`Unsupported ${name}: ${value}`)
+function flattenCubic(from, control1, control2, to, output, depth = 0) {
+  if (depth >= 12 || curveFlatness([from, control1, control2, to]) <= 0.0025) {
+    output.push(to)
+    return
   }
-  return options[value]
+  const a = midpoint(from, control1)
+  const b = midpoint(control1, control2)
+  const c = midpoint(control2, to)
+  const d = midpoint(a, b)
+  const e = midpoint(b, c)
+  const middle = midpoint(d, e)
+  flattenCubic(from, a, d, middle, output, depth + 1)
+  flattenCubic(middle, e, c, to, output, depth + 1)
 }
 
-function hasReadyStructure(node, isRoot = false) {
-  if (node.type !== 'element') {
-    return true
+function flattenPath(data) {
+  const parsed = validatePath(data).abs().unshort().unarc()
+  const contours = []
+  let points = []
+  let current = [0, 0]
+  let start = [0, 0]
+  const addPoint = (point) => {
+    if (!points.length || Math.hypot(point[0] - points.at(-1)[0], point[1] - points.at(-1)[1]) > 1e-10) {
+      points.push(point)
+    }
   }
-  // Inspect the original attributes so CSS, transforms and effects cannot be
-  // hidden by SVGO's style normalization and accidentally bypass conversion.
-  if (Object.keys(node.attributes).some((name) => !READY_ATTRIBUTES.has(name))) {
-    return false
+  for (const segment of parsed.segments) {
+    const command = segment[0]
+    if (command === 'M') {
+      if (points.length > 1) {
+        contours.push(points)
+      }
+      current = [segment[1], segment[2]]
+      start = current
+      points = [current]
+    } else if (command === 'L') {
+      current = [segment[1], segment[2]]
+      addPoint(current)
+    } else if (command === 'C') {
+      const to = [segment[5], segment[6]]
+      flattenCubic(current, [segment[1], segment[2]], [segment[3], segment[4]], to, points)
+      current = to
+    } else if (command === 'Q') {
+      const to = [segment[3], segment[4]]
+      flattenQuadratic(current, [segment[1], segment[2]], to, points)
+      current = to
+    } else if (command === 'Z') {
+      addPoint(start)
+      current = start
+    }
   }
-  if (['desc', 'metadata', 'path', 'title'].includes(node.name)) {
-    return !node.children.some((child) => child.type === 'element')
+  if (points.length > 1) {
+    contours.push(points)
   }
-  if (node.name === 'g' || (isRoot && node.name === 'svg')) {
-    return node.children.every((child) => hasReadyStructure(child))
-  }
-  return false
+  return contours
 }
 
-function isFontReady(originalRoot, renderedOutline) {
-  if (!hasReadyStructure(originalRoot, true) || !renderedOutline.toSVGString()) {
-    return false
-  }
-  const paths = []
-  appendFontPaths(originalRoot, paths)
-  const fontOutline = new Path2D(paths.join(' '))
-  // Fonts implicitly close contours and fill all paths together with nonzero
-  // winding. Compare that result with SVG's separately painted paths: opposite
-  // winding in overlapping paths or evenodd holes may still need conversion.
-  return new Path2D(renderedOutline).op(fontOutline, PathOp.Xor).toSVGString() === ''
+function flattenQuadratic(from, control, to, output) {
+  const control1 = [from[0] + (2 / 3) * (control[0] - from[0]), from[1] + (2 / 3) * (control[1] - from[1])]
+  const control2 = [to[0] + (2 / 3) * (control[0] - to[0]), to[1] + (2 / 3) * (control[1] - to[1])]
+  flattenCubic(from, control1, control2, to, output)
+}
+
+function formatNumber(number) {
+  return String(Number(number.toFixed(4)))
 }
 
 function length(value, name) {
   const text = String(value).trim()
   if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?(?:px)?$/i.test(text)) {
-    throw new Error(`Unsupported ${name}: ${text}. Use numbers or px units.`)
+    fatal('INVALID_LENGTH', `${name} must be a number or px length, got "${text}".`)
   }
   const result = Number(text.replace(/px$/i, ''))
   if (!Number.isFinite(result)) {
-    throw new Error(`Invalid ${name}: ${text}`)
+    fatal('INVALID_LENGTH', `${name} is not finite.`)
   }
   return result
 }
 
+function midpoint(first, second) {
+  return [(first[0] + second[0]) / 2, (first[1] + second[1]) / 2]
+}
+
+function normalizePathData(data) {
+  if (!data) {
+    return ''
+  }
+  return validatePath(data)
+    .abs()
+    .unshort()
+    .unarc()
+    .round(4)
+    .toString()
+    .replace(/-0(?:\.0+)?(?=[\s,]|$)/g, '0')
+}
+
 function numberList(value, name) {
-  const text = value.trim()
+  const text = String(value).trim()
   if (!text) {
     return []
   }
   return text.split(/[\s,]+/).map((item) => length(item, name))
 }
 
-function paintVisible(paint, opacity, style, context) {
-  if (paint === 'none' || paint === 'transparent' || length(opacity, 'opacity') === 0) {
-    return false
-  }
-  if (length(opacity, 'opacity') !== 1) {
-    throw new Error('Partial opacity cannot be represented in a monochrome icon font.')
-  }
-  const color = paint === 'currentColor' ? style.color : paint
-  if (/^url\(/i.test(color)) {
-    throw new Error(
-      `Gradient or pattern paint ${color} cannot be preserved in a monochrome icon font. Use a solid fill/stroke or keep this icon as SVG.`,
-    )
-  }
-  if (!/^#[\da-f]{3}(?:[\da-f]{3})?$/i.test(color)) {
-    throw new Error(`Unsupported paint: ${color}. Use a solid monochrome fill/stroke.`)
-  }
-  if (context.color && context.color !== color.toLowerCase()) {
-    throw new Error('Multiple colors cannot be represented in a monochrome icon font.')
-  }
-  context.color = color.toLowerCase()
-  return true
-}
-
-function parseSvg(source, normalize = false) {
-  let document
-  optimize(source, {
-    plugins: [
-      ...(normalize
-        ? [
-            { name: 'inlineStyles', params: { onlyMatchedOnce: false } },
-            'convertStyleToAttrs',
-            { name: 'convertColors', params: { shortname: false } },
-          ]
-        : []),
-      {
-        fn: (root) => {
-          document = root
-        },
-        name: 'collectDocument',
-      },
-    ],
-  })
-  const elements = document.children.filter((node) => node.type === 'element')
-  if (elements.length !== 1 || elements[0].name !== 'svg') {
-    throw new Error('Expected one <svg> root element.')
-  }
-  if (document.children.some((node) => node.type === 'instruction' && node.name !== 'xml')) {
-    throw new Error('External stylesheets are not supported.')
-  }
-  return elements[0]
-}
-
-function renderNode(node, inherited, parentMatrix, context, isRoot = false) {
-  const result = new Path2D()
-  if (node.type !== 'element' || IGNORED_ELEMENTS.has(node.name)) {
-    return result
-  }
-  const attrs = node.attributes
-  if (attrs.display === 'none' || (attrs.opacity !== undefined && length(attrs.opacity, 'opacity') === 0)) {
-    return result
-  }
-  validateAttributes(node)
-  const style = { ...inherited }
-  for (const key of Object.keys(DEFAULT_STYLE)) {
-    if (attrs[key] !== undefined && attrs[key] !== 'inherit') {
-      style[key] = attrs[key]
-    }
-  }
-  const localMatrix = attrs.transform
-    ? compose(fromDefinition(fromTransformAttribute(attrs.transform)))
-    : identity()
-  const matrix = compose(parentMatrix, localMatrix)
-  if (!Object.values(matrix).every(Number.isFinite)) {
-    throw new Error('Invalid transform matrix.')
-  }
-
-  if (node.name === 'g' || (node.name === 'svg' && isRoot)) {
-    for (const child of node.children) {
-      result.op(renderNode(child, style, matrix, context), PathOp.Union)
-    }
-    return result
-  }
-  if (style.visibility === 'hidden' || style.visibility === 'collapse') {
-    return result
-  }
-  const geometry = createPath(node)
-  if (paintVisible(style.fill, style['fill-opacity'], style, context)) {
-    const fill = new Path2D(geometry)
-    fill.setFillType(
-      enumValue(style['fill-rule'], { evenodd: FillType.EvenOdd, nonzero: FillType.Winding }, 'fill-rule'),
-    )
-    result.op(fill.transform(matrix), PathOp.Union)
-  }
-  const width = length(style['stroke-width'], 'stroke-width')
-  if (width < 0) {
-    throw new Error('stroke-width must be non-negative.')
-  }
-  if (width > 0 && paintVisible(style.stroke, style['stroke-opacity'], style, context)) {
-    const stroke = new Path2D(geometry)
-    if (style['stroke-dasharray'] !== 'none') {
-      const dash = numberList(style['stroke-dasharray'], 'stroke-dasharray')
-      if (dash.length === 1) {
-        dash.push(dash[0])
-      }
-      if (dash.length !== 2 || dash.some((value) => value <= 0)) {
-        throw new Error('Only positive one- or two-value stroke-dasharray patterns are supported.')
-      }
-      stroke.dash(dash[0], dash[1], length(style['stroke-dashoffset'], 'stroke-dashoffset'))
-    }
-    const miterLimit = length(style['stroke-miterlimit'], 'stroke-miterlimit')
-    if (miterLimit < 1) {
-      throw new Error('stroke-miterlimit must be at least 1.')
-    }
-    stroke.transform(scale(STROKE_PRECISION_SCALE))
-    stroke.stroke({
-      cap: enumValue(
-        style['stroke-linecap'],
-        { butt: StrokeCap.Butt, round: StrokeCap.Round, square: StrokeCap.Square },
-        'stroke-linecap',
-      ),
-      join: enumValue(
-        style['stroke-linejoin'],
-        { bevel: StrokeJoin.Bevel, miter: StrokeJoin.Miter, round: StrokeJoin.Round },
-        'stroke-linejoin',
-      ),
-      miterLimit,
-      width: width * STROKE_PRECISION_SCALE,
-    })
-    // Expand strokes before transforming, including non-uniform scale/skew.
-    result.op(stroke.transform(compose(matrix, scale(1 / STROKE_PRECISION_SCALE))), PathOp.Union)
+function opacity(value, name) {
+  const text = String(value).trim()
+  const result = text.endsWith('%') ? Number.parseFloat(text) / 100 : length(text, name)
+  if (!Number.isFinite(result) || result < 0 || result > 1) {
+    fatal('INVALID_STYLE', `${name} must be between 0 and 1.`)
   }
   return result
 }
 
-function serializeIcon(dimensions, data) {
-  const width = dimensions.width === undefined ? '' : ` width="${dimensions.width}"`
-  const height = dimensions.height === undefined ? '' : ` height="${dimensions.height}"`
-  return `<svg xmlns="http://www.w3.org/2000/svg"${width}${height} viewBox="${dimensions.viewBox.join(' ')}"><path fill="currentColor" d="${data}"/></svg>\n`
-}
-
-function svgSize(value) {
-  const text = String(value).trim()
+function outlineStyle(currentStyle, descriptor, copyLocalColor) {
+  const properties = {
+    fill: `${descriptor.stroke}!important`,
+    'fill-opacity': `${formatNumber(descriptor.strokeOpacity)}!important`,
+    stroke: 'none!important',
+  }
   if (
-    !/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?(?:px|em|rem|ex|ch|cm|mm|in|pt|pc|%)?$/i.test(text) ||
-    !Number.isFinite(parseFloat(text)) ||
-    parseFloat(text) <= 0
+    copyLocalColor &&
+    descriptor.stroke.toLowerCase() === 'currentcolor' &&
+    descriptor.node.attributes.color !== undefined
   ) {
-    throw new Error(`SVG width and height must be positive lengths: ${text}`)
+    properties.color = `${descriptor.state.style.color}!important`
   }
-  return text
+  return setStyleProperties(currentStyle, properties, new Set([...STROKE_ATTRIBUTES, 'fill', 'fill-opacity']))
 }
 
-function validateAttributes(node) {
-  for (const [name, value] of Object.entries(node.attributes)) {
-    if (name === 'opacity' && length(value, name) !== 1) {
-      throw new Error('Partial opacity cannot be represented in a monochrome icon font.')
-    }
-    if (ALLOWED_ATTRIBUTES.has(name) || /^(?:xmlns|data-|aria-)|:/.test(name)) {
-      continue
-    }
-    if (
-      ['clip-path', 'filter', 'marker-end', 'marker-mid', 'marker-start', 'mask', 'vector-effect'].includes(
-        name,
-      ) &&
-      value === 'none'
-    ) {
-      continue
-    }
-    throw new Error(`Unsupported ${name} on <${node.name}>. Convert this feature to plain paths first.`)
+function parseDashArray(value) {
+  if (!value || value === 'none') {
+    return null
   }
+  const dash = numberList(value, 'stroke-dasharray')
+  if (dash.length === 0 || dash.some((number) => number < 0) || dash.every((number) => number === 0)) {
+    fatal('INVALID_STROKE', 'stroke-dasharray needs non-negative lengths and at least one positive length.')
+  }
+  if (dash.length % 2 === 1) {
+    dash.push(...dash)
+  }
+  return dash
+}
+
+function parseStyle(value) {
+  return Object.fromEntries(parseStyleEntries(value))
+}
+
+function parseStyleEntries(value) {
+  if (!value) {
+    return []
+  }
+  const entries = []
+  for (const declaration of value.split(';')) {
+    if (!declaration.trim()) {
+      continue
+    }
+    const separator = declaration.indexOf(':')
+    if (separator < 1) {
+      fatal('INVALID_STYLE', `Invalid style declaration: ${declaration}`)
+    }
+    entries.push([declaration.slice(0, separator).trim(), declaration.slice(separator + 1).trim()])
+  }
+  return entries
+}
+
+function pointLineDistance(point, start, end) {
+  const lineLength = Math.hypot(end[0] - start[0], end[1] - start[1])
+  if (lineLength === 0) {
+    return Math.hypot(point[0] - start[0], point[1] - start[1])
+  }
+  return (
+    Math.abs(
+      (end[1] - start[1]) * point[0] - (end[0] - start[0]) * point[1] + end[0] * start[1] - end[1] * start[0],
+    ) / lineLength
+  )
+}
+
+function removeStrokeAttributes(node) {
+  for (const name of STROKE_ATTRIBUTES) {
+    delete node.attributes[name]
+  }
+}
+
+function resolveVariables(value, variables, stack = []) {
+  if (typeof value !== 'string' || !value.includes('var(')) {
+    return value
+  }
+  let changed = false
+  const result = value.replace(/var\(([^()]*)\)/g, (_, body) => {
+    const [rawName, ...fallbackParts] = body.split(',')
+    const name = rawName.trim()
+    const fallback = fallbackParts.length ? fallbackParts.join(',').trim() : undefined
+    if (!/^--[\w-]+$/.test(name)) {
+      fatal('INVALID_STYLE', `Invalid CSS variable name: ${name}.`)
+    }
+    if (stack.includes(name)) {
+      fatal('INVALID_STYLE', `Circular CSS variable ${name}.`)
+    }
+    const replacement = variables[name] ?? fallback
+    if (replacement === undefined) {
+      fatal('INVALID_STYLE', `CSS variable ${name} has no value or fallback.`)
+    }
+    changed = true
+    return resolveVariables(replacement.trim(), variables, [...stack, name])
+  })
+  if (result.includes('var(') && !changed) {
+    fatal('INVALID_STYLE', `Unsupported CSS variable expression: ${value}`)
+  }
+  return result.includes('var(') ? resolveVariables(result, variables, stack) : result
+}
+
+function scanShapeTokens(source) {
+  const shapes = []
+  const stack = []
+  let cursor = 0
+  while (cursor < source.length) {
+    const start = source.indexOf('<', cursor)
+    if (start < 0) {
+      break
+    }
+    if (source.startsWith('<!--', start)) {
+      cursor = skipMarkup(source, start, '-->')
+      continue
+    }
+    if (source.startsWith('<![CDATA[', start)) {
+      cursor = skipMarkup(source, start, ']]>')
+      continue
+    }
+    if (source.startsWith('<?', start)) {
+      cursor = skipMarkup(source, start, '?>')
+      continue
+    }
+    if (source.startsWith('<!', start)) {
+      cursor = findTagEnd(source, start) + 1
+      continue
+    }
+
+    const tagEnd = findTagEnd(source, start)
+    const tagSource = source.slice(start, tagEnd + 1)
+    const closing = /^<\s*\//.test(tagSource)
+    const name = tagSource.match(/^<\s*(?:\/\s*)?([\w:.-]+)/)?.[1]
+    if (!name) {
+      fatal('INVALID_SVG', `Cannot parse tag at source offset ${start}.`)
+    }
+    if (closing) {
+      const opened = stack.pop()
+      if (!opened || opened.name !== name) {
+        fatal('INVALID_SVG', `Unexpected closing tag </${name}>.`)
+      }
+      opened.end = tagEnd + 1
+    } else {
+      const selfClosing = /\/\s*>$/.test(tagSource)
+      const token = { end: selfClosing ? tagEnd + 1 : undefined, name, start }
+      if (SHAPES.has(name)) {
+        shapes.push(token)
+      }
+      if (!selfClosing) {
+        stack.push(token)
+      }
+    }
+    cursor = tagEnd + 1
+  }
+  if (stack.length > 0 || shapes.some(({ end }) => end === undefined)) {
+    fatal('INVALID_SVG', 'SVG contains unclosed elements.')
+  }
+  return shapes
+}
+
+function serializeElement(node) {
+  const attributes = Object.entries(node.attributes)
+    .map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`)
+    .join('')
+  return `<${node.name}${attributes}/>`
+}
+
+function setStyleProperties(style, properties, removed = STROKE_ATTRIBUTES) {
+  const declarations = parseStyleEntries(style).filter(([name]) => !removed.has(name))
+  for (const [name, value] of Object.entries(properties)) {
+    declarations.push([name, value])
+  }
+  return declarations.map(([name, value]) => `${name}:${value}`).join(';')
+}
+
+function shapePath(node) {
+  const attributes = node.attributes
+  const number = (name, fallback = 0) => length(attributes[name] ?? fallback, name)
+  const result = new Path2D()
+  switch (node.name) {
+    case 'circle':
+    case 'ellipse': {
+      const radiusX = node.name === 'circle' ? number('r') : number('rx')
+      const radiusY = node.name === 'circle' ? radiusX : number('ry')
+      if (radiusX < 0 || radiusY < 0) {
+        fatal('INVALID_PATH', 'Ellipse radii cannot be negative.')
+      }
+      if (radiusX > 0 && radiusY > 0) {
+        result.ellipse(number('cx'), number('cy'), radiusX, radiusY, 0, 0, Math.PI * 2)
+        result.closePath()
+      }
+      return result
+    }
+    case 'line':
+      result.moveTo(number('x1'), number('y1'))
+      result.lineTo(number('x2'), number('y2'))
+      return result
+    case 'path':
+      validatePath(attributes.d ?? '')
+      return new Path2D(attributes.d ?? '')
+    case 'polygon':
+    case 'polyline': {
+      const values = numberList(attributes.points ?? '', 'points')
+      if (values.length % 2 !== 0) {
+        fatal('INVALID_PATH', 'points must contain coordinate pairs.')
+      }
+      for (let index = 0; index < values.length; index += 2) {
+        if (index === 0) {
+          result.moveTo(values[index], values[index + 1])
+        } else {
+          result.lineTo(values[index], values[index + 1])
+        }
+      }
+      if (node.name === 'polygon' && values.length >= 4) {
+        result.closePath()
+      }
+      return result
+    }
+    case 'rect': {
+      const x = number('x')
+      const y = number('y')
+      const width = number('width')
+      const height = number('height')
+      if (width < 0 || height < 0) {
+        fatal('INVALID_PATH', 'Rectangle dimensions cannot be negative.')
+      }
+      if (width === 0 || height === 0) {
+        return result
+      }
+      const radiusX = Math.min(number('rx', attributes.ry ?? 0), width / 2)
+      const radiusY = Math.min(number('ry', attributes.rx ?? 0), height / 2)
+      if (radiusX < 0 || radiusY < 0) {
+        fatal('INVALID_PATH', 'Rectangle radii cannot be negative.')
+      }
+      if (radiusX === 0 || radiusY === 0) {
+        result.rect(x, y, width, height)
+      } else {
+        return new Path2D(
+          `M${x + radiusX} ${y}H${x + width - radiusX}A${radiusX} ${radiusY} 0 0 1 ${x + width} ${y + radiusY}V${y + height - radiusY}A${radiusX} ${radiusY} 0 0 1 ${x + width - radiusX} ${y + height}H${x + radiusX}A${radiusX} ${radiusY} 0 0 1 ${x} ${y + height - radiusY}V${y + radiusY}A${radiusX} ${radiusY} 0 0 1 ${x + radiusX} ${y}Z`,
+        )
+      }
+      return result
+    }
+    default:
+      return result
+  }
+}
+
+function skipMarkup(source, start, terminator) {
+  const end = source.indexOf(terminator, start + 2)
+  if (end < 0) {
+    fatal('INVALID_SVG', `Unclosed XML markup at source offset ${start}.`)
+  }
+  return end + terminator.length
+}
+
+function strokeToPath(path, descriptor) {
+  const style = descriptor.state.style
+  const miterLimit = length(style['stroke-miterlimit'], 'stroke-miterlimit')
+  if (miterLimit < 1) {
+    fatal('INVALID_STROKE', 'stroke-miterlimit must be at least 1.')
+  }
+  const options = {
+    cap: enumValue(
+      style['stroke-linecap'],
+      { butt: StrokeCap.Butt, round: StrokeCap.Round, square: StrokeCap.Square },
+      'stroke-linecap',
+    ),
+    join: enumValue(
+      style['stroke-linejoin'],
+      { bevel: StrokeJoin.Bevel, miter: StrokeJoin.Miter, round: StrokeJoin.Round },
+      'stroke-linejoin',
+    ),
+    miterLimit,
+    width: descriptor.strokeWidth * STROKE_SCALE,
+  }
+
+  let stroke = new Path2D(path).transform(scale(STROKE_SCALE))
+  const dash = parseDashArray(style['stroke-dasharray'])
+  if (dash) {
+    const offset = length(style['stroke-dashoffset'], 'stroke-dashoffset')
+    if (dash.length > 2) {
+      stroke = dashPath(path, dash, offset).transform(scale(STROKE_SCALE))
+    } else {
+      stroke.dash(dash[0] * STROKE_SCALE, dash[1] * STROKE_SCALE, offset * STROKE_SCALE)
+    }
+  }
+  stroke.stroke(options)
+  return stroke
+    .transform(scale(1 / STROKE_SCALE))
+    .simplify()
+    .asWinding()
 }
 
 function validatePath(data) {
   const parsed = svgpath(data)
   if (parsed.err || parsed.segments.some((segment) => segment.slice(1).some((value) => !Number.isFinite(value)))) {
-    throw new Error(`Invalid SVG path: ${parsed.err || 'non-finite coordinates'}`)
+    fatal('INVALID_PATH', parsed.err || 'Path contains non-finite coordinates.')
   }
   return parsed
 }

@@ -46,6 +46,7 @@ async function main() {
     options: {
       help: { short: 'h', type: 'boolean' },
       path: { multiple: true, short: 'p', type: 'string' },
+      verbose: { short: 'v', type: 'boolean' },
     },
   })
 
@@ -86,7 +87,15 @@ async function main() {
 
     try {
       const original = await readFile(source, 'utf8')
-      const fixed = convertSvg(original)
+      const diagnostics = []
+      const fixed = convertSvg(original, {
+        onDiagnostic: (diagnostic) => diagnostics.push(diagnostic),
+      })
+      for (const diagnostic of diagnostics) {
+        if (diagnostic.level === 'warning' || values.verbose) {
+          console.warn(`  ${diagnostic.level}: ${diagnostic.code}: ${diagnostic.message}`)
+        }
+      }
       if (fixed === original) {
         console.log(`[${index + 1}/${svgFiles.length}] unchanged: ${relativePath}`)
         continue
@@ -121,16 +130,17 @@ Usage:
 
 Options:
   -p, --path   Directory or SVG file; may be repeated
+  -v, --verbose  Also print applied auto-fixes
   -h, --help   Show this help
 
 Notes:
-  Recursively converts monochrome SVG strokes to filled paths using Skia
+  Converts only elements with a visible stroke into filled outline paths
   Paths are resolved from the current working directory
   SVG files are overwritten in place; no output directory is needed
   Each SVG is processed once, even when supplied paths overlap
-  Already compatible filled paths are left unchanged, including formatting and modification time
-  Missing width and height attributes are never added
-  Unsupported SVG features are reported without rewriting that file; processing continues
+  Fill-only elements, groups, defs, metadata, viewBox and transforms are preserved
+  SVG files without visible strokes are left byte-for-byte unchanged
+  Run brick svg first and brick svg-fix last
   Exits with code 1 if any file fails
   Other files and symbolic links discovered inside directories are skipped`)
 }
