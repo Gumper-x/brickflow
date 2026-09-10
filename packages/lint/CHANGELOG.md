@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.47
+
+### Patch Changes
+
+- Gradient icon
+
 ## 0.0.46
 
 ### Patch Changes
