@@ -51,6 +51,10 @@
     </p>
 
     <div class="flex items-start gap-2">
+      <Icon
+        :name="iconName"
+        class="bg-linear-to-tr from-red-400 to-blue-400 bg-clip-text text-transparent"
+      />
       <div class="bg-gray-700">
         <Icon :name="iconName" />
       </div>
