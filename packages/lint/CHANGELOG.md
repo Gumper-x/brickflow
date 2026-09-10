@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.46
+
+### Patch Changes
+
+- Fix install cli *
+
 ## 0.0.45
 
 ### Patch Changes

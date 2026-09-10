@@ -1,5 +1,9 @@
-import { generateIcons, getIconFontCssPath as getGeneratedIconFontCssPath } from '@brickflow/cli/icon'
 import { readdir } from 'node:fs/promises'
+
+import {
+  generateIcons,
+  getIconFontCssPath as getGeneratedIconFontCssPath,
+} from '../../../cli/src/icon/generate.js'
 
 export interface BrickflowUiIconFontOptions {
   inputDir: string
