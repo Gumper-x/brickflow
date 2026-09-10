@@ -1,6 +1,5 @@
-import { FontAssetType, generateFonts, OtherAssetType } from 'fantasticon'
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { generateIcons, getIconFontCssPath as getGeneratedIconFontCssPath } from '@brickflow/cli/icon'
+import { readdir } from 'node:fs/promises'
 
 export interface BrickflowUiIconFontOptions {
   inputDir: string
@@ -15,27 +14,7 @@ type VitePlugin = {
 }
 
 const ICON_FILE_PATTERN = /\.svg$/i
-
-const minifyCss = (css: string): string =>
-  css
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\s+/g, ' ')
-    .replace(/\s*([{}:;,>+~])\s*/g, '$1')
-    .replace(/;\}/g, '}')
-    .trim()
-
-const normalizeGeneratedCss = (css: string): string =>
-  `${css
-    .replace(/"/g, "'")
-    .replace(/^ {4}/gm, '  ')
-    .replace(/(\.(?:eot|ttf|woff2?))\?[^#'")]+(#iefix)?/gi, '$1$2')
-    .replace(/src: ([^\n]+),\n([^\n]+),\n([^\n]+);/, 'src:\n    $1,\n    $2,\n    $3;')
-    .replace(
-      /i\[class\^='icon-'\]:before, i\[class\*=' icon-'\]:before \{/,
-      "@layer base {\n  i[class^='icon-'],\n  i[class*=' icon-'] {\n    container-type: inline-size;\n    display: inline-flex;justify-content: center;align-items: center;\n    width: 1em;\n  }\n}\n\ni[class^='icon-']:before,\ni[class*=' icon-']:before {\n  font-size: 100cqw;",
-    )
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()}\n`
+const ICON_FONT_NAME = 'brickflow-icon'
 
 export const getIconFontNames = async (inputDir: string): Promise<string[]> => {
   const entries = await readdir(inputDir, { withFileTypes: true })
@@ -56,7 +35,8 @@ export const getIconFontNames = async (inputDir: string): Promise<string[]> => {
   return entries.map((entry) => entry.name.replace(ICON_FILE_PATTERN, '')).sort((a, b) => a.localeCompare(b))
 }
 
-export const getIconFontCssPath = (outputDir: string): string => join(outputDir, 'icon.minify.css')
+export const getIconFontCssPath = (outputDir: string): string =>
+  getGeneratedIconFontCssPath(outputDir, ICON_FONT_NAME)
 
 export const createIconFontAssetsInlineLimit = (
   outputDir: string,
@@ -79,22 +59,11 @@ export const createIconFontAssetsInlineLimit = (
 
 export const generateIconFont = async ({ inputDir, outputDir }: BrickflowUiIconFontOptions): Promise<void> => {
   await getIconFontNames(inputDir)
-  await mkdir(outputDir, { recursive: true })
-  await generateFonts({
-    assetTypes: [OtherAssetType.CSS],
-    fontsUrl: '.',
-    fontTypes: [FontAssetType.EOT, FontAssetType.WOFF2, FontAssetType.WOFF],
+  await generateIcons({
     inputDir,
-    name: 'icon',
-    normalize: true,
+    name: ICON_FONT_NAME,
     outputDir,
   })
-
-  const cssPath = join(outputDir, 'icon.css')
-  const css = normalizeGeneratedCss(await readFile(cssPath, 'utf8'))
-
-  await writeFile(cssPath, css)
-  await writeFile(getIconFontCssPath(outputDir), minifyCss(css))
 }
 
 export const brickflowUiIconFontPlugin = (options: BrickflowUiIconFontOptions): VitePlugin => ({

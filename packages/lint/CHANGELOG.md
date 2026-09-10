@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.45
+
+### Patch Changes
+
+- Fix icon sizes and text flow
+
 ## 0.0.44
 
 ### Patch Changes

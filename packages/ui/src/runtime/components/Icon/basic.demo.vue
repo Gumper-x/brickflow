@@ -43,5 +43,20 @@
         class="text-2xl text-red-400"
       />
     </div>
+
+    <p>
+      Text with icon
+      <Icon :name="iconName" />
+      sample words.
+    </p>
+
+    <div class="flex items-start gap-2">
+      <div class="bg-gray-700">
+        <Icon :name="iconName" />
+      </div>
+      <div class="bg-gray-700 leading-0">
+        <Icon :name="iconName" />
+      </div>
+    </div>
   </div>
 </template>

@@ -197,12 +197,12 @@ importers:
 
   packages/ui:
     dependencies:
+      '@brickflow/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@tailwindcss/vite':
         specifier: 4.3.3
         version: 4.3.3(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.0))
-      fantasticon:
-        specifier: 4.1.0
-        version: 4.1.0(supports-color@10.2.2)
       jiti:
         specifier: 2.7.0
         version: 2.7.0

@@ -1,7 +1,8 @@
-import { FontAssetType, generateFonts, OtherAssetType } from 'fantasticon'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+
+import { generateIcons } from './generate.js'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const workspaceRoot = path.resolve(currentDir, '../../../..')
@@ -37,67 +38,15 @@ if (/[\\/]/.test(iconName)) {
   throw new Error(`Icon name must not contain path separators: ${iconName}`)
 }
 
-fs.mkdirSync(outputDir, { recursive: true })
-
-await generateFonts({
-  assetTypes: [OtherAssetType.CSS, OtherAssetType.JSON],
-  fontsUrl: '.',
-  fontTypes: [FontAssetType.EOT, FontAssetType.WOFF2, FontAssetType.WOFF],
-  formatOptions: {
-    json: {
-      indent: 2,
-    },
-  },
+await generateIcons({
   inputDir,
   name: iconName,
-  normalize: true,
   outputDir,
 })
-
-const cssSourceFile = [`${iconName}.css`, 'icons.css', 'icon.css'].find((file) =>
-  fs.existsSync(path.join(outputDir, file)),
-)
-
-if (!cssSourceFile) {
-  throw new Error(`CSS output file was not generated for icon set "${iconName}"`)
-}
-
-const cssPath = path.join(outputDir, cssSourceFile)
-const minifiedCssPath = path.join(outputDir, `${path.parse(cssSourceFile).name}.minify.css`)
-const cssContent = fs.readFileSync(cssPath, 'utf8')
-const normalizedCssContent = normalizeGeneratedCss(cssContent)
-
-if (normalizedCssContent !== cssContent) {
-  fs.writeFileSync(cssPath, normalizedCssContent)
-}
-
-fs.writeFileSync(minifiedCssPath, minifyCss(normalizedCssContent))
 
 console.log(`✅ Icons generated for ${iconName}`)
 console.log(`   input:  ${inputDir}`)
 console.log(`   output: ${outputDir}`)
-
-function minifyCss(css) {
-  return css
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\s+/g, ' ')
-    .replace(/\s*([{}:;,>+~])\s*/g, '$1')
-    .replace(/;\}/g, '}')
-    .trim()
-}
-
-function normalizeGeneratedCss(css) {
-  return `${css
-    .replace(/"/g, "'")
-    .replace(/^ {4}/gm, '  ')
-    .replace(/src: ([^\n]+),\n([^\n]+),\n([^\n]+);/, 'src:\n    $1,\n    $2,\n    $3;')
-    .replace(
-      /i\[class\^='icon-'\]:before, i\[class\*=' icon-'\]:before \{/,
-      "i[class^='icon-']:before,\ni[class*=' icon-']:before {",
-    )
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()}\n`
-}
 
 function parseArgs(rawArgs) {
   const parsedOptions = {

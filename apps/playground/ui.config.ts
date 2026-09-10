@@ -1,4 +1,4 @@
-import { defineBrickflowUi, UI_STYLE } from '@brickflow/ui/tailwind'
+import { defineBrickflowUi, UI_STYLE } from '../../packages/ui/src/runtime/tailwind'
 
 export default defineBrickflowUi({
   uiConfig: {

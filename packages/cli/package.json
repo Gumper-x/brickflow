@@ -1,9 +1,16 @@
 {
   "name": "@brickflow/cli",
-  "version": "0.0.44",
+  "version": "0.0.45",
   "description": "",
   "type": "module",
   "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./icon": {
+      "types": "./src/icon/generate.d.ts",
+      "import": "./src/icon/generate.js"
+    }
+  },
   "bin": {
     "brick": "./index.mjs"
   },

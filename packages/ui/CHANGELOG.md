@@ -1,5 +1,13 @@
 # @brickflow/ui
 
+## 0.0.45
+
+### Patch Changes
+
+- Fix icon sizes and text flow
+- Updated dependencies
+  - @brickflow/cli@0.0.45
+
 ## 0.0.44
 
 ### Patch Changes
