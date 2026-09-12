@@ -9,4 +9,15 @@ export default defineNuxtConfig({
     enabled: true,
   },
   modules: ['../../packages/ui/src/module.ts'],
+  vite: {
+    build: {
+      target: 'es2020',
+    },
+    css: {
+      modules: {
+        localsConvention: 'camelCaseOnly',
+      },
+      postcss: {},
+    },
+  },
 })

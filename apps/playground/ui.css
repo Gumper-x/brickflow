@@ -153,3 +153,15 @@ body {
     transform: scale(1);
   }
 }
+
+.poof-enter-active,
+.poof-leave-active {
+  transition:
+    transform 0.2s ease-in-out,
+    opacity 0.2s ease-in-out;
+}
+.poof-enter-from,
+.poof-leave-to {
+  transform: scale(0.9);
+  opacity: 0;
+}

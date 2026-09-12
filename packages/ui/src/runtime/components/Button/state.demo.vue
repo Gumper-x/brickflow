@@ -5,15 +5,26 @@
 </script>
 
 <script lang="ts" setup>
-  import { buttonConfig } from '#brickflow-ui-icons'
+  import { ref } from 'vue'
+
+  import { buttonConfig, firstIconName } from '#brickflow-ui-icons'
 
   import Button from './index.vue'
 
   const firstColorClasses = Object.values(buttonConfig.colorClasses)[0] ?? {}
+
+  const stateActive = ref(true)
 </script>
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
+    <button
+      type="button"
+      class="cursor-pointer rounded-xl bg-blue-500 px-3 py-2"
+      @click="stateActive = !stateActive"
+    >
+      {{ stateActive ? 'On' : 'Off' }}
+    </button>
     <div class="basis-full">
       <div class="relative flex w-fit flex-col items-start gap-3 pl-13">
         <div class="absolute top-0 left-0 z-0 size-full object-cover pt-7 pl-13">
@@ -44,14 +55,15 @@
             class="flex flex-col items-stretch gap-2"
           >
             <Button
-              disabled
+              :disabled="stateActive"
               :color="color"
               :variant="variant"
             >
               Disabled
             </Button>
             <Button
-              loading
+              :loading="stateActive"
+              :icon="firstIconName"
               :color="color"
               :variant="variant"
             >

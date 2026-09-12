@@ -1,5 +1,11 @@
 # @brickflow/cli
 
+## 0.0.49
+
+### Patch Changes
+
+- Squre ui update
+
 ## 0.0.48
 
 ### Patch Changes

@@ -3,6 +3,7 @@
     colorClasses: Record<string, Record<string, string>>
     colorDefault: string
     loadingIconName: string
+    loadingIconTransition: string
     sizeClasses: Record<string, string>
     sizeDefault: string
     sizeIconClasses: Record<string, string>
@@ -15,6 +16,7 @@
 <script setup lang="ts">
   import type { RouteLocationRaw } from 'vue-router'
 
+  import { twMerge } from 'tailwind-merge'
   import { computed, shallowRef } from 'vue'
 
   import Icon from '../Icon/index.vue'
@@ -58,10 +60,9 @@
   const isButton = computed(() => props.to === undefined)
   const classes = computed(() => [
     UI_STYLE.base,
-    sizeClasses[props.size],
+    twMerge(sizeClasses[props.size], props.square && UI_STYLE.state.square),
     colorClasses[props.color][props.variant],
     props.block && UI_STYLE.state.block,
-    props.square && UI_STYLE.state.square,
     disabled.value && UI_STYLE.state.disabled,
   ])
 
@@ -93,25 +94,30 @@
     }"
     @contextmenu.prevent
   >
-    <span
-      v-if="$slots.leading || props.icon || props.loading"
-      :class="UI_STYLE.slot.leading"
+    <Transition
+      name="poof"
+      mode="out-in"
     >
-      <slot name="leading">
+      <span v-if="props.loading">
         <Icon
-          v-if="props.loading"
           :name="UI_CONFIG.loadingIconName"
-          :class="UI_STYLE.state.loading"
+          :class="[UI_STYLE.state.loading, sizeIconClasses[props.size]]"
           aria-hidden="true"
         />
-        <Icon
-          v-else
-          :name="props.icon!"
-          :class="sizeIconClasses[props.size]"
-          aria-hidden="true"
-        />
-      </slot>
-    </span>
+      </span>
+      <span
+        v-else-if="$slots.leading || props.icon"
+        :class="UI_STYLE.slot.leading"
+      >
+        <slot name="leading">
+          <Icon
+            :name="props.icon!"
+            :class="sizeIconClasses[props.size]"
+            aria-hidden="true"
+          />
+        </slot>
+      </span>
+    </Transition>
 
     <span
       v-if="$slots.default"
