@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.50
+
+### Patch Changes
+
+- Fix transition
+
 ## 0.0.49
 
 ### Patch Changes

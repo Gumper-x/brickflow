@@ -95,7 +95,7 @@
     @contextmenu.prevent
   >
     <Transition
-      name="poof"
+      :name="UI_CONFIG.loadingIconTransition"
       mode="out-in"
     >
       <span v-if="props.loading">
