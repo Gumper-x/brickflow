@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.51
+
+### Patch Changes
+
+- Add target to button
+
 ## 0.0.50
 
 ### Patch Changes

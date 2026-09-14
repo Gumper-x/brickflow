@@ -31,6 +31,7 @@
       rounded?: boolean
       size?: ButtonSize
       square?: boolean
+      target?: '_blank' | '_parent' | '_self' | '_top' | null | (Record<string, never> & string)
       to?: RouteLocationRaw
       trailingIcon?: string
       type?: 'button' | 'reset' | 'submit'
@@ -41,6 +42,7 @@
       icon: undefined,
       rounded: false,
       size: UI_CONFIG.sizeDefault,
+      target: undefined,
       to: undefined,
       trailingIcon: undefined,
       type: 'button',
@@ -55,9 +57,9 @@
   type ButtonSize = Extract<keyof typeof sizeClasses, string>
   type ButtonVariant = Extract<keyof (typeof colorClasses)[ButtonColor], string>
 
-  const component = computed(() => (props.to === undefined ? 'button' : BaseLink))
-  const disabled = computed(() => props.disabled || props.loading)
   const isButton = computed(() => props.to === undefined)
+  const component = computed(() => (isButton.value ? 'button' : BaseLink))
+  const disabled = computed(() => props.disabled || props.loading)
   const classes = computed(() => [
     UI_STYLE.base,
     twMerge(sizeClasses[props.size], props.square && UI_STYLE.state.square),
@@ -82,6 +84,7 @@
     :is="component"
     v-bind="animationTapClass ? { onPointerupPassive: handleTap } : {}"
     :to="props.to"
+    :target="isButton ? undefined : props.target"
     :type="isButton ? props.type : undefined"
     :disabled="isButton ? disabled : undefined"
     :aria-busy="props.loading || undefined"
