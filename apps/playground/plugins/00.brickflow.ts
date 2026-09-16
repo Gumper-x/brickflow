@@ -1,5 +1,5 @@
 export default defineNuxtPlugin((nuxtApp) => {
-  provideBrickflowConfig(nuxtApp.vueApp, {
+  provideBrickflow(nuxtApp.vueApp, {
     i18n: useI18n(),
   })
 })

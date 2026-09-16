@@ -1,6 +1,6 @@
 import {
   addComponentsDir,
-  addImportsDir,
+  addImports,
   addTemplate,
   addTypeTemplate,
   createResolver,
@@ -42,11 +42,8 @@ export interface ModuleOptions {
   theme?: boolean
 }
 
-export type {
-  BrickflowConfig,
-  BrickflowI18n,
-  BrickflowRouteLocationParam,
-} from './runtime/composables/useTranslate'
+export type { BrickflowConfig } from './runtime/composables/useBrickflow'
+export type { BrickflowI18n, BrickflowRouteLocationParam } from './runtime/composables/useTranslate'
 
 const UI_STYLE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?|vue)$/
 const UI_COMPONENT_FILE_PATTERN = /(?:^|[/\\])index\.vue$/
@@ -685,7 +682,22 @@ export default defineNuxtModule<ModuleOptions>({
       viteConfig.plugins.push(tailwindcss() as unknown)
     })
 
-    addImportsDir(resolver.resolve('./runtime/composables'))
+    addImports([
+      ...['provideBrickflow', 'useBrickflow', 'BrickflowConfig'].map((name) => ({
+        from: resolver.resolve('./runtime/composables/useBrickflow'),
+        name,
+        type: name === 'useBrickflow',
+      })),
+      {
+        from: resolver.resolve('./runtime/composables/useScreen'),
+        name: 'useScreen',
+      },
+      ...['useTheme', 'Theme', 'ThemeController'].map((name) => ({
+        from: resolver.resolve('./runtime/composables/useTheme'),
+        name,
+        type: name !== 'useTheme',
+      })),
+    ])
     addComponentsDir({
       ignore: ['**/*.demo.vue'],
       path: resolver.resolve('./runtime/components'),

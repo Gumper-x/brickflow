@@ -1,10 +1,8 @@
 import type { RouteRecordNameGeneric } from 'vue-router'
 
-import { type App, inject, type InjectionKey, type Ref, shallowRef } from 'vue'
+import { type Ref, shallowRef } from 'vue'
 
-export interface BrickflowConfig {
-  i18n?: BrickflowI18n
-}
+import { useBrickflow } from './useBrickflow'
 
 export interface BrickflowI18n {
   getRealName: (route: { name: RouteRecordNameGeneric }) => string
@@ -18,24 +16,16 @@ export interface BrickflowRouteLocationParam {
   query: Record<string, unknown>
 }
 
-const brickflowConfigKey: InjectionKey<BrickflowConfig> = Symbol('brickflow-config')
+const getFallbackRealPath = (route: BrickflowRouteLocationParam | string): string =>
+  typeof route === 'string' ? route : route.path
 
-const useTranslateFallback = (): BrickflowI18n => {
-  const getRealPath = (route: BrickflowRouteLocationParam | string): string =>
-    typeof route === 'string' ? route : route.path
-
-  return {
-    getRealName: (route) => String(route.name),
-    getRealPath,
-    locale: shallowRef('en'),
-    localePath: getRealPath,
-  }
-}
-
-export function provideBrickflowConfig<T extends BrickflowConfig>(app: App, config: T): void {
-  app.provide(brickflowConfigKey, config)
+const translateFallback: BrickflowI18n = {
+  getRealName: (route) => String(route.name),
+  getRealPath: getFallbackRealPath,
+  locale: shallowRef('en'),
+  localePath: getFallbackRealPath,
 }
 
 export function useTranslate(): BrickflowI18n {
-  return inject(brickflowConfigKey, undefined)?.i18n ?? useTranslateFallback()
+  return useBrickflow().i18n ?? translateFallback
 }

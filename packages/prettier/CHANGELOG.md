@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.52
+
+### Patch Changes
+
+- Fix: remove auto import useTranslate
+
 ## 0.0.51
 
 ### Patch Changes
