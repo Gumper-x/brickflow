@@ -38,6 +38,13 @@
           Link home
         </BrickButton>
         <BrickButton
+          color="win"
+          variant="soft"
+          to="/demo"
+        >
+          Link demo
+        </BrickButton>
+        <BrickButton
           color="danger"
           variant="ghost"
           square

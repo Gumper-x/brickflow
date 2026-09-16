@@ -1,6 +1,6 @@
 import type { RouteRecordNameGeneric } from 'vue-router'
 
-import { type App, inject, type InjectionKey, type Ref, ref } from 'vue'
+import { type App, inject, type InjectionKey, type Ref, shallowRef } from 'vue'
 
 export interface BrickflowConfig {
   i18n?: BrickflowI18n
@@ -27,7 +27,7 @@ const useTranslateFallback = (): BrickflowI18n => {
   return {
     getRealName: (route) => String(route.name),
     getRealPath,
-    locale: ref('en'),
+    locale: shallowRef('en'),
     localePath: getRealPath,
   }
 }
