@@ -1,5 +1,11 @@
 # @brickflow/ui
 
+## 0.0.53
+
+### Patch Changes
+
+- Fix export dist
+
 ## 0.0.52
 
 ### Patch Changes
