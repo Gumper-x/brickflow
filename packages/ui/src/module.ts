@@ -27,12 +27,11 @@ import {
   collectUiConfigComponentPathsFromCode,
   collectUiConfigPathsFromCode,
   collectUiConfigSchemaEntriesFromCode,
-  collectUiConfigStyleReferencePaths,
-  collectUiStyleConfigPathsFromCode,
-  collectUiStylePathsFromCode,
+  collectUiStylePathsWithConfig,
   createUiConfigLiteralTypeDeclaration,
   createUiConfigSchemaTypeDeclaration,
   createUiStyleTypeDeclaration,
+  resolveUiStyleConfigPath,
 } from './vite/ui-style'
 
 export interface ModuleOptions {
@@ -196,12 +195,7 @@ const collectComponentStyleValues = (
   componentPath: string,
   config: BrickflowUiConfig,
 ): UiStyleValue[] =>
-  [
-    ...collectUiStylePathsFromCode(source),
-    ...collectUiConfigStyleReferencePaths(config.uiConfig)
-      .filter(([component]) => component === toComponentStyleKey(componentPath))
-      .map((path) => path.slice(1)),
-  ]
+  collectUiStylePathsWithConfig(source, componentPath, config.uiConfig)
     .map((path) => path.join('.'))
     .filter(Boolean)
     .filter((path, index, paths) => paths.indexOf(path) === index)
@@ -421,15 +415,14 @@ export default defineNuxtModule<ModuleOptions>({
         })),
       )
       const uiConfig = (await loadUiConfig()).uiConfig
-      const uiConfigStyleReferencePaths = collectUiConfigStyleReferencePaths(uiConfig)
-      const paths = [
-        ...fileContents.flatMap(({ content }) => collectUiStylePathsFromCode(content)),
-        ...uiConfigStyleReferencePaths.map((path) => path.slice(1)),
-      ]
-      const configPaths = fileContents.flatMap(({ content, file }) =>
-        collectUiStyleConfigPathsFromCode(content, file),
+      const stylePaths = fileContents.map(({ content, file }) => ({
+        file,
+        paths: collectUiStylePathsWithConfig(content, file, uiConfig),
+      }))
+      const paths = stylePaths.flatMap(({ paths: componentPaths }) => componentPaths)
+      const configPaths = stylePaths.flatMap(({ file, paths: componentPaths }) =>
+        componentPaths.map((path) => resolveUiStyleConfigPath(file, path)),
       )
-      configPaths.push(...uiConfigStyleReferencePaths)
       const uiConfigPaths = fileContents.flatMap(({ content, file }) =>
         collectUiConfigPathsFromCode(content, file, uiConfig),
       )

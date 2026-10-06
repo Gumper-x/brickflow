@@ -102,7 +102,7 @@ const readPath = (source: unknown, path: string[]): unknown =>
     return (value as Record<string, unknown>)[key]
   }, source)
 
-const resolveUiStyleConfigPath = (id: string, path: string[]): string[] => {
+export const resolveUiStyleConfigPath = (id: string, path: string[]): string[] => {
   const cleanId = id.split('?')[0] ?? id
 
   if (!cleanId.endsWith('.vue')) {
@@ -416,6 +416,39 @@ const collectUiConfigStyleReferencePathsFromValue = (
 
 export const collectUiConfigStyleReferencePaths = (config: BrickflowUiConfigObject): string[][] =>
   Object.entries(config).flatMap(([key, value]) => collectUiConfigStyleReferencePathsFromValue(value, [key]))
+
+export const collectUiStylePathsWithConfig = (
+  code: string,
+  id: string,
+  config: BrickflowUiConfigObject,
+): string[][] => {
+  const [componentName] = resolveUiStyleConfigPath(id, [])
+  const componentConfig = componentName ? config[componentName] : undefined
+  const configReferences: string[] = []
+
+  const addConfigReferences = (value: BrickflowUiConfigValue, configPath: string[] = []): void => {
+    if (isBrickflowUiStyleReference(value)) {
+      const referencePath = getBrickflowUiStyleReferencePath(value)
+      configReferences.push(`UI_STYLE.${referencePath.join('.')}`)
+
+      if (configPath.length >= 2 && referencePath.length >= configPath.length) {
+        const prefixLength = referencePath.length - configPath.length + 1
+        const requiredPath = [...referencePath.slice(0, prefixLength), ...configPath.slice(1)]
+        configReferences.push(`UI_STYLE.${requiredPath.join('.')}`)
+      }
+    } else if (typeof value !== 'string') {
+      for (const [key, childValue] of Object.entries(value)) {
+        addConfigReferences(childValue, [...configPath, key])
+      }
+    }
+  }
+
+  if (componentConfig) {
+    addConfigReferences(componentConfig)
+  }
+
+  return collectUiStylePathsFromCode(`${configReferences.join('\n')}\n${code}`)
+}
 
 const renderInterfaceDeclaration = (
   name: string,
