@@ -55,6 +55,7 @@ export default defineBrickflowUi({
         },
       },
       colorDefault: 'main',
+      loadingContentTransition: 'poof',
       loadingIconName: 'loading',
       loadingIconTransition: 'poof',
       sizeClasses: {

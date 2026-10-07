@@ -2,6 +2,7 @@
   const UI_CONFIG = defineUiConfig<{
     colorClasses: Record<string, Record<string, string>>
     colorDefault: string
+    loadingContentTransition: string
     loadingIconName: string
     loadingIconTransition: string
     sizeClasses: Record<string, string>
@@ -17,7 +18,7 @@
   import type { RouteLocationRaw } from 'vue-router'
 
   import { twMerge } from 'tailwind-merge'
-  import { computed, shallowRef } from 'vue'
+  import { computed, shallowRef, watch } from 'vue'
 
   import Icon from '../Icon/index.vue'
   import BaseLink from '../Link/index.vue'
@@ -68,6 +69,27 @@
     disabled.value && UI_STYLE.state.disabled,
   ])
 
+  const loadingState = shallowRef<'appear' | 'disappear' | undefined>(props.loading ? 'disappear' : undefined)
+  const loadingTransition = shallowRef<'appear' | 'disappear'>()
+  const loadingContentClasses = computed(() => {
+    return [
+      loadingState.value === 'appear' && `${UI_CONFIG.loadingContentTransition}-leave-to`,
+      loadingState.value === 'disappear' && `${UI_CONFIG.loadingContentTransition}-enter-from`,
+      loadingTransition.value === 'appear' && `${UI_CONFIG.loadingContentTransition}-leave-active`,
+      loadingTransition.value === 'disappear' && `${UI_CONFIG.loadingContentTransition}-enter-active`,
+    ]
+  })
+  function loadingTransitionAfterLeave(): void {
+    loadingTransition.value = undefined
+    loadingState.value = undefined
+  }
+  watch(
+    () => props.loading,
+    () => {
+      loadingTransition.value = props.loading ? 'appear' : 'disappear'
+    },
+  )
+
   const isAnimating = shallowRef(false)
   const animationTapClass = UI_STYLE.animationTap
   function handleTap(): void {
@@ -97,41 +119,29 @@
     }"
     @contextmenu.prevent
   >
-    <Transition
-      :name="UI_CONFIG.loadingIconTransition"
-      mode="out-in"
+    <span
+      v-if="$slots.leading || props.icon"
+      :class="[UI_STYLE.slot.leading, loadingContentClasses]"
     >
-      <span v-if="props.loading">
+      <slot name="leading">
         <Icon
-          :name="UI_CONFIG.loadingIconName"
-          :class="[UI_STYLE.state.loading, sizeIconClasses[props.size]]"
+          :name="props.icon!"
+          :class="sizeIconClasses[props.size]"
           aria-hidden="true"
         />
-      </span>
-      <span
-        v-else-if="$slots.leading || props.icon"
-        :class="UI_STYLE.slot.leading"
-      >
-        <slot name="leading">
-          <Icon
-            :name="props.icon!"
-            :class="sizeIconClasses[props.size]"
-            aria-hidden="true"
-          />
-        </slot>
-      </span>
-    </Transition>
+      </slot>
+    </span>
 
     <span
       v-if="$slots.default"
-      :class="UI_STYLE.slot.label"
+      :class="[UI_STYLE.slot.label, loadingContentClasses]"
     >
       <slot />
     </span>
 
     <span
       v-if="$slots.trailing || props.trailingIcon"
-      :class="UI_STYLE.slot.trailing"
+      :class="[UI_STYLE.slot.trailing, loadingContentClasses]"
     >
       <slot name="trailing">
         <Icon
@@ -141,5 +151,25 @@
         />
       </slot>
     </span>
+
+    <Transition
+      :name="UI_CONFIG.loadingIconTransition"
+      mode="out-in"
+      @enter="loadingState = 'appear'"
+      @afterEnter="loadingState = 'disappear'"
+      @leave="loadingState = undefined"
+      @afterLeave="loadingTransitionAfterLeave"
+    >
+      <span
+        v-if="props.loading"
+        :style="{ position: 'absolute', top: '50%', left: '50%', translate: '-50% -50%' }"
+      >
+        <Icon
+          :name="UI_CONFIG.loadingIconName"
+          :class="[UI_STYLE.state.loading, sizeIconClasses[props.size]]"
+          aria-hidden="true"
+        />
+      </span>
+    </Transition>
   </component>
 </template>
