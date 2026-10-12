@@ -8,7 +8,7 @@
 <script lang="ts" setup>
   import { ref } from 'vue'
 
-  import { firstIconName } from '#brickflow-ui-icons'
+  import { firstIconName } from '#brickflow-ui'
 
   import Icon from './index.vue'
 

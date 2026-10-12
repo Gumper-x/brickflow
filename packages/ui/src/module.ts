@@ -463,6 +463,8 @@ export default defineNuxtModule<ModuleOptions>({
     })
     nuxt.hook('prepare:types', ({ references }) => {
       references.push({ path: resolver.resolve('./runtime/config.d.ts') })
+      references.push({ path: resolver.resolve('./runtime/ui-config.d.ts') })
+      references.push({ path: resolver.resolve('./runtime/brickflow-ui.d.ts') })
     })
 
     const iconFontTemplate = addTemplate({
@@ -471,9 +473,6 @@ export default defineNuxtModule<ModuleOptions>({
         const iconNames = iconFont ? await getIconFontNames(iconFont.inputDir) : []
 
         return [
-          "import { uiConfig } from '#brickflow-ui-config'",
-          '',
-          'export const buttonConfig = uiConfig.button',
           `export const iconNames = ${JSON.stringify(iconNames)}`,
           `export const firstIconName = ${JSON.stringify(iconNames[0] ?? '')}`,
           '',
@@ -495,6 +494,16 @@ export default defineNuxtModule<ModuleOptions>({
           'export const uiConfig = config.uiConfig',
           'export const uiStyles = config.uiStyles',
           'export default config',
+          '',
+        ].join('\n'),
+    })
+
+    const brickflowUiTemplate = addTemplate({
+      filename: 'brickflow/brickflow-ui.mjs',
+      getContents: () =>
+        [
+          "export { UI_CONFIG, UI_STYLE, uiConfig, uiStyles } from './brickflow-ui-config.mjs'",
+          "export { firstIconName, iconNames } from './brickflow-ui-icons.mjs'",
           '',
         ].join('\n'),
     })
@@ -609,6 +618,7 @@ export default defineNuxtModule<ModuleOptions>({
       },
     })
 
+    nuxt.options.alias['#brickflow-ui'] = brickflowUiTemplate.dst
     nuxt.options.alias['#brickflow-ui-config'] = uiConfigTemplate.dst
     nuxt.options.alias['#brickflow-ui-catalog'] = uiCatalogTemplate.dst
     nuxt.options.alias['#brickflow-ui-icons'] = iconFontTemplate.dst

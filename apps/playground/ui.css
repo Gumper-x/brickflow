@@ -124,8 +124,8 @@ body {
   background: linear-gradient(
     to bottom right,
     rgba(255, 255, 255, 0.3) 0%,
-    #54576100 48%,
-    #54576100 58%,
+    rgba(84, 87, 97, 0.1) 48%,
+    rgba(84, 87, 97, 0.1) 58%,
     rgba(255, 255, 255, 0.3) 100%
   );
   -webkit-mask:
@@ -136,6 +136,16 @@ body {
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+  pointer-events: none;
+}
+.global-border-gradient-half::before {
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(84, 87, 97, 0.1) 48%,
+    rgba(84, 87, 97, 0.1) 58%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
 }
 
 .global-tap-animation {

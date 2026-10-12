@@ -15,5 +15,10 @@
     "noEmit": true
   },
   "exclude": ["**/node_modules", "**/.nuxt", "**/.output", "**/dist"],
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.vue",
+    "../../apps/playground/node_modules/.cache/nuxt/.nuxt/types/brickflow-ui-config-literals.d.ts"
+  ]
 }

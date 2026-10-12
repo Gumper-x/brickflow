@@ -8,7 +8,7 @@
 <script lang="ts" setup>
   import { computed, onBeforeUnmount, ref } from 'vue'
 
-  import { iconNames } from '#brickflow-ui-icons'
+  import { iconNames } from '#brickflow-ui'
 
   import Icon from './index.vue'
 

@@ -5,11 +5,12 @@
 </script>
 
 <script lang="ts" setup>
-  import { buttonConfig } from '#brickflow-ui-icons'
+  import { uiConfig } from '#brickflow-ui'
 
   import Button from './index.vue'
 
-  const firstColorClasses = Object.values(buttonConfig.colorClasses)[0] ?? {}
+  const buttonConfig = uiConfig.button
+  const firstColorClasses = buttonConfig.colorClasses[buttonConfig.colorDefault]
 </script>
 
 <template>

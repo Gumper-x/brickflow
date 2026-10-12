@@ -6,7 +6,7 @@
 </script>
 
 <script lang="ts" setup>
-  import { firstIconName } from '#brickflow-ui-icons'
+  import { firstIconName } from '#brickflow-ui'
 
   import Button from './index.vue'
 </script>
