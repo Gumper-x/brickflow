@@ -103,7 +103,7 @@
     @contextmenu.prevent
   >
     <TransitionSize
-      v-if="!$slots.leading && !props.icon"
+      v-if="!$slots.leading && !props.icon && !props.trailingIcon"
       dimension="width"
       :flexParent="baseRef?.$el || baseRef"
       flexDirection="start"
@@ -116,8 +116,9 @@
         />
       </span>
     </TransitionSize>
+
     <Transition
-      v-else
+      v-if="$slots.leading || props.icon"
       :name="UI_CONFIG.loadingIconTransition"
       mode="out-in"
     >
@@ -129,7 +130,7 @@
         />
       </span>
       <span
-        v-else-if="$slots.leading || props.icon"
+        v-else
         :class="UI_STYLE.slot.leading"
       >
         <slot name="leading">
@@ -149,17 +150,30 @@
       <slot />
     </span>
 
-    <span
+    <Transition
       v-if="$slots.trailing || props.trailingIcon"
-      :class="UI_STYLE.slot.trailing"
+      :name="UI_CONFIG.loadingIconTransition"
+      mode="out-in"
     >
-      <slot name="trailing">
+      <span v-if="props.loading && !props.icon">
         <Icon
-          :name="props.trailingIcon!"
-          :class="sizeIconClasses[props.size]"
+          :name="UI_CONFIG.loadingIconName"
+          :class="[UI_STYLE.state.loading, sizeIconClasses[props.size]]"
           aria-hidden="true"
         />
-      </slot>
-    </span>
+      </span>
+      <span
+        v-else
+        :class="UI_STYLE.slot.trailing"
+      >
+        <slot name="trailing">
+          <Icon
+            :name="props.trailingIcon!"
+            :class="sizeIconClasses[props.size]"
+            aria-hidden="true"
+          />
+        </slot>
+      </span>
+    </Transition>
   </component>
 </template>
