@@ -106,6 +106,7 @@
       v-if="!$slots.leading && !props.icon"
       dimension="width"
       :flexParent="baseRef?.$el || baseRef"
+      flexDirection="start"
     >
       <span v-if="props.loading">
         <Icon

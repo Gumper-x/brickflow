@@ -21,6 +21,7 @@
       dimension?: 'height' | 'width'
       duration?: number
       expandClasses?: ''
+      flexDirection?: 'end' | 'start'
       flexParent?: Element
       mode?: 'default' | 'in-out' | 'out-in'
       name?: string
@@ -29,6 +30,7 @@
       dimension: 'height',
       duration: 300,
       expandClasses: '',
+      flexDirection: 'start',
       flexParent: undefined,
       gap: 0,
       mode: undefined,
@@ -39,7 +41,11 @@
   const gap = ref(0)
 
   const sizeName = computed(() => props.dimension)
-  const marginName = computed(() => (props.dimension === 'height' ? 'marginBottom' : 'marginRight'))
+  const marginName = computed(() => {
+    const xDirection = props.flexDirection === 'start' ? 'Left' : 'Right'
+    const yDirection = props.flexDirection === 'start' ? 'Top' : 'Bottom'
+    return `margin${props.dimension === 'height' ? yDirection : xDirection}`
+  })
   const scrollName = computed(() => (props.dimension === 'height' ? 'scrollHeight' : 'scrollWidth'))
   const expandClass = computed(() => {
     return (props.expandClasses || '!transition-all !ease-in-out !overflow-hidden will-change-transform').split(
