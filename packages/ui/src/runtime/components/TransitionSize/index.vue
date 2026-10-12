@@ -42,9 +42,9 @@
 
   const sizeName = computed(() => props.dimension)
   const marginName = computed(() => {
-    const xDirection = props.flexDirection === 'start' ? 'Left' : 'Right'
-    const yDirection = props.flexDirection === 'start' ? 'Top' : 'Bottom'
-    return `margin${props.dimension === 'height' ? yDirection : xDirection}`
+    const xDirection = props.flexDirection === 'start' ? 'marginLeft' : 'marginRight'
+    const yDirection = props.flexDirection === 'start' ? 'marginTop' : 'marginBottom'
+    return props.dimension === 'height' ? yDirection : xDirection
   })
   const scrollName = computed(() => (props.dimension === 'height' ? 'scrollHeight' : 'scrollWidth'))
   const expandClass = computed(() => {
