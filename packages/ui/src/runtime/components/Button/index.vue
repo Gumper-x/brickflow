@@ -21,6 +21,8 @@
 
   import Icon from '../Icon/index.vue'
   import BaseLink from '../Link/index.vue'
+  import TransitionSize from '../TransitionSize/index.vue'
+
   const props = withDefaults(
     defineProps<{
       block?: boolean
@@ -57,6 +59,8 @@
   type ButtonSize = Extract<keyof typeof sizeClasses, string>
   type ButtonVariant = Extract<keyof (typeof colorClasses)[ButtonColor], string>
 
+  const baseRef = shallowRef()
+
   const isButton = computed(() => props.to === undefined)
   const component = computed(() => (isButton.value ? 'button' : BaseLink))
   const disabled = computed(() => props.disabled || props.loading)
@@ -82,6 +86,7 @@
 <template>
   <component
     :is="component"
+    ref="baseRef"
     v-bind="animationTapClass ? { onPointerupPassive: handleTap } : {}"
     :to="props.to"
     :target="isButton ? undefined : props.target"
@@ -97,7 +102,21 @@
     }"
     @contextmenu.prevent
   >
+    <TransitionSize
+      v-if="!$slots.leading && !props.icon"
+      dimension="width"
+      :flexParent="baseRef?.$el || baseRef"
+    >
+      <span v-if="props.loading">
+        <Icon
+          :name="UI_CONFIG.loadingIconName"
+          :class="[UI_STYLE.state.loading, sizeIconClasses[props.size]]"
+          aria-hidden="true"
+        />
+      </span>
+    </TransitionSize>
     <Transition
+      v-else
       :name="UI_CONFIG.loadingIconTransition"
       mode="out-in"
     >

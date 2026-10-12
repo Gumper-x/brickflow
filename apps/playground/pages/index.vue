@@ -2,21 +2,31 @@
   const { t } = useI18n()
   const screen = useScreen()
   const { $di } = useNuxtApp()
+  const { theme } = useTheme()
+
   const clicks = ref(0)
   const screenReady = ref(false)
+  const testLoading = ref(false)
 
   const activeScreen = computed(() => {
     const screens = ['dk', 'lp', 'tb', 'mb', 'ms'] as const
 
     return screens.find((key) => screen[key]) ?? 'unknown'
   })
-  const { theme } = useTheme()
   const product = await $di.product.productOne({
     effect() {
       console.log('Effect productOne')
     },
     server: true,
   })
+
+  function handleTestLoading(): void {
+    testLoading.value = true
+    setTimeout(() => {
+      testLoading.value = false
+    }, 3000)
+  }
+
   onMounted(async () => {
     await screen.ready
     screenReady.value = true
@@ -58,6 +68,32 @@
           variant="ghost"
         >
           Clicked {{ clicks }} times
+        </BrickButton>
+      </div>
+    </section>
+
+    <section class="space-y-4 text-alt-400">
+      <p class="text-sm font-medium text-gray-500">Button loading icon transition</p>
+      <div class="flex flex-col flex-wrap items-start gap-3">
+        <BrickButton
+          :loading="testLoading"
+          @click="handleTestLoading"
+        >
+          TestButton
+        </BrickButton>
+        <BrickButton
+          :loading="testLoading"
+          icon="rocket"
+          @click="handleTestLoading"
+        >
+          TestButton
+        </BrickButton>
+        <BrickButton
+          :loading="testLoading"
+          trailingIcon="rocket"
+          @click="handleTestLoading"
+        >
+          TestButton
         </BrickButton>
       </div>
     </section>
