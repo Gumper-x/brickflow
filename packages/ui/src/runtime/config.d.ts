@@ -1,18 +1,5 @@
 export {}
 
-declare module '#brickflow-ui-config' {
-  import type { BrickflowUiConfig } from './tailwind'
-
-  export const UI_CONFIG: BrickflowUiConfigType
-  export const UI_STYLE: BrickflowUiStyleType
-  export const uiConfig: BrickflowUiConfig['uiConfig']
-  export const uiStyles: BrickflowUiConfig['uiStyles']
-
-  const config: BrickflowUiConfig
-
-  export default config
-}
-
 declare global {
   type BrickflowUiConfigFor<TExpected extends BrickflowUiConfigObject> = {
     [TKey in keyof BrickflowUiConfigLiteralPaths]: BrickflowUiConfigLiteralPaths[TKey] extends TExpected

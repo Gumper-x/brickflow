@@ -5,9 +5,11 @@
 </script>
 
 <script lang="ts" setup>
-  import { buttonConfig, firstIconName } from '#brickflow-ui-icons'
+  import { firstIconName, uiConfig } from '#brickflow-ui'
 
   import Button from './index.vue'
+
+  const buttonConfig = uiConfig.button
 </script>
 
 <template>

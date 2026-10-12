@@ -1,5 +1,7 @@
 @import './ui-breakpoint.css';
 
+@source './components';
+
 @media (width < 1440px) {
   .dkHidden {
     display: none !important;

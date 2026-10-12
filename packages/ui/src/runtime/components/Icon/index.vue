@@ -1,10 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue'
 
-  defineOptions({
-    inheritAttrs: false,
-  })
-
   const props = withDefaults(
     defineProps<{
       name: string
@@ -17,7 +13,6 @@
 
 <template>
   <i
-    v-bind="$attrs"
     :class="classes"
     role="img"
   />
