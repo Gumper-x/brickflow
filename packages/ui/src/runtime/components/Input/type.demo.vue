@@ -9,7 +9,7 @@
 
   import Input from './index.vue'
 
-  const types = ['text', 'email', 'number', 'password', 'search', 'url'] as const
+  const types = ['text', 'email', 'decimal', 'numeric', 'password', 'search', 'tel', 'url'] as const
 </script>
 
 <template>

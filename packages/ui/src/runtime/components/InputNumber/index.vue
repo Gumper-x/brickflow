@@ -87,7 +87,7 @@
       onKeydown: handleKeydown,
     }"
     :value="inputValue"
-    type="number"
+    type="decimal"
     :min="props.min"
     :max="props.max"
     :step="props.step"

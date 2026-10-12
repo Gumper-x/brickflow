@@ -1,5 +1,8 @@
 <script lang="ts">
   const UI_CONFIG = defineUiConfig<{
+    hidePasswordIconName: string
+    searchClearIconName: string
+    showPasswordIconName: string
     sizeClasses: Record<
       string,
       {
@@ -53,7 +56,7 @@
       readonly?: boolean
       size?: InputSize
       trailingIcon?: string
-      type?: 'email' | 'number' | 'password' | 'search' | 'text' | 'url'
+      type?: 'decimal' | 'email' | 'numeric' | 'password' | 'search' | 'tel' | 'text' | 'url'
       value?: null | string
       variant?: InputVariant
     }>(),
@@ -109,10 +112,7 @@
 
   const hasDescription = computed(() => Boolean(props.description || slots.description || slots.error))
   const inputType = computed(() => {
-    if (props.type === 'password') {
-      return showPassword.value ? 'text' : 'password'
-    }
-    return props.type === 'number' ? 'text' : props.type
+    return props.type === 'password' && !showPassword.value ? 'password' : 'text'
   })
   const classes = computed(() => [
     UI_STYLE.base,
@@ -245,7 +245,7 @@
         ref="inputRef"
         :value="currentValue"
         :type="inputType"
-        :inputmode="props.type === 'number' ? 'decimal' : undefined"
+        :inputmode="props.type === 'password' ? undefined : props.type"
         :disabled="props.disabled"
         :readonly="props.readonly"
         :placeholder="props.placeholder"
@@ -266,7 +266,10 @@
         :aria-label="showPassword ? 'Hide password' : 'Show password'"
         @click="showPassword = !showPassword"
       >
-        {{ showPassword ? 'Hide' : 'Show' }}
+        <Icon
+          :name="showPassword ? UI_CONFIG.hidePasswordIconName : UI_CONFIG.showPasswordIconName"
+          aria-hidden="true"
+        />
       </button>
       <button
         v-else-if="props.type === 'search' && isEmptyField"
@@ -276,7 +279,10 @@
         aria-label="Clear search"
         @click="clear"
       >
-        ×
+        <Icon
+          :name="UI_CONFIG.searchClearIconName"
+          aria-hidden="true"
+        />
       </button>
       <slot
         v-else
