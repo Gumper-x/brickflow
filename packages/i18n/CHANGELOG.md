@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.54
+
+### Patch Changes
+
+- Input release and Button loading
+
 ## 0.0.53
 
 ### Patch Changes
