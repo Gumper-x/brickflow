@@ -21,11 +21,19 @@
   <div class="flex flex-wrap items-center gap-3">
     <button
       type="button"
-      class="cursor-pointer rounded-xl bg-blue-500 px-3 py-2"
+      class="w-30 cursor-pointer rounded-xl px-3 py-2"
+      :class="stateActive ? 'bg-blue-500' : 'bg-blue-800'"
       @click="stateActive = !stateActive"
     >
       {{ stateActive ? 'On' : 'Off' }}
     </button>
+    <Button
+      :loading="stateActive"
+      :icon="firstIconName"
+    >
+      Loading
+    </Button>
+    <Button :loading="stateActive">Loading</Button>
     <div class="basis-full">
       <div class="relative flex w-fit flex-col items-start gap-3 pl-13">
         <div class="absolute top-0 left-0 z-0 size-full object-cover pt-7 pl-13">
