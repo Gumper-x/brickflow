@@ -21,6 +21,8 @@
 
   import Icon from '../Icon/index.vue'
   import BaseLink from '../Link/index.vue'
+  import TransitionSize from '../TransitionSize/index.vue'
+
   const props = withDefaults(
     defineProps<{
       block?: boolean
@@ -57,6 +59,8 @@
   type ButtonSize = Extract<keyof typeof sizeClasses, string>
   type ButtonVariant = Extract<keyof (typeof colorClasses)[ButtonColor], string>
 
+  const baseRef = shallowRef()
+
   const isButton = computed(() => props.to === undefined)
   const component = computed(() => (isButton.value ? 'button' : BaseLink))
   const disabled = computed(() => props.disabled || props.loading)
@@ -82,6 +86,7 @@
 <template>
   <component
     :is="component"
+    ref="baseRef"
     v-bind="animationTapClass ? { onPointerupPassive: handleTap } : {}"
     :to="props.to"
     :target="isButton ? undefined : props.target"
@@ -97,7 +102,23 @@
     }"
     @contextmenu.prevent
   >
+    <TransitionSize
+      v-if="!$slots.leading && !props.icon && !props.trailingIcon"
+      dimension="width"
+      :flexParent="baseRef?.$el || baseRef"
+      flexDirection="start"
+    >
+      <span v-if="props.loading">
+        <Icon
+          :name="UI_CONFIG.loadingIconName"
+          :class="[UI_STYLE.state.loading, sizeIconClasses[props.size]]"
+          aria-hidden="true"
+        />
+      </span>
+    </TransitionSize>
+
     <Transition
+      v-if="$slots.leading || props.icon"
       :name="UI_CONFIG.loadingIconTransition"
       mode="out-in"
     >
@@ -109,7 +130,7 @@
         />
       </span>
       <span
-        v-else-if="$slots.leading || props.icon"
+        v-else
         :class="UI_STYLE.slot.leading"
       >
         <slot name="leading">
@@ -129,17 +150,30 @@
       <slot />
     </span>
 
-    <span
+    <Transition
       v-if="$slots.trailing || props.trailingIcon"
-      :class="UI_STYLE.slot.trailing"
+      :name="UI_CONFIG.loadingIconTransition"
+      mode="out-in"
     >
-      <slot name="trailing">
+      <span v-if="props.loading && !props.icon">
         <Icon
-          :name="props.trailingIcon!"
-          :class="sizeIconClasses[props.size]"
+          :name="UI_CONFIG.loadingIconName"
+          :class="[UI_STYLE.state.loading, sizeIconClasses[props.size]]"
           aria-hidden="true"
         />
-      </slot>
-    </span>
+      </span>
+      <span
+        v-else
+        :class="UI_STYLE.slot.trailing"
+      >
+        <slot name="trailing">
+          <Icon
+            :name="props.trailingIcon!"
+            :class="sizeIconClasses[props.size]"
+            aria-hidden="true"
+          />
+        </slot>
+      </span>
+    </Transition>
   </component>
 </template>
