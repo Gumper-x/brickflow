@@ -19,6 +19,6 @@
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.vue",
-    "../../apps/playground/node_modules/.cache/nuxt/.nuxt/types/brickflow-ui-config-literals.d.ts"
+    "../../apps/playground/.nuxt/types/brickflow-ui-config-literals.d.ts"
   ]
 }
