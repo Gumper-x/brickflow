@@ -46,12 +46,12 @@
       disabled?: boolean
       icon?: string
       label?: string
-      onBlur?: (value: null | string, target: HTMLInputElement) => void
-      onFocus?: (value: null | string, target: HTMLInputElement | null) => void
+      onBlur?: (value: string, target: HTMLInputElement) => void
+      onChange?: (value: string, target: HTMLInputElement) => void
+      onFocus?: (value: string, target: HTMLInputElement | null) => void
       onIconClick?: () => void
+      onInput?: (value: string, target: HTMLInputElement | null) => void
       onTrailingIconClick?: () => void
-      onValueChange?: (value: null | string, target: HTMLInputElement) => void
-      onValueInput?: (value: null | string, target: HTMLInputElement | null) => void
       placeholder?: string
       readonly?: boolean
       size?: InputSize
@@ -68,11 +68,11 @@
       icon: undefined,
       label: undefined,
       onBlur: undefined,
+      onChange: undefined,
       onFocus: undefined,
       onIconClick: undefined,
+      onInput: undefined,
       onTrailingIconClick: undefined,
-      onValueChange: undefined,
-      onValueInput: undefined,
       placeholder: '',
       readonly: false,
       size: 'md',
@@ -83,8 +83,7 @@
     },
   )
 
-  const model = shallowRef<null | string>('')
-  // const model = defineModel<null | number | string>({ default: '' })
+  const model = shallowRef('')
 
   const attrs = useAttrs()
   const slots = useSlots()
@@ -104,7 +103,7 @@
 
   const fieldId = computed(() => String(attrs.id ?? generatedId))
   const descriptionId = computed(() => `${fieldId.value}-description`)
-  const currentValue = computed(() => (props.value === undefined ? model.value : props.value))
+  const currentValue = computed(() => (props.value === undefined ? model.value : (props.value ?? '')))
   const widthMeasureText = computed(() => currentValue.value || props.placeholder || ' ')
   const isEmptyField = computed(() => {
     return Boolean(currentValue.value)
@@ -177,23 +176,23 @@
     props.onBlur?.(currentValue.value, event.target as HTMLInputElement)
   }
 
+  function handleChange(event: Event): void {
+    const target = event.target as HTMLInputElement
+    props.onChange?.(target.value, target)
+  }
+
   function handleFocus(event: FocusEvent): void {
     hasFocus.value = true
     props.onFocus?.(currentValue.value, event.target as HTMLInputElement)
   }
 
-  function onChange(event: Event): void {
-    const target = event.target as HTMLInputElement
-    props.onValueChange?.(target.value, target)
-  }
-
-  function onInput(event: Event): void {
+  function handleInput(event: Event): void {
     setValue((event.target as HTMLInputElement).value)
   }
 
-  function setValue(value: null | string): void {
+  function setValue(value: string): void {
     model.value = value
-    props.onValueInput?.(value, inputRef.value)
+    props.onInput?.(value, inputRef.value)
   }
 
   defineExpose({ clear, fieldId, focus, hasFocus, inputRef })
@@ -252,8 +251,8 @@
         :aria-describedby="hasDescription ? descriptionId : undefined"
         :class="fieldClasses"
         :style="fieldStyle"
-        @input="onInput"
-        @change="onChange"
+        @input="handleInput"
+        @change="handleChange"
         @focus="handleFocus"
         @blur="handleBlur"
       />

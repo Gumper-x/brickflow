@@ -9,27 +9,25 @@
 
   import InputNumber from './index.vue'
 
-  const quantity = ref<null | number>(null)
-  const price = ref<null | number>(25)
+  const price = ref<number>(25)
+  function handleInput(event: number): void {
+    price.value = event
+  }
 </script>
 
 <template>
   <div class="flex max-w-sm flex-col gap-4">
     <InputNumber
-      v-model="quantity"
-      label="Quantity"
-      description="Use ↑ and ↓ to change by one."
-      :min="0"
-      :max="20"
-    />
-    <InputNumber
-      v-model="price"
+      :value="price"
       label="Price"
-      description="Changes in steps of five."
+      description="Min: 0 — Max: 200"
       :min="0"
-      :max="100"
+      :max="200"
       :step="5"
-    />
-    <p class="text-sm text-gray-400">Quantity: {{ quantity ?? '—' }} · Price: {{ price ?? '—' }}</p>
+      @input="handleInput"
+    >
+      <template #leading><span class="text-green-400">$</span></template>
+    </InputNumber>
+    <p class="text-gray-500">Value: {{ price }}</p>
   </div>
 </template>

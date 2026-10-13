@@ -5,6 +5,8 @@
 </script>
 
 <script lang="ts" setup>
+  import { ref } from 'vue'
+
   import { firstIconName, uiConfig } from '#brickflow-ui'
 
   import Button from '../Button/index.vue'
@@ -15,6 +17,7 @@
   function copy(): void {
     console.log('Click')
   }
+  const text = ref('')
 </script>
 
 <template>
@@ -26,6 +29,7 @@
       style="grid-template-columns: minmax(0, 24rem) max-content; grid-template-rows: repeat(3, auto)"
     >
       <Input
+        :value="text"
         :size="size"
         :icon="firstIconName"
         :trailingIcon="firstIconName"
@@ -34,6 +38,7 @@
         :label="`Size: ${size}`"
         class="row-span-3 grid! grid-rows-subgrid"
         @iconClick="copy"
+        @input="text = $event"
       />
       <Button
         :size="size"

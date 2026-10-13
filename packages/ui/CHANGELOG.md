@@ -1,5 +1,11 @@
 # @brickflow/ui
 
+## 0.0.55
+
+### Patch Changes
+
+- Input number and lint
+
 ## 0.0.54
 
 ### Patch Changes

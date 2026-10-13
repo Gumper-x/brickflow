@@ -1,120 +1,95 @@
-<script setup lang="ts">
-  import { computed, ref, watch } from 'vue'
+<script setup lang="ts" generic="T extends boolean = false">
+  import { shallowRef, watch } from 'vue'
 
+  import { isEmpty } from '../../utils/checkup.js'
   import Input from '../Input/index.vue'
 
   defineOptions({ inheritAttrs: false })
 
   const props = withDefaults(
     defineProps<{
+      denominator?: number
       description?: string
+      disabled?: boolean
       label?: string
       max?: number
       min?: number
-      onBlur?: (value: null | string, target: HTMLInputElement) => void
+      nullable?: T
+      onBlur?: (value: true extends NoInfer<T> ? null | number : number) => void
+      onFocus?: (value: true extends NoInfer<T> ? null | number : number) => void
+      onInput?: (value: true extends NoInfer<T> ? null | number : number) => void
       onKeydown?: (event: KeyboardEvent) => void
-      onValueChange?: (value: null | number, target: HTMLInputElement) => void
-      onValueInput?: (value: null | number, target: HTMLInputElement | null) => void
       step?: number
-      value?: null | number
+      value: true extends NoInfer<T> ? null | number : number
     }>(),
     {
+      denominator: 0,
       description: undefined,
+      disabled: false,
       label: undefined,
       max: undefined,
       min: undefined,
+      nullable: undefined,
       onBlur: undefined,
+      onFocus: undefined,
+      onInput: undefined,
       onKeydown: undefined,
       onValueChange: undefined,
-      onValueInput: undefined,
       step: 1,
-      value: undefined,
     },
   )
 
-  const model = defineModel<null | number>({ default: null })
-  const rawValue = ref<null | string>(null)
-  const currentValue = computed(() => (props.value === undefined ? model.value : props.value))
-  const inputValue = computed(
-    () => rawValue.value ?? (currentValue.value === null ? '' : String(currentValue.value)),
+  const inputValue = shallowRef(prepareValue(props.value))
+
+  watch(
+    () => props.value,
+    () => {
+      inputValue.value = prepareValue(props.value)
+    },
   )
 
-  function clamp(value: number): number {
-    return Math.min(props.max ?? Infinity, Math.max(props.min ?? -Infinity, value))
-  }
-
-  let lastInputValue: null | number | undefined
-  watch(currentValue, (value) => {
-    if (value !== lastInputValue) {
-      rawValue.value = null
-    }
-  })
-
-  function decimalPlaces(value: number): number {
-    const [fraction = '', exponent = '0'] = String(value).split(/e/i)
-    return Math.max(0, (fraction.split('.')[1]?.length ?? 0) - Number(exponent))
-  }
-
-  function handleBlur(value: null | string, target: HTMLInputElement): void {
-    rawValue.value = null
-    props.onBlur?.(value, target)
-  }
-
-  function handleKeydown(event: KeyboardEvent): void {
-    props.onKeydown?.(event)
-
-    const target = event.target as HTMLInputElement
-    if (
-      event.defaultPrevented ||
-      target.readOnly ||
-      target.disabled ||
-      props.step <= 0 ||
-      !Number.isFinite(props.step)
-    ) {
+  function handleBlur(value: string, target: HTMLInputElement): void {
+    if (!target) {
       return
     }
+    const nextValue = prepareValue(props.value)
+    target.value = nextValue
+    inputValue.value = nextValue
+    props.onBlur?.(props.value)
+  }
+  const allowedRegexp = /^-?\d*(?:\.\d*)?$/
+  const validNumberRegexp = /^-?(?:\d+(?:\.\d+)?|\.\d+)$/
 
-    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+  function handleInput(rawValue: string, target: HTMLInputElement | null): void {
+    if (!target) {
       return
     }
+    const nextValue = rawValue.replace(/,/, '.')
+    target.value = nextValue
 
-    event.preventDefault()
-    const current = toNumber(rawValue.value) ?? currentValue.value ?? 0
-    const next = current + (event.key === 'ArrowUp' ? props.step : -props.step)
-    const precision = Math.min(12, Math.max(decimalPlaces(current), decimalPlaces(props.step)))
-    const value = clamp(Number(next.toFixed(precision)))
-    rawValue.value = String(value)
-    lastInputValue = value
-    model.value = value
-    target.value = String(value)
-    props.onValueInput?.(value, target)
-  }
-
-  function handleValueChange(value: null | string, target: HTMLInputElement): void {
-    const parsed = toNumber(value)
-    const bounded = parsed === null ? null : clamp(parsed)
-    rawValue.value = null
-    lastInputValue = bounded
-    model.value = bounded
-    target.value = bounded === null ? '' : String(bounded)
-    props.onValueChange?.(bounded, target)
-  }
-
-  function handleValueInput(value: null | string, target: HTMLInputElement | null): void {
-    rawValue.value = value ?? ''
-    const number = toNumber(value)
-    lastInputValue = number
-    model.value = number
-    props.onValueInput?.(number, target)
-  }
-
-  function toNumber(value: null | string): null | number {
-    if (value === null || value.trim() === '') {
-      return null
+    if (isEmpty(nextValue)) {
+      return
     }
-
-    const number = Number(value.replace(',', '.'))
-    return Number.isFinite(number) ? number : null
+    if (!allowedRegexp.test(nextValue)) {
+      target.value = inputValue.value
+      return
+    }
+    if (!validNumberRegexp.test(nextValue)) {
+      return
+    }
+    let nextValueNumber = Number(nextValue)
+    if (!isEmpty(props.min) && nextValueNumber < props.min) {
+      target.value = prepareValue(props.min)
+      nextValueNumber = props.min
+    }
+    if (!isEmpty(props.max) && nextValueNumber > props.max) {
+      target.value = prepareValue(props.max)
+      nextValueNumber = props.max
+    }
+    props.onInput?.(nextValueNumber)
+  }
+  function prepareValue(value: typeof props.value): string {
+    return value === null ? '' : String(value)
   }
 </script>
 
@@ -122,15 +97,15 @@
   <Input
     v-bind="{
       ...$attrs,
-      onValueInput: handleValueInput,
-      onValueChange: handleValueChange,
-      onBlur: handleBlur,
-      onKeydown: handleKeydown,
+      // onBlur: handleBlur,
+      // onKeydown: handleKeydown,
     }"
     :value="inputValue"
     :label="props.label"
     :description="props.description"
     type="decimal"
+    @input="handleInput"
+    @blur="handleBlur"
   >
     <template
       v-if="$slots.label"
@@ -139,16 +114,16 @@
       <slot name="label" />
     </template>
     <template
-      v-if="$slots.left"
+      v-if="$slots.leading"
       #leading
     >
-      <slot name="left" />
+      <slot name="leading" />
     </template>
     <template
-      v-if="$slots.right"
+      v-if="$slots.trailing"
       #trailing
     >
-      <slot name="right" />
+      <slot name="trailing" />
     </template>
     <template
       v-if="$slots.error"
