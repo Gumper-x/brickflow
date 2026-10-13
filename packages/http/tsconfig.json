@@ -17,6 +17,9 @@
   },
   "vueCompilerOptions": {
     "strictTemplates": true,
+    "fallthroughAttributes": true,
+    "checkRequiredFallthroughAttributes": true,
+    "checkUnknownEvents": false,
     "dataAttributes": ["data-*", "draggable", "onClick"]
   },
   "exclude": ["**/node_modules", "**/.nuxt", "**/.output", "**/dist"],

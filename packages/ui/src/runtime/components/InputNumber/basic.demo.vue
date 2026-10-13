@@ -21,7 +21,6 @@
       description="Use ↑ and ↓ to change by one."
       :min="0"
       :max="20"
-      block
     />
     <InputNumber
       v-model="price"
@@ -30,7 +29,6 @@
       :min="0"
       :max="100"
       :step="5"
-      block
     />
     <p class="text-sm text-gray-400">Quantity: {{ quantity ?? '—' }} · Price: {{ price ?? '—' }}</p>
   </div>
