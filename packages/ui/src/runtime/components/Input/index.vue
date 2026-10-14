@@ -41,6 +41,7 @@
   const props = withDefaults(
     defineProps<{
       align?: 'center' | 'left' | 'right'
+      autocomplete?: string
       autoWidth?: boolean
       description?: string
       disabled?: boolean
@@ -62,6 +63,7 @@
     }>(),
     {
       align: 'left',
+      autocomplete: undefined,
       autoWidth: false,
       description: undefined,
       disabled: false,
@@ -245,6 +247,7 @@
         :value="currentValue"
         :type="inputType"
         :inputmode="props.type === 'password' ? undefined : props.type"
+        :autocomplete="props.autocomplete"
         :disabled="props.disabled"
         :readonly="props.readonly"
         :placeholder="props.placeholder"

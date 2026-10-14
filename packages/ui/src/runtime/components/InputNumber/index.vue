@@ -8,36 +8,61 @@
 
   const props = withDefaults(
     defineProps<{
+      align?: InputProps['align']
+      autocomplete?: string
+      autoWidth?: boolean
       denominator?: number
       description?: string
       disabled?: boolean
+      icon?: string
       label?: string
       max?: number
       min?: number
       nullable?: boolean & T
       onBlur?: (value: true extends NoInfer<T> ? null | number : number) => void
+      onChange?: (value: string, target: HTMLInputElement) => void
       onFocus?: (value: true extends NoInfer<T> ? null | number : number) => void
+      onIconClick?: () => void
       onInput?: (value: true extends NoInfer<T> ? null | number : number) => void
       onKeydown?: (event: KeyboardEvent) => void
+      onTrailingIconClick?: () => void
+      placeholder?: string
+      readonly?: boolean
+      size?: InputProps['size']
       step?: number
+      trailingIcon?: string
       value: true extends NoInfer<T> ? null | number : number
+      variant?: InputProps['variant']
     }>(),
     {
+      align: undefined,
+      autocomplete: undefined,
+      autoWidth: false,
       denominator: 0,
       description: undefined,
       disabled: false,
+      icon: undefined,
       label: undefined,
       max: undefined,
       min: undefined,
       nullable: undefined,
       onBlur: undefined,
+      onChange: undefined,
       onFocus: undefined,
+      onIconClick: undefined,
       onInput: undefined,
       onKeydown: undefined,
-      onValueChange: undefined,
+      onTrailingIconClick: undefined,
+      placeholder: undefined,
+      readonly: false,
+      size: undefined,
       step: 1,
+      trailingIcon: undefined,
+      variant: undefined,
     },
   )
+
+  type InputProps = InstanceType<typeof Input>['$props']
 
   const inputValue = shallowRef(prepareValue(props.value))
 
@@ -62,6 +87,15 @@
     inputValue.value = nextValue
     props.onBlur?.(props.value)
   }
+
+  function handleChange(value: string, target: HTMLInputElement): void {
+    props.onChange?.(value, target)
+  }
+
+  function handleFocus(): void {
+    props.onFocus?.(props.value)
+  }
+
   const allowedRegexp = /^-?\d*(?:\.\d*)?$/
   const validNumberRegexp = /^-?(?:\d+(?:\.\d+)?|\.\d+)$/
 
@@ -154,12 +188,26 @@
       ...$attrs,
     }"
     :value="inputValue"
+    :align="props.align"
+    :autocomplete="props.autocomplete"
+    :autoWidth="props.autoWidth"
     :label="props.label"
     :description="props.description"
+    :disabled="props.disabled"
+    :icon="props.icon"
+    :placeholder="props.placeholder"
+    :readonly="props.readonly"
+    :size="props.size"
+    :trailingIcon="props.trailingIcon"
     :type="props.denominator === 0 ? 'numeric' : 'decimal'"
+    :variant="props.variant"
     @input="handleInput"
+    @change="handleChange"
     @blur="handleBlur"
+    @focus="handleFocus"
+    @iconClick="props.onIconClick?.()"
     @keydown="handleKeydown"
+    @trailingIconClick="props.onTrailingIconClick?.()"
   >
     <template
       v-if="$slots.label"
