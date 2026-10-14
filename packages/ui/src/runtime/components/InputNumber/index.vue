@@ -14,7 +14,7 @@
       label?: string
       max?: number
       min?: number
-      nullable?: T
+      nullable?: boolean & T
       onBlur?: (value: true extends NoInfer<T> ? null | number : number) => void
       onFocus?: (value: true extends NoInfer<T> ? null | number : number) => void
       onInput?: (value: true extends NoInfer<T> ? null | number : number) => void
@@ -52,6 +52,11 @@
     if (!target) {
       return
     }
+    if (props.nullable && target.value === '') {
+      inputValue.value = ''
+      props.onBlur?.(null as typeof props.value)
+      return
+    }
     const nextValue = prepareValue(props.value)
     target.value = nextValue
     inputValue.value = nextValue
@@ -64,19 +69,36 @@
     if (!target) {
       return
     }
-    const nextValue = rawValue.replace(/,/, '.')
+    let nextValue = rawValue.replace(/,/, '.')
     target.value = nextValue
 
     if (isEmpty(nextValue)) {
+      if (props.nullable) {
+        inputValue.value = ''
+        props.onInput?.(null as typeof props.value)
+      }
       return
     }
     if (!allowedRegexp.test(nextValue)) {
       target.value = inputValue.value
       return
     }
-    if (!validNumberRegexp.test(nextValue)) {
+    const fraction = nextValue.split('.')[1]
+    if (fraction !== undefined && (props.denominator === 0 || fraction.length > props.denominator)) {
+      nextValue =
+        props.denominator === 0
+          ? nextValue.slice(0, nextValue.indexOf('.'))
+          : nextValue.slice(0, nextValue.indexOf('.') + props.denominator + 1)
+      target.value = nextValue
+    }
+    if (isEmpty(nextValue) || !validNumberRegexp.test(nextValue)) {
+      if (isEmpty(nextValue) && props.nullable) {
+        inputValue.value = ''
+        props.onInput?.(null as typeof props.value)
+      }
       return
     }
+
     let nextValueNumber = Number(nextValue)
     if (!isEmpty(props.min) && nextValueNumber < props.min) {
       target.value = prepareValue(props.min)
@@ -86,8 +108,41 @@
       target.value = prepareValue(props.max)
       nextValueNumber = props.max
     }
+
     props.onInput?.(nextValueNumber)
   }
+
+  function handleKeydown(event: KeyboardEvent): void {
+    props.onKeydown?.(event)
+    if (event.defaultPrevented || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) {
+      return
+    }
+    const target = event.target
+    if (!(target instanceof HTMLInputElement) || target.disabled || target.readOnly) {
+      return
+    }
+    if (!Number.isFinite(props.step) || props.step <= 0) {
+      return
+    }
+
+    event.preventDefault()
+    const parsedValue = Number(target.value)
+    const currentValue = target.value !== '' && Number.isFinite(parsedValue) ? parsedValue : (props.value ?? 0)
+    const direction = event.key === 'ArrowUp' ? 1 : -1
+    const step = props.step * (event.shiftKey ? 2 : 1)
+    const precision = Math.max(0, Math.min(100, Math.trunc(props.denominator)))
+    let nextValue = Number((currentValue + direction * step).toFixed(precision))
+    if (!isEmpty(props.min) && nextValue < props.min) {
+      nextValue = props.min
+    }
+    if (!isEmpty(props.max) && nextValue > props.max) {
+      nextValue = props.max
+    }
+
+    target.value = prepareValue(nextValue)
+    props.onInput?.(nextValue)
+  }
+
   function prepareValue(value: typeof props.value): string {
     return value === null ? '' : String(value)
   }
@@ -97,15 +152,14 @@
   <Input
     v-bind="{
       ...$attrs,
-      // onBlur: handleBlur,
-      // onKeydown: handleKeydown,
     }"
     :value="inputValue"
     :label="props.label"
     :description="props.description"
-    type="decimal"
+    :type="props.denominator === 0 ? 'numeric' : 'decimal'"
     @input="handleInput"
     @blur="handleBlur"
+    @keydown="handleKeydown"
   >
     <template
       v-if="$slots.label"
