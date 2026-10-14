@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.56
+
+### Patch Changes
+
+- Add inputNumber and base for component Form
+
 ## 0.0.55
 
 ### Patch Changes
