@@ -10,7 +10,7 @@
 
   import InputNumber from './index.vue'
 
-  const price = ref<number>(8.55)
+  const price = ref<number>(8)
   const price2 = ref<number>(12.55)
 </script>
 
