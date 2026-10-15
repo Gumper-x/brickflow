@@ -110,7 +110,7 @@
   }
   function shrink(el: HTMLElement): void {
     el.classList.add(...expandClass.value)
-    el.style.transitionDuration = `${props.duration}ms`
+    el.style.setProperty('transition-duration', `${props.duration}ms`, 'important')
     el.style[sizeName.value] = '0'
     el.style.padding = '0'
     if (props.flexParent) {
