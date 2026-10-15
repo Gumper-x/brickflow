@@ -203,13 +203,15 @@
 
 <template>
   <div :class="[classes, $attrs.class]">
-    <label
-      v-if="props.label || $slots.label"
-      :for="fieldId"
-      :class="labelClasses"
-    >
-      <slot name="label">{{ props.label }}</slot>
-    </label>
+    <TransitionSize>
+      <label
+        v-if="props.label || $slots.label"
+        :for="fieldId"
+        :class="labelClasses"
+      >
+        <slot name="label">{{ props.label }}</slot>
+      </label>
+    </TransitionSize>
 
     <label
       :for="fieldId"
