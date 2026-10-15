@@ -35,6 +35,7 @@
   import { computed, ref, shallowRef, useAttrs, useId, useSlots, watch } from 'vue'
 
   import Icon from '../Icon/index.vue'
+  import TransitionSize from '../TransitionSize/index.vue'
 
   defineOptions({ inheritAttrs: false })
 
@@ -307,13 +308,15 @@
       </slot>
     </label>
 
-    <div
-      v-if="hasDescription"
-      :id="descriptionId"
-      :class="descriptionClasses"
-    >
-      <slot name="error" />
-      <slot name="description">{{ props.description }}</slot>
-    </div>
+    <TransitionSize>
+      <div
+        v-if="hasDescription"
+        :id="descriptionId"
+        :class="descriptionClasses"
+      >
+        <slot name="error" />
+        <slot name="description">{{ props.description }}</slot>
+      </div>
+    </TransitionSize>
   </div>
 </template>
