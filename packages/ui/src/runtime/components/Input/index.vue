@@ -91,6 +91,7 @@
   const attrs = useAttrs()
   const slots = useSlots()
   const generatedId = useId()
+  const baseRef = ref<HTMLInputElement | null>(null)
   const inputRef = ref<HTMLInputElement | null>(null)
   const widthMeasureRef = ref<HTMLSpanElement | null>(null)
   const measuredWidth = ref(0)
@@ -202,8 +203,14 @@
 </script>
 
 <template>
-  <div :class="[classes, $attrs.class]">
-    <TransitionSize>
+  <div
+    ref="baseRef"
+    :class="[classes, $attrs.class]"
+  >
+    <TransitionSize
+      :flexParent="baseRef"
+      flexDirection="end"
+    >
       <label
         v-if="props.label || $slots.label"
         :for="fieldId"
@@ -310,7 +317,7 @@
       </slot>
     </label>
 
-    <TransitionSize>
+    <TransitionSize :flexParent="baseRef">
       <div
         v-if="hasDescription"
         :id="descriptionId"
