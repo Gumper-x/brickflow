@@ -28,13 +28,14 @@
     <Input
       :value="email"
       label="Email"
-      placeholder="example@brickflow.com"
+      placeholder="example@oyes.com"
       type="email"
       autocomplete="email"
       @input="email = $event"
     />
     <Input
       :value="password"
+      placeholder="**********"
       label="Password"
       type="password"
       autocomplete="current-password"
