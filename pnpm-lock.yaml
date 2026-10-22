@@ -203,6 +203,9 @@ importers:
       jiti:
         specifier: 2.7.0
         version: 2.7.0
+      maska:
+        specifier: 3.2.2
+        version: 3.2.2
       tailwind-merge:
         specifier: 3.6.0
         version: 3.6.0
@@ -3753,6 +3756,9 @@ packages:
   make-fetch-happen@14.0.3:
     resolution: {integrity: sha512-QMjGbFTP0blj97EeidG5hk/QhKQ3T4ICckQGLgz38QF7Vgbk6e6FTARN8KhKxyBbWn8R0HU+bnw8aSoFPD4qtQ==}
     engines: {node: ^18.17.0 || >=20.5.0}
+
+  maska@3.2.2:
+    resolution: {integrity: sha512-qhhoeKXYLsDOxfB70nybuGJmB+XsNb/xhKBBQGMMnT5Hw4+lhdeQmgwlkHYoMIUcppcnLHW6LppPPpGewrv9WQ==}
 
   mdn-data@2.0.28:
     resolution: {integrity: sha512-aylIc7Z9y4yzHYAJNuESG3hfhC+0Ibp/MAMiaOZgNv4pmEdFyfZhhhny4MNiAfWdBQ1RQ2mfDWmM1x8SvGyp8g==}
@@ -9657,6 +9663,8 @@ snapshots:
       ssri: 12.0.0
     transitivePeerDependencies:
       - supports-color
+
+  maska@3.2.2: {}
 
   mdn-data@2.0.28: {}
 

@@ -35,6 +35,7 @@
     "@tailwindcss/vite": "4.3.3",
     "fantasticon": "4.1.0",
     "jiti": "2.7.0",
+    "maska": "3.2.2",
     "tailwind-merge": "3.6.0",
     "tailwindcss": "4.3.3"
   },

@@ -31,8 +31,10 @@
 </script>
 
 <script setup lang="ts">
+  import type { MaskaDetail, MaskInput, MaskInputOptions, MaskType } from 'maska'
+
   import { twMerge } from 'tailwind-merge'
-  import { computed, ref, shallowRef, useAttrs, useId, useSlots, watch } from 'vue'
+  import { computed, nextTick, ref, shallowRef, useAttrs, useId, useSlots, watch } from 'vue'
 
   import Icon from '../Icon/index.vue'
   import TransitionSize from '../TransitionSize/index.vue'
@@ -48,11 +50,13 @@
       disabled?: boolean
       icon?: string
       label?: string
+      mask?: MaskInputOptions | MaskType
       onBlur?: (value: string, target: HTMLInputElement) => void
       onChange?: (value: string, target: HTMLInputElement) => void
       onFocus?: (value: string, target: HTMLInputElement | null) => void
       onIconClick?: () => void
       onInput?: (value: string, target: HTMLInputElement | null) => void
+      onMask?: (detail: MaskaDetail, target: HTMLInputElement) => void
       onTrailingIconClick?: () => void
       placeholder?: string
       readonly?: boolean
@@ -70,11 +74,13 @@
       disabled: false,
       icon: undefined,
       label: undefined,
+      mask: undefined,
       onBlur: undefined,
       onChange: undefined,
       onFocus: undefined,
       onIconClick: undefined,
       onInput: undefined,
+      onMask: undefined,
       onTrailingIconClick: undefined,
       placeholder: '',
       readonly: false,
@@ -87,6 +93,8 @@
   )
 
   const model = shallowRef('')
+  const maskedValue = shallowRef<null | string>(null)
+  let maskInput: MaskInput | undefined
 
   const attrs = useAttrs()
   const slots = useSlots()
@@ -108,9 +116,14 @@
   const fieldId = computed(() => String(attrs.id ?? generatedId))
   const descriptionId = computed(() => `${fieldId.value}-description`)
   const currentValue = computed(() => (props.value === undefined ? model.value : (props.value ?? '')))
-  const widthMeasureText = computed(() => currentValue.value || props.placeholder || ' ')
+  const displayValue = computed(() =>
+    props.mask === null || props.mask === undefined
+      ? currentValue.value
+      : (maskedValue.value ?? currentValue.value),
+  )
+  const widthMeasureText = computed(() => displayValue.value || props.placeholder || ' ')
   const isEmptyField = computed(() => {
-    return Boolean(currentValue.value)
+    return Boolean(displayValue.value)
   })
 
   const hasDescription = computed(() => Boolean(props.description || slots.description || slots.error))
@@ -166,6 +179,64 @@
     { flush: 'post', immediate: true },
   )
 
+  watch(
+    [() => props.mask, inputRef],
+    async ([mask, input], _previous, onCleanup) => {
+      maskInput?.destroy()
+      maskInput = undefined
+      maskedValue.value = null
+
+      if (mask === null || mask === undefined || !input) {
+        return
+      }
+
+      let canceled = false
+      onCleanup(() => {
+        canceled = true
+        maskInput?.destroy()
+        maskInput = undefined
+      })
+
+      const { MaskInput } = await import('maska')
+      if (canceled) {
+        return
+      }
+
+      const options: MaskInputOptions = typeof mask === 'object' && !Array.isArray(mask) ? mask : { mask }
+      const onMaska = options.onMaska
+
+      maskInput = new MaskInput(input, {
+        ...options,
+        onMaska: (detail) => {
+          maskedValue.value = detail.masked
+          model.value = detail.masked
+          if (Array.isArray(onMaska)) {
+            onMaska.forEach((callback) => callback(detail))
+          } else {
+            onMaska?.(detail)
+          }
+          props.onMask?.(detail, input)
+        },
+      })
+    },
+    { flush: 'post', immediate: true },
+  )
+
+  watch(
+    () => props.value,
+    async () => {
+      if (!maskInput || !inputRef.value) {
+        return
+      }
+      maskedValue.value = null
+      await nextTick()
+      if (maskInput && inputRef.value) {
+        maskInput.updateValue(inputRef.value)
+      }
+    },
+    { flush: 'post' },
+  )
+
   function clear(): void {
     setValue('')
     focus()
@@ -191,11 +262,17 @@
   }
 
   function handleInput(event: Event): void {
+    if (props.mask !== null && props.mask !== undefined && event instanceof CustomEvent) {
+      return
+    }
     setValue((event.target as HTMLInputElement).value)
   }
 
   function setValue(value: string): void {
     model.value = value
+    if (props.mask !== null && props.mask !== undefined) {
+      maskedValue.value = value
+    }
     props.onInput?.(value, inputRef.value)
   }
 
@@ -254,7 +331,7 @@
         v-bind="{ ...$attrs, class: undefined, id: undefined }"
         :id="fieldId"
         ref="inputRef"
-        :value="currentValue"
+        :value="displayValue"
         :type="inputType"
         :inputmode="props.type === 'password' ? undefined : props.type"
         :autocomplete="props.autocomplete"
