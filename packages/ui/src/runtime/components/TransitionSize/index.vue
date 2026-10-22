@@ -21,8 +21,8 @@
       dimension?: 'height' | 'width'
       duration?: number
       expandClasses?: ''
-      flexDirection?: 'end' | 'start'
-      flexParent?: Element
+      flexDirection?: 'center' | 'end' | 'start'
+      flexParent?: Element | null
       mode?: 'default' | 'in-out' | 'out-in'
       name?: string
     }>(),
@@ -41,21 +41,14 @@
   const gap = ref(0)
 
   const sizeName = computed(() => props.dimension)
-  const marginName = computed(() => {
-    const xDirection = props.flexDirection === 'start' ? 'marginLeft' : 'marginRight'
-    const yDirection = props.flexDirection === 'start' ? 'marginTop' : 'marginBottom'
-    return props.dimension === 'height' ? yDirection : xDirection
-  })
-  const scrollName = computed(() => (props.dimension === 'height' ? 'scrollHeight' : 'scrollWidth'))
+  const scrollName = computed(() => (props.dimension === 'height' ? 'offsetHeight' : 'offsetWidth'))
   const expandClass = computed(() => {
-    return (props.expandClasses || '!transition-all !ease-in-out !overflow-hidden will-change-transform').split(
-      ' ',
-    )
+    return (props.expandClasses || '!transition-all !ease-in-out').split(' ')
   })
 
   const beforeStart = (event: Element): void => {
     const el = event as HTMLElement
-    shrink(el)
+    el.style.setProperty('transition-duration', `${0}ms`, 'important')
   }
   const start = (event: Element): void => {
     const el = event as HTMLElement
@@ -63,16 +56,22 @@
 
     // Wait until component mounted to get proper height
     nextTick(() => {
-      if (el[scrollName.value] === 0) {
-        el.style[sizeName.value] = ''
-      } else {
-        el.style[sizeName.value] = `${el[scrollName.value]}px`
-        el.style.padding = ''
-        if (props.flexParent) {
-          el.style[marginName.value] = ''
-        }
-      }
+      releasePadding(el)
+      const height = el[scrollName.value]
+      shrinkPadding(el)
+      shrink(el)
       el.style.overflow = 'hidden'
+      requestAnimationFrame(() => {
+        el.style.setProperty('transition-duration', `${props.duration}ms`, 'important')
+        if (height === 0) {
+          el.style[sizeName.value] = ''
+          releasePadding(el)
+        } else {
+          el.style[sizeName.value] = `${height}px`
+          releasePadding(el)
+          setNegativeMargin(el, 0)
+        }
+      })
     })
   }
   const afterEnter = (event: Element): void => {
@@ -86,13 +85,15 @@
 
     el.style[sizeName.value] = `${el[scrollName.value]}px`
     if (props.flexParent) {
-      el.style[marginName.value] = ''
+      el.style.setProperty('flex-shrink', '0', 'important')
+      el.style.setProperty('flex-grow', '0', 'important')
     }
     el.style.overflow = 'hidden'
   }
   const leave = (event: Element): void => {
     const el = event as HTMLElement
     if (el[scrollName.value] !== 0) {
+      el.style.setProperty('transition-duration', `${props.duration}ms`, 'important')
       shrink(el)
     }
   }
@@ -102,20 +103,61 @@
   }
 
   function release(el: HTMLElement): void {
-    el.classList.add(...expandClass.value)
+    el.classList.remove(...expandClass.value)
     el.style.transitionDuration = ''
+    el.style.flexGrow = ''
+    el.style.flexShrink = ''
     el.style[sizeName.value] = ''
-    el.style[marginName.value] = ''
     el.style.overflow = String(el.dataset.oldOverflow)
+    setNegativeMargin(el, 0)
+    releasePadding(el)
   }
+  function releasePadding(el: HTMLElement): void {
+    if (props.dimension === 'height') {
+      el.style.paddingTop = ''
+      el.style.paddingBottom = ''
+    } else {
+      el.style.paddingLeft = ''
+      el.style.paddingRight = ''
+    }
+  }
+
+  function setNegativeMargin(el: HTMLElement, value?: number): void {
+    if (value === undefined || !props.flexParent) {
+      return
+    }
+    switch (props.flexDirection) {
+      case 'center':
+        el.style[props.dimension === 'height' ? 'marginTop' : 'marginLeft'] = value ? `-${value / 2}px` : ''
+        el.style[props.dimension === 'height' ? 'marginBottom' : 'marginRight'] = value ? `-${value / 2}px` : ''
+        break
+      case 'end':
+        el.style[props.dimension === 'height' ? 'marginTop' : 'marginLeft'] = value ? `-${value}px` : ''
+        break
+      case 'start':
+        el.style[props.dimension === 'height' ? 'marginBottom' : 'marginRight'] = value ? `-${value}px` : ''
+        break
+      default:
+    }
+  }
+
   function shrink(el: HTMLElement): void {
     el.classList.add(...expandClass.value)
-    el.style.setProperty('transition-duration', `${props.duration}ms`, 'important')
+    el.style.flexGrow = '0'
     el.style[sizeName.value] = '0'
-    el.style.padding = '0'
+    shrinkPadding(el)
     if (props.flexParent) {
       gap.value = parseInt(window.getComputedStyle(props.flexParent)?.gap) || 0
-      el.style[marginName.value] = `-${gap.value}px`
+      setNegativeMargin(el, gap.value)
+    }
+  }
+  function shrinkPadding(el: HTMLElement): void {
+    if (props.dimension === 'height') {
+      el.style.paddingTop = '0'
+      el.style.paddingBottom = '0'
+    } else {
+      el.style.paddingLeft = '0'
+      el.style.paddingRight = '0'
     }
   }
 </script>

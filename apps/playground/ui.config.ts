@@ -219,7 +219,7 @@ export default defineBrickflowUi({
         center: 'text-center',
         right: 'text-right',
       },
-      base: 'relative inline-flex w-full min-w-0 flex-col gap-1.5 font-sans',
+      base: 'relative flex w-full min-w-0 flex-col gap-1.5 font-sans',
       description: 'pl-0.5',
       field: 'min-w-0 flex-1 bg-transparent outline-none disabled:cursor-not-allowed',
       fieldWrap: 'relative flex min-w-0 cursor-text items-center gap-2 transition-colors duration-150',
