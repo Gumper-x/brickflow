@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.57
+
+### Patch Changes
+
+- Validation input
+
 ## 0.0.56
 
 ### Patch Changes

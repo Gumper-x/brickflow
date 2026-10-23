@@ -21,6 +21,9 @@ Use the Nuxt auto-imported `rule` object, then pass its rules to `Input` or `Inp
 <script setup lang="ts">
 const emailRules = [rule.required(), rule.email(), rule.regex(/\.com$/i, () => t('Use a .com address'))]
 const ageRules = [rule.required()]
+const usernameRules = [rule.minLength(3), rule.maxLength(24)]
+const codeRules = [rule.length(6)]
+const websiteRules = [rule.url()]
 </script>
 
 <template>
@@ -31,6 +34,9 @@ const ageRules = [rule.required()]
 />
 
 <InputNumber :value="age" :rules="ageRules" @input="age = $event" />
+<Input :value="username" :rules="usernameRules" @input="username = $event" />
+<Input :value="code" :rules="codeRules" @input="code = $event" />
+<Input :value="website" :rules="websiteRules" @input="website = $event" />
 </template>
 ```
 
