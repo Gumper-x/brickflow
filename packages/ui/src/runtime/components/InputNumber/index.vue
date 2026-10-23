@@ -1,5 +1,7 @@
 <script setup lang="ts" generic="T extends boolean = false">
-  import { shallowRef, watch } from 'vue'
+  import { computed, ref, shallowRef, watch } from 'vue'
+
+  import type { Rule } from '../../utils/rules'
 
   import { isEmpty } from '../../utils/checkup.js'
   import Input from '../Input/index.vue'
@@ -28,6 +30,7 @@
       onTrailingIconClick?: () => void
       placeholder?: string
       readonly?: boolean
+      rules?: Rule<null | number>[]
       size?: InputProps['size']
       step?: number
       trailingIcon?: string
@@ -55,6 +58,7 @@
       onTrailingIconClick: undefined,
       placeholder: undefined,
       readonly: false,
+      rules: undefined,
       size: undefined,
       step: 1,
       trailingIcon: undefined,
@@ -64,7 +68,17 @@
 
   type InputProps = InstanceType<typeof Input>['$props']
 
+  const inputRef = ref<InstanceType<typeof Input> | null>(null)
   const inputValue = shallowRef(prepareValue(props.value))
+  const inputRules = computed(() =>
+    props.rules?.map(
+      (rule): Rule<string> =>
+        (value) =>
+          rule(value === '' ? null : Number(value)),
+    ),
+  )
+
+  defineExpose({ validate: () => inputRef.value?.validate() ?? true })
 
   watch(
     () => props.value,
@@ -99,6 +113,10 @@
   const allowedRegexp = /^-?\d*(?:\.\d*)?$/
   const validNumberRegexp = /^-?(?:\d+(?:\.\d+)?|\.\d+)$/
 
+  function emitInput(value: typeof props.value): void {
+    props.onInput?.(value)
+  }
+
   function handleInput(rawValue: string, target: HTMLInputElement | null): void {
     if (!target) {
       return
@@ -109,7 +127,7 @@
     if (isEmpty(nextValue)) {
       if (props.nullable) {
         inputValue.value = ''
-        props.onInput?.(null as typeof props.value)
+        emitInput(null as typeof props.value)
       }
       return
     }
@@ -128,7 +146,7 @@
     if (isEmpty(nextValue) || !validNumberRegexp.test(nextValue)) {
       if (isEmpty(nextValue) && props.nullable) {
         inputValue.value = ''
-        props.onInput?.(null as typeof props.value)
+        emitInput(null as typeof props.value)
       }
       return
     }
@@ -143,7 +161,7 @@
       nextValueNumber = props.max
     }
 
-    props.onInput?.(nextValueNumber)
+    emitInput(nextValueNumber)
   }
 
   function handleKeydown(event: KeyboardEvent): void {
@@ -174,7 +192,7 @@
     }
 
     target.value = prepareValue(nextValue)
-    props.onInput?.(nextValue)
+    emitInput(nextValue)
   }
 
   function prepareValue(value: typeof props.value): string {
@@ -184,6 +202,7 @@
 
 <template>
   <Input
+    ref="inputRef"
     v-bind="{
       ...$attrs,
     }"
@@ -197,6 +216,7 @@
     :icon="props.icon"
     :placeholder="props.placeholder"
     :readonly="props.readonly"
+    :rules="inputRules"
     :size="props.size"
     :trailingIcon="props.trailingIcon"
     :type="props.denominator === 0 ? 'numeric' : 'decimal'"

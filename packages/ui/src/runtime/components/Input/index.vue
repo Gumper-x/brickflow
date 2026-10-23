@@ -36,6 +36,9 @@
   import { twMerge } from 'tailwind-merge'
   import { computed, nextTick, ref, shallowRef, useAttrs, useId, useSlots, watch } from 'vue'
 
+  import type { Rule } from '../../utils/rules'
+
+  import { useFieldRules } from '../../composables/useFieldRules'
   import Icon from '../Icon/index.vue'
   import TransitionSize from '../TransitionSize/index.vue'
 
@@ -60,6 +63,7 @@
       onTrailingIconClick?: () => void
       placeholder?: string
       readonly?: boolean
+      rules?: Rule<string>[]
       size?: InputSize
       trailingIcon?: string
       type?: 'decimal' | 'email' | 'numeric' | 'password' | 'search' | 'tel' | 'text' | 'url'
@@ -84,6 +88,7 @@
       onTrailingIconClick: undefined,
       placeholder: '',
       readonly: false,
+      rules: undefined,
       size: 'md',
       trailingIcon: undefined,
       type: 'text',
@@ -116,6 +121,15 @@
   const fieldId = computed(() => String(attrs.id ?? generatedId))
   const descriptionId = computed(() => `${fieldId.value}-description`)
   const currentValue = computed(() => (props.value === undefined ? model.value : (props.value ?? '')))
+  const {
+    error,
+    input: validateInput,
+    validate,
+  } = useFieldRules(
+    currentValue,
+    computed(() => props.rules),
+    focus,
+  )
   const displayValue = computed(() =>
     props.mask === null || props.mask === undefined
       ? currentValue.value
@@ -126,7 +140,8 @@
     return Boolean(displayValue.value)
   })
 
-  const hasDescription = computed(() => Boolean(props.description || slots.description || slots.error))
+  const hasError = computed(() => Boolean(error.value))
+  const hasDescription = computed(() => Boolean(props.description || slots.description || hasError.value))
   const inputType = computed(() => {
     return props.type === 'password' && !showPassword.value ? 'password' : 'text'
   })
@@ -147,7 +162,12 @@
   ])
   const labelClasses = computed(() => twMerge(UI_STYLE.label, sizeClass.value.label, variantClass.value.label))
   const descriptionClasses = computed(() =>
-    twMerge(UI_STYLE.description, sizeClass.value.description, variantClass.value.description),
+    twMerge(
+      UI_STYLE.description,
+      sizeClass.value.description,
+      variantClass.value.description,
+      hasError.value && UI_STYLE.state.errorDescription,
+    ),
   )
   const leadingIconClasses = computed(() =>
     twMerge(
@@ -270,13 +290,14 @@
 
   function setValue(value: string): void {
     model.value = value
+    validateInput(value)
     if (props.mask !== null && props.mask !== undefined) {
       maskedValue.value = value
     }
     props.onInput?.(value, inputRef.value)
   }
 
-  defineExpose({ clear, fieldId, focus, hasFocus, inputRef })
+  defineExpose({ clear, fieldId, focus, hasFocus, inputRef, validate })
 </script>
 
 <template>
@@ -300,6 +321,7 @@
     <label
       :for="fieldId"
       :class="fieldWrapClasses"
+      :aria-invalid="hasError ? 'true' : undefined"
       :style="props.autoWidth ? { maxWidth: '100%', width: 'fit-content' } : undefined"
     >
       <span
@@ -339,6 +361,7 @@
         :readonly="props.readonly"
         :placeholder="props.placeholder"
         :aria-describedby="hasDescription ? descriptionId : undefined"
+        :aria-invalid="hasError ? 'true' : undefined"
         :class="fieldClasses"
         :style="fieldStyle"
         @input="handleInput"
@@ -400,8 +423,18 @@
         :id="descriptionId"
         :class="descriptionClasses"
       >
-        <slot name="error" />
-        <slot name="description">{{ props.description }}</slot>
+        <slot
+          v-if="hasError"
+          name="error"
+        >
+          {{ error }}
+        </slot>
+        <slot
+          v-else
+          name="description"
+        >
+          {{ props.description }}
+        </slot>
       </div>
     </TransitionSize>
   </div>

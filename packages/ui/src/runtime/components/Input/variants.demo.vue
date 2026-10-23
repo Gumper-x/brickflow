@@ -5,11 +5,19 @@
 </script>
 
 <script lang="ts" setup>
+  import { onMounted, ref } from 'vue'
+
   import { uiConfig } from '#brickflow-ui'
 
+  import { rule } from '../../utils/rules'
   import Input from './index.vue'
 
   const inputConfig = uiConfig.input
+  const errorInputs = ref<InstanceType<typeof Input>[]>([])
+
+  onMounted(() => {
+    errorInputs.value.forEach((input) => input.validate())
+  })
 </script>
 
 <template>
@@ -23,6 +31,14 @@
         :variant="variant"
         :label="`Variant ${variant}`"
         placeholder="Type here"
+      />
+      <Input
+        ref="errorInputs"
+        :variant="variant"
+        :label="`Error ${variant}`"
+        :rules="[rule.required(), rule.minLength(4)]"
+        description="This description is hidden while the field has an error"
+        placeholder="Required field"
       />
       <Input
         :variant="variant"

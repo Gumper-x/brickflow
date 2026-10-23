@@ -43,6 +43,8 @@ export interface ModuleOptions {
 
 export type { BrickflowConfig } from './runtime/composables/useBrickflow'
 export type { BrickflowI18n, BrickflowRouteLocationParam } from './runtime/composables/useTranslate'
+export { rule } from './runtime/utils/rules'
+export type { Rule, RuleMessages } from './runtime/utils/rules'
 
 const UI_STYLE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?|vue)$/
 const UI_COMPONENT_FILE_PATTERN = /(?:^|[/\\])index\.vue$/
@@ -686,6 +688,7 @@ export default defineNuxtModule<ModuleOptions>({
     })
 
     addImports([
+      { from: resolver.resolve('./runtime/utils/rules'), name: 'rule' },
       ...['provideBrickflow', 'useBrickflow', 'BrickflowConfig'].map((name) => ({
         from: resolver.resolve('./runtime/composables/useBrickflow'),
         name,

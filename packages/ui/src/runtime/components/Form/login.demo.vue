@@ -7,6 +7,7 @@
 <script lang="ts" setup>
   import { ref } from 'vue'
 
+  import { rule } from '../../utils/rules'
   import Button from '../Button/index.vue'
   import Input from '../Input/index.vue'
   import Form from './index.vue'
@@ -14,6 +15,12 @@
   const email = ref('')
   const password = ref('')
   const submittedEmail = ref('')
+  const emailRules = [
+    rule.required(),
+    rule.email(),
+    rule.regex(/\.com$/i, () => 'CUSTOM RULE: Use a .com email address'),
+  ]
+  const passwordRules = [rule.required(), rule.minLength(8)]
 
   function handleSubmit(): void {
     submittedEmail.value = email.value
@@ -30,6 +37,8 @@
       label="Email"
       placeholder="example@oyes.com"
       type="email"
+      :rules="emailRules"
+      description="Only .com"
       autocomplete="email"
       @input="email = $event"
     />
@@ -38,6 +47,7 @@
       placeholder="**********"
       label="Password"
       type="password"
+      :rules="passwordRules"
       autocomplete="current-password"
       @input="password = $event"
     />

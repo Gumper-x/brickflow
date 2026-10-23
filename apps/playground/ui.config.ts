@@ -263,20 +263,23 @@ export default defineBrickflowUi({
         autoWidth: 'w-fit',
         autoWidthField: 'flex-none',
         disabled: 'cursor-not-allowed opacity-50',
+        errorDescription: 'text-danger-500',
         readonly: 'opacity-75',
       },
       variant: {
         solid: {
           description: 'text-plain-500',
-          field: 'text-plain-200 placeholder:text-plain-500',
-          fieldWrap: 'global-border-gradient global-border-gradient-half bg-plain-900',
+          field: 'text-plain-200 placeholder:text-plain-500 aria-invalid:placeholder:text-danger-900',
+          fieldWrap:
+            'global-border-gradient global-border-gradient-half bg-plain-900 ring-inset aria-invalid:bg-danger-950/30 aria-invalid:ring-1 aria-invalid:ring-danger-800 ',
           icon: 'text-plain-500',
           label: 'text-plain-300',
         },
         text: {
           description: 'text-plain-500',
           field: 'text-plain-100 placeholder:text-plain-500',
-          fieldWrap: 'global-border-gradient global-border-gradient-half',
+          fieldWrap:
+            'global-border-gradient global-border-gradient-half ring-inset aria-invalid:bg-danger-950/30 aria-invalid:ring-1 aria-invalid:ring-danger-900',
           icon: 'text-plain-500',
           label: 'text-plain-300',
         },
