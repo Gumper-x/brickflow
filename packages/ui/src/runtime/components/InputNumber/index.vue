@@ -176,7 +176,6 @@
     if (!Number.isFinite(props.step) || props.step <= 0) {
       return
     }
-
     event.preventDefault()
     const parsedValue = Number(target.value)
     const currentValue = target.value !== '' && Number.isFinite(parsedValue) ? parsedValue : (props.value ?? 0)
