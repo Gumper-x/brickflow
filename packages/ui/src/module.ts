@@ -481,6 +481,20 @@ export default defineNuxtModule<ModuleOptions>({
         ].join('\n')
       },
     })
+    addTemplate({
+      filename: 'brickflow/brickflow-ui-icons.d.mts',
+      getContents: async () => {
+        const iconNames = iconFont ? await getIconFontNames(iconFont.inputDir) : []
+        const iconNameType = iconNames.length ? iconNames.map((name) => JSON.stringify(name)).join(' | ') : 'never'
+
+        return [
+          `export type IconName = ${iconNameType}`,
+          'export const firstIconName: IconName',
+          'export const iconNames: readonly IconName[]',
+          '',
+        ].join('\n')
+      },
+    })
 
     const uiConfigTemplate = addTemplate({
       filename: 'brickflow/brickflow-ui-config.mjs',

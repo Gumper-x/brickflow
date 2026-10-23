@@ -20,7 +20,7 @@
   const filteredIconNames = computed(() => {
     const query = search.value.trim().toLocaleLowerCase()
 
-    return query ? iconNames.filter((name) => name.toLocaleLowerCase().includes(query)) : iconNames
+    return query ? iconNames.filter((name: string) => name.toLocaleLowerCase().includes(query)) : iconNames
   })
 
   const copyIconName = async (name: string): Promise<void> => {

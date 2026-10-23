@@ -1,8 +1,10 @@
 <script lang="ts">
+  import type { IconName } from '#brickflow-ui'
+
   const UI_CONFIG = defineUiConfig<{
-    hidePasswordIconName: string
-    searchClearIconName: string
-    showPasswordIconName: string
+    hidePasswordIconName: IconName
+    searchClearIconName: IconName
+    showPasswordIconName: IconName
     sizeClasses: Record<
       string,
       {
@@ -51,7 +53,7 @@
       autoWidth?: boolean
       description?: string
       disabled?: boolean
-      icon?: string
+      icon?: IconName
       label?: string
       mask?: MaskInputOptions | MaskType
       onBlur?: (value: string, target: HTMLInputElement) => void
@@ -65,7 +67,7 @@
       readonly?: boolean
       rules?: Rule<string>[]
       size?: InputSize
-      trailingIcon?: string
+      trailingIcon?: IconName
       type?: 'decimal' | 'email' | 'numeric' | 'password' | 'search' | 'tel' | 'text' | 'url'
       value?: null | string
       variant?: InputVariant

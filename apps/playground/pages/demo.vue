@@ -20,7 +20,10 @@
   <main class="mx-auto max-w-3xl space-y-10 p-10 mb:p-6">
     <section class="space-y-4">
       <div class="flex flex-wrap items-center gap-3">
-        <BrickButton @click="clicks += 1">
+        <BrickButton
+          icon="cart"
+          @click="clicks += 1"
+        >
           <template #leading><span aria-hidden="true">+</span></template>
           Add item
         </BrickButton>

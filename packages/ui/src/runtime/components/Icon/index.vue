@@ -1,9 +1,11 @@
 <script setup lang="ts">
   import { computed } from 'vue'
 
+  import type { IconName } from '#brickflow-ui'
+
   const props = withDefaults(
     defineProps<{
-      name: string
+      name: IconName
     }>(),
     {},
   )

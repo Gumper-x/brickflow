@@ -1,8 +1,10 @@
 <script lang="ts">
+  import type { IconName } from '#brickflow-ui'
+
   const UI_CONFIG = defineUiConfig<{
     colorClasses: Record<string, Record<string, string>>
     colorDefault: string
-    loadingIconName: string
+    loadingIconName: IconName
     loadingIconTransition: string
     sizeClasses: Record<string, string>
     sizeDefault: string
@@ -28,14 +30,14 @@
       block?: boolean
       color?: ButtonColor
       disabled?: boolean
-      icon?: string
+      icon?: IconName
       loading?: boolean
       rounded?: boolean
       size?: ButtonSize
       square?: boolean
       target?: '_blank' | '_parent' | '_self' | '_top' | null | (Record<string, never> & string)
       to?: RouteLocationRaw
-      trailingIcon?: string
+      trailingIcon?: IconName
       type?: 'button' | 'reset' | 'submit'
       variant?: ButtonVariant
     }>(),

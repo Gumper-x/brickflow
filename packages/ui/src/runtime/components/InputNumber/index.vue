@@ -1,6 +1,8 @@
 <script setup lang="ts" generic="T extends boolean = false">
   import { computed, ref, shallowRef, watch } from 'vue'
 
+  import type { IconName } from '#brickflow-ui'
+
   import type { Rule } from '../../utils/rules'
 
   import { isEmpty } from '../../utils/checkup.js'
@@ -16,7 +18,7 @@
       denominator?: number
       description?: string
       disabled?: boolean
-      icon?: string
+      icon?: IconName
       label?: string
       max?: number
       min?: number
@@ -33,7 +35,7 @@
       rules?: Rule<null | number>[]
       size?: InputProps['size']
       step?: number
-      trailingIcon?: string
+      trailingIcon?: IconName
       value: true extends NoInfer<T> ? null | number : number
       variant?: InputProps['variant']
     }>(),
