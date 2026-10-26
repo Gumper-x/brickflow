@@ -2,7 +2,7 @@ import type { HttpClient, HttpKey, HttpParam, HttpResponseData } from './http'
 import type { HttpError, UseHttpFn, UseHttpOptions, UseHttpResult } from './nuxt'
 
 export interface CreateGetFactory<P extends HttpParam> {
-  <T extends string>(
+  <T extends HttpKey>(
     url: T,
     payload?: CreateGetPayload<T, CreateGetParams<T, P>>,
   ): (options?: CreateGetOptions<T, CreateGetParams<T, P>>) => Promise<CreateGetResult<T, CreateGetParams<T, P>>>
@@ -61,7 +61,7 @@ export function createUseCase<D>() {
 
 export function defineGet(useHttp: UseHttpFn) {
   return function withParams<P extends HttpParam = CreateGetEmptyParams>(): CreateGetFactory<P> {
-    function withUrl<T extends string>(
+    function withUrl<T extends HttpKey>(
       url: T,
       payload?: CreateGetPayload<T, CreateGetParams<T, P>>,
     ): (

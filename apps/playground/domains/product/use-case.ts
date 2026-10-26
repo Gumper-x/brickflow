@@ -11,7 +11,6 @@ export default createUseCase()(({ httpClient }) => {
 
     productOne: createGet()('/products/:productId'),
     productOne2: createGet<{ test: number }>()('/products/:productId'),
-    productOne3: createGet()('/products/:sex'),
     products: createGet<{
       limit: number
     }>()('/products'),
