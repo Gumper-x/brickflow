@@ -32,11 +32,14 @@ export interface UseHttpCacheEntry<T> {
   value: T
 }
 
+export type UseHttpConfig<T extends HttpKey = HttpKey> = Omit<GetConfig<T>, 'params' | 'signal'>
+
 export interface UseHttpFn {
   <T extends HttpKey, P extends HttpParam>(options: UseHttpOptions<T, P>): Promise<UseHttpResult<T, P>>
 }
 
 export interface UseHttpOptions<T extends HttpKey, P extends HttpParam> {
+  config?: UseHttpConfig<T>
   effect?: UseHttpEffect<T, P>
   initParams?: P
   isError?: (payload: HttpResponseData<T>) => boolean
@@ -131,6 +134,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
 
       try {
         const response = await httpClient.get<T>(options.url, {
+          ...options.config,
           params: mappedParams,
         } as GetConfig<T>)
         const responsePayload = response.data as HttpResponseData<T>
@@ -226,6 +230,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
 
           const signalHttp = fetchOpt?.signal ? [controller.signal, fetchOpt.signal] : controller.signal
           const response = await httpClient.get<T>(options.url, {
+            ...options.config,
             params: mappedParams,
             signal: signalHttp,
           } as GetConfig<T>)

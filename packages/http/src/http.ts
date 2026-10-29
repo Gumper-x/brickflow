@@ -108,7 +108,7 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
             return attemptRequest(attempt + 1)
           }
 
-          await options.onResponse?.(response as HttpAnyResponse)
+          await options.onResponse?.(response as unknown as HttpAnyResponse)
           return response
         } catch (error) {
           if (isAbortError(error) || attempt >= retries) {
@@ -158,7 +158,7 @@ export function createHttp(options: CreateHttpOptions): HttpClient {
         status: response.status,
       }
 
-      await options.onResponse?.(parsedResponse as HttpAnyResponse)
+      await options.onResponse?.(parsedResponse as unknown as HttpAnyResponse)
       return parsedResponse
     },
   }
