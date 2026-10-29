@@ -1,9 +1,5 @@
 # @brickflow/ui
 
-## 0.0.58
-
-No changes in this release.
-
 ## 0.0.57
 
 ### Patch Changes

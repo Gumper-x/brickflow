@@ -1,11 +1,5 @@
 # @brickflow/cli
 
-## 0.0.58
-
-### Patch Changes
-
-- translate: add `--dirs` option to `translate-sync`, `translate-context` and `translate` (default `packages/brick,apps/*`)
-
 ## 0.0.57
 
 ### Patch Changes
