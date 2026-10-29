@@ -9,7 +9,7 @@ export type BrickflowUiConfigObject = {
   readonly [key: string]: BrickflowUiConfigValue
 }
 
-export type BrickflowUiConfigValue = BrickflowUiConfigObject | BrickflowUiStyleReference | string
+export type BrickflowUiConfigValue = boolean | BrickflowUiConfigObject | BrickflowUiStyleReference | string
 
 export interface BrickflowUiStyleReference {
   readonly [UI_STYLE_REFERENCE]: readonly string[]
@@ -150,7 +150,11 @@ function validateUiConfig(value: unknown, path = 'uiConfig'): asserts value is B
   for (const [key, childValue] of Object.entries(value)) {
     const childPath = `${path}.${key}`
 
-    if (typeof childValue === 'string' || isBrickflowUiStyleReference(childValue)) {
+    if (
+      typeof childValue === 'string' ||
+      typeof childValue === 'boolean' ||
+      isBrickflowUiStyleReference(childValue)
+    ) {
       continue
     }
 
@@ -159,7 +163,7 @@ function validateUiConfig(value: unknown, path = 'uiConfig'): asserts value is B
       continue
     }
 
-    throw new TypeError(`${childPath} must be a string, UI_STYLE reference, or an object.`)
+    throw new TypeError(`${childPath} must be a string, boolean, UI_STYLE reference, or an object.`)
   }
 }
 

@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+  import { LazyDialogExample } from '#components'
+
   const screen = useScreen()
   const clicks = ref(0)
   const screenReady = ref(false)
@@ -9,6 +11,7 @@
     return screens.find((key) => screen[key]) ?? 'unknown'
   })
   const { theme } = useTheme()
+  const dialog = useDialog()
 
   onMounted(async () => {
     await screen.ready
@@ -19,6 +22,36 @@
 <template>
   <main class="mx-auto max-w-3xl space-y-10 p-10 mb:p-6">
     <section class="space-y-4">
+      <BrickButton @click="dialog.open(LazyDialogExample, { text: `Dialog №${dialog.stack.length + 1}` })">
+        Open dialog
+      </BrickButton>
+      <BrickButton
+        @click="
+          dialog.open(
+            LazyDialogExample,
+            { text: `Dialog №${dialog.stack.length + 1} · bottom` },
+            { placement: 'bottom' },
+          )
+        "
+      >
+        Open at bottom
+      </BrickButton>
+      <BrickButton
+        @click="
+          dialog.open(
+            LazyDialogExample,
+            { text: `Dialog №${dialog.stack.length + 1} · movable bottom` },
+            { placement: 'bottom', rubberBand: false },
+          )
+        "
+      >
+        Open movable bottom
+      </BrickButton>
+      <BrickButton
+        @click="dialog.open(LazyDialogExample, { text: 'Fullscreen dialog' }, { placement: 'fullscreen' })"
+      >
+        Open fullscreen
+      </BrickButton>
       <div class="flex flex-wrap items-center gap-3">
         <BrickButton
           icon="cart"
@@ -66,15 +99,15 @@
 
     <ClientOnly>{{ theme }}</ClientOnly>
     <section class="space-y-4">
-      <p class="text-sm font-medium text-gray-500">useScreen</p>
-      <p class="text-sm text-gray-300">
+      <p class="text-sm font-medium text-plain-500">useScreen</p>
+      <p class="text-sm text-plain-300">
         <template v-if="screenReady">
           Active range:
           <strong>{{ activeScreen }}</strong>
         </template>
         <template v-else>Detecting screen size…</template>
       </p>
-      <div class="grid gap-2 rounded-lg bg-gray-100 p-3 text-sm font-medium text-gray-700">
+      <div class="grid gap-2 rounded-lg bg-plain-100 p-3 text-sm font-medium text-plain-700">
         TEST LINT
         <p
           v-if="screen.lp && clicks === 2"

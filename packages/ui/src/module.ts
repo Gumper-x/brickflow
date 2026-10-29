@@ -1,6 +1,7 @@
 import {
   addComponentsDir,
   addImports,
+  addPlugin,
   addTemplate,
   addTypeTemplate,
   createResolver,
@@ -42,6 +43,7 @@ export interface ModuleOptions {
 }
 
 export type { BrickflowConfig } from './runtime/composables/useBrickflow'
+export type { DialogController, DialogHandle, DialogOptions } from './runtime/composables/useDialog'
 export type { BrickflowI18n, BrickflowRouteLocationParam } from './runtime/composables/useTranslate'
 export { rule } from './runtime/utils/rules'
 export type { Rule, RuleMessages } from './runtime/utils/rules'
@@ -702,6 +704,7 @@ export default defineNuxtModule<ModuleOptions>({
     })
 
     addImports([
+      { as: 'useDialog', from: resolver.resolve('./runtime/composables/useDialog'), name: 'useDialog' },
       { from: resolver.resolve('./runtime/utils/rules'), name: 'rule' },
       ...['provideBrickflow', 'useBrickflow', 'BrickflowConfig'].map((name) => ({
         from: resolver.resolve('./runtime/composables/useBrickflow'),
@@ -718,8 +721,9 @@ export default defineNuxtModule<ModuleOptions>({
         type: name !== 'useTheme',
       })),
     ])
+    addPlugin({ mode: 'all', src: resolver.resolve('./runtime/plugins/dialog.ts') })
     addComponentsDir({
-      ignore: ['**/*.demo.vue'],
+      ignore: ['**/*.demo.vue', '**/Dialog/Host.vue', '**/Dialog/DemoContent.vue'],
       path: resolver.resolve('./runtime/components'),
       pathPrefix: false,
       prefix: options.componentPrefix ?? 'Brick',
