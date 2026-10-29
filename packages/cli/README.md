@@ -32,3 +32,13 @@ If a stroked element also has a visible fill, its original fill geometry is kept
 Run `brick svg` first for general SVGO optimization and `brick svg-fix` last for stroke expansion. After all strokes are expanded, later `svg-fix` runs do nothing; the two commands no longer alternate between competing canonical formats.
 
 Geometry and stroke lengths must be unitless or use `px`. Non-scaling strokes are rejected because expanding them correctly would require changing transforms; the original file is left untouched on failure.
+
+## Translation directories
+
+`brick translate-sync`, `brick translate-context` and `brick translate` look for translatable sources in `packages/brick` and `apps/*` by default. Pass `--dirs` to use other directories:
+
+```sh
+brick translate-sync --dirs "packages/stem,apps/*"
+```
+
+Directories are comma-separated, relative to the workspace root, and may contain globs. Quote the value so the shell does not expand `*`.
