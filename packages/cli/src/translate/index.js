@@ -5,7 +5,7 @@ import { resolveWorkspaceRoot } from '../shared/workspace-root.js'
 import { getContextFilePath, readAiContextDescription } from '../translate-context/ai-context.js'
 import { translateBatch } from './ai.js'
 import { buildTranslateHelp, parseTranslateRuntimeArgs, setTranslateRuntimeConfig } from './runtime-config.js'
-import { listTranslationTargets, sortObjectKeys, stringifySortedJson } from './utils.js'
+import { listTranslationTargets, setTranslateDirs, sortObjectKeys, stringifySortedJson } from './utils.js'
 
 const workspaceRoot = resolveWorkspaceRoot()
 const rawArgs = process.argv.slice(3)
@@ -20,6 +20,7 @@ let requestedLanguageCodes
 
 try {
   setTranslateRuntimeConfig(options)
+  setTranslateDirs(options.dirs, workspaceRoot)
   requestedLanguageCodes = parseLanguageCodes(options.locales)
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error))

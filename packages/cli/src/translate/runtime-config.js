@@ -1,3 +1,5 @@
+import { DEFAULT_TRANSLATE_DIRS } from './utils.js'
+
 export const DEFAULT_CONTEXT_MODEL = 'gemini-3.1-flash-lite-preview'
 
 let runtimeConfig = null
@@ -14,6 +16,7 @@ Required options:
 
 Optional:
   --context-model "<model>"  Default: ${DEFAULT_CONTEXT_MODEL}
+  --dirs "<dir,dir>"         Default: ${DEFAULT_TRANSLATE_DIRS.join(',')}
 
 Example:
   ${command} \\
@@ -34,6 +37,7 @@ export function parseTranslateRuntimeArgs(rawArgs) {
   const options = {
     apiKey: null,
     contextModel: DEFAULT_CONTEXT_MODEL,
+    dirs: undefined,
     locales: undefined,
     productContext: null,
   }
@@ -56,6 +60,12 @@ export function parseTranslateRuntimeArgs(rawArgs) {
 
     if (value === '--context-model') {
       options.contextModel = rawArgs[index + 1] ?? DEFAULT_CONTEXT_MODEL
+      index += 1
+      continue
+    }
+
+    if (value === '--dirs') {
+      options.dirs = rawArgs[index + 1] ?? null
       index += 1
       continue
     }

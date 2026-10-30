@@ -14,12 +14,15 @@ import {
   parseTranslateRuntimeArgs,
   setTranslateRuntimeConfig,
 } from '../translate/runtime-config.js'
-import { listTranslationTargets, stringifySortedJson } from '../translate/utils.js'
+import {
+  getTranslationGlobs,
+  listTranslationTargets,
+  setTranslateDirs,
+  stringifySortedJson,
+} from '../translate/utils.js'
 
 const workspaceRoot = resolveWorkspaceRoot()
 const CONTEXT_FILE_NAME = 'ai-context.json'
-const CONTEXT_FILE_GLOB =
-  '{packages/brick,apps/*}/{components/**/translate,pages-translate/*,layouts-translate/**,script-translate/*}/ai-context.json'
 const CHANGE_THRESHOLD = readFloat('TRANSLATE_CONTEXT_MIN_CHANGE', 0.3)
 const SOURCE_MAX_CHARS = readPositiveInt('TRANSLATE_CONTEXT_SOURCE_MAX_CHARS', 16000)
 
@@ -122,7 +125,7 @@ export function readAiContextDescription(samplePath) {
 
 export function removeObsoleteAiContexts(targets, rootDir = workspaceRoot) {
   const activeContextPaths = new Set(targets.map(({ samplePath }) => getContextFilePath(samplePath)))
-  const contextPaths = globSync(CONTEXT_FILE_GLOB, {
+  const contextPaths = globSync(getTranslationGlobs(CONTEXT_FILE_NAME), {
     absolute: true,
     cwd: rootDir,
     nodir: true,
@@ -152,6 +155,7 @@ export async function runAiContextCli(rawArgs = process.argv.slice(3), command =
 
   try {
     setTranslateRuntimeConfig(options)
+    setTranslateDirs(options.dirs, workspaceRoot)
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     console.error('')

@@ -4,9 +4,12 @@ import path from 'path'
 
 import {
   compileVueToJS,
+  DEFAULT_TRANSLATE_DIRS,
   extractStrings,
+  getTranslateDirs,
   getTranslationPaths,
   listWorkspaceFiles,
+  setTranslateDirs,
   sortObjectKeys,
   stringifySortedJson,
 } from '../translate/utils.js'
@@ -20,21 +23,31 @@ if (args.includes('--help') || args.includes('-h')) {
   process.exit(0)
 }
 
-if (args.length > 0) {
+const dirsIndex = args.indexOf('--dirs')
+const isValidArgs = args.length === 0 || (args.length === 2 && dirsIndex === 0)
+
+if (!isValidArgs) {
   printHelp()
   process.exit(1)
 }
 
 const workspaceRoot = resolveWorkspaceRoot()
+
+try {
+  setTranslateDirs(dirsIndex === 0 ? args[1] : undefined, workspaceRoot)
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error))
+  process.exit(1)
+}
 const activeTranslationDirs = new Set()
 const cleanupRoots = new Set()
-const staticCleanupRoots = [
-  path.resolve(workspaceRoot, 'packages/brick/script-translate'),
-  ...globSync('apps/*/script-translate', {
+const staticCleanupRoots = globSync(
+  getTranslateDirs().map((dir) => `${dir}/script-translate`),
+  {
     absolute: true,
     cwd: workspaceRoot,
-  }),
-]
+  },
+)
 
 const files = listWorkspaceFiles(workspaceRoot).filter(
   (file) => /\.(?:js|ts|vue)$/.test(file) && !file.endsWith('.d.ts'),
@@ -152,7 +165,10 @@ function printHelp() {
   console.log(`brick translate-sync
 
 Usage:
-  brick translate-sync
+  brick translate-sync [--dirs "<dir,dir>"]
+
+Options:
+  --dirs  Comma-separated translation directories. Default: ${DEFAULT_TRANSLATE_DIRS.join(',')}
 
 Notes:
   Scans source files and regenerates translation sample.json files

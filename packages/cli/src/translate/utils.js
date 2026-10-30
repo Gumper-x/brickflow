@@ -4,9 +4,11 @@ import { isIdentifier, isMemberExpression, isStringLiteral, isTemplateLiteral } 
 import { compileTemplate, parse as parseSFC } from '@vue/compiler-sfc'
 import { execFileSync } from 'child_process'
 import { createHash } from 'crypto'
-import { existsSync } from 'fs'
+import { existsSync, statSync } from 'fs'
 import { globSync } from 'glob'
-import { join, resolve } from 'path'
+import { dirname, join, relative, resolve } from 'path'
+
+import { resolveWorkspaceRoot } from '../shared/workspace-root.js'
 
 const tTraverse = traverseModule.default || traverseModule
 const IGNORED_GLOB_PATTERNS = [
@@ -18,8 +20,12 @@ const IGNORED_GLOB_PATTERNS = [
   '**/public/**',
 ]
 const IGNORED_SOURCE_SEGMENTS = ['/node_modules/', '/.nuxt/', '/dist/', '/.output/', '/coverage/', '/public/']
-const TRANSLATION_SAMPLE_GLOB =
-  '{packages/brick,apps/*}/{components/**/translate,pages-translate/*,layouts-translate/**,script-translate/*}/sample.json'
+export const DEFAULT_TRANSLATE_DIRS = ['packages/brick', 'apps/*']
+const TRANSLATION_DIRS_GLOB = '{components/**/translate,pages-translate/*,layouts-translate/**,script-translate/*}'
+
+let translateDirs = DEFAULT_TRANSLATE_DIRS
+let translateRoots = null
+let workspaceRootDir = null
 
 export function compileVueToJS(code, filePath) {
   const { descriptor } = parseSFC(code)
@@ -127,21 +133,28 @@ export function getProjectName(id) {
 
 export function getProjectRoot(id) {
   const normalizedId = id.replace(/[?#].*$/, '')
-  const brickMatch = normalizedId.match(/^(.*\/packages\/brick)(?:\/|$)/)
 
-  if (brickMatch) {
-    return brickMatch[1]
+  if (!translateRoots) {
+    setTranslateDirs(undefined, resolveWorkspaceRoot())
   }
 
-  const appMatch = normalizedId.match(/^(.*\/apps\/[^/]+)(?:\/|$)/)
-
-  return appMatch?.[1] ?? null
+  return translateRoots.find((rootDir) => normalizedId.startsWith(`${rootDir}/`)) ?? null
 }
 
 export function getScriptName(id) {
-  const relativePath = id.split('/packages/')[1] ?? id.split('/apps/')[1] ?? id.replace(/^\//, '')
+  const projectRoot = getProjectRoot(id)
+  const baseDir = projectRoot ? dirname(projectRoot) : (workspaceRootDir ?? resolveWorkspaceRoot())
+  const relativePath = relative(baseDir, id).replace(/\\/g, '/')
 
   return toPageName(relativePath.replace(/\.\w+$/, '').replace(/\//g, '_'))
+}
+
+export function getTranslateDirs() {
+  return translateDirs
+}
+
+export function getTranslationGlobs(fileName) {
+  return translateDirs.map((dir) => `${dir}/${TRANSLATION_DIRS_GLOB}/${fileName}`)
 }
 
 export function getTranslationPaths(id) {
@@ -158,18 +171,16 @@ export function getTranslationPaths(id) {
     return null
   }
 
-  const isComponent =
-    normalizedId.endsWith('.vue') &&
-    (normalizedId.includes('/packages/brick/components/') ||
-      (normalizedId.includes('/apps/') && normalizedId.includes('/components/')))
+  const projectRoot = getProjectRoot(normalizedId)
+  if (!projectRoot) {
+    return null
+  }
+
+  const isComponent = normalizedId.endsWith('.vue') && normalizedId.includes('/components/')
   const isPage = normalizedId.endsWith('.vue') && normalizedId.includes('/pages/')
   const isLayout = normalizedId.endsWith('.vue') && normalizedId.includes('/layouts/')
-  const projectRoot = getProjectRoot(normalizedId)
   const isScript =
-    !normalizedId.endsWith('.vue') &&
-    Boolean(projectRoot) &&
-    /\.(?:js|ts)$/.test(normalizedId) &&
-    !normalizedId.endsWith('.d.ts')
+    !normalizedId.endsWith('.vue') && /\.(?:js|ts)$/.test(normalizedId) && !normalizedId.endsWith('.d.ts')
 
   if (isComponent && !normalizedId.endsWith('/index.vue')) {
     return null
@@ -235,7 +246,7 @@ export function getTranslationPaths(id) {
 }
 
 export function listTranslationSamplePaths(workspaceRoot) {
-  return globSync(TRANSLATION_SAMPLE_GLOB, {
+  return globSync(getTranslationGlobs('sample.json'), {
     absolute: true,
     cwd: workspaceRoot,
     ignore: IGNORED_GLOB_PATTERNS,
@@ -287,6 +298,32 @@ export function listWorkspaceFiles(workspaceRoot) {
 
 export function normalize(input) {
   return input.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+export function setTranslateDirs(value, workspaceRoot) {
+  const dirs =
+    value === undefined
+      ? DEFAULT_TRANSLATE_DIRS
+      : String(value ?? '')
+          .split(',')
+          .map((dir) => dir.trim().replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, ''))
+          .filter(Boolean)
+
+  if (dirs.length === 0) {
+    throw new Error(
+      'Invalid --dirs value. Use comma-separated directories, for example: --dirs "packages/stem,apps/*"',
+    )
+  }
+
+  translateDirs = dirs
+  workspaceRootDir = workspaceRoot
+  translateRoots = globSync(dirs, {
+    absolute: true,
+    cwd: workspaceRoot,
+    ignore: IGNORED_GLOB_PATTERNS,
+  })
+    .filter((dirPath) => statSync(dirPath).isDirectory())
+    .sort((left, right) => right.length - left.length)
 }
 
 export function shortHash(input) {
