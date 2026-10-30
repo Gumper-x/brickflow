@@ -6,7 +6,7 @@ import { execFileSync } from 'child_process'
 import { createHash } from 'crypto'
 import { existsSync, statSync } from 'fs'
 import { globSync } from 'glob'
-import { join, resolve } from 'path'
+import { dirname, join, relative, resolve } from 'path'
 
 import { resolveWorkspaceRoot } from '../shared/workspace-root.js'
 
@@ -25,6 +25,7 @@ const TRANSLATION_DIRS_GLOB = '{components/**/translate,pages-translate/*,layout
 
 let translateDirs = DEFAULT_TRANSLATE_DIRS
 let translateRoots = null
+let workspaceRootDir = null
 
 export function compileVueToJS(code, filePath) {
   const { descriptor } = parseSFC(code)
@@ -141,7 +142,9 @@ export function getProjectRoot(id) {
 }
 
 export function getScriptName(id) {
-  const relativePath = id.split('/packages/')[1] ?? id.split('/apps/')[1] ?? id.replace(/^\//, '')
+  const projectRoot = getProjectRoot(id)
+  const baseDir = projectRoot ? dirname(projectRoot) : (workspaceRootDir ?? resolveWorkspaceRoot())
+  const relativePath = relative(baseDir, id).replace(/\\/g, '/')
 
   return toPageName(relativePath.replace(/\.\w+$/, '').replace(/\//g, '_'))
 }
@@ -169,15 +172,15 @@ export function getTranslationPaths(id) {
   }
 
   const projectRoot = getProjectRoot(normalizedId)
-  const isComponent =
-    normalizedId.endsWith('.vue') && Boolean(projectRoot) && normalizedId.includes('/components/')
+  if (!projectRoot) {
+    return null
+  }
+
+  const isComponent = normalizedId.endsWith('.vue') && normalizedId.includes('/components/')
   const isPage = normalizedId.endsWith('.vue') && normalizedId.includes('/pages/')
   const isLayout = normalizedId.endsWith('.vue') && normalizedId.includes('/layouts/')
   const isScript =
-    !normalizedId.endsWith('.vue') &&
-    Boolean(projectRoot) &&
-    /\.(?:js|ts)$/.test(normalizedId) &&
-    !normalizedId.endsWith('.d.ts')
+    !normalizedId.endsWith('.vue') && /\.(?:js|ts)$/.test(normalizedId) && !normalizedId.endsWith('.d.ts')
 
   if (isComponent && !normalizedId.endsWith('/index.vue')) {
     return null
@@ -313,6 +316,7 @@ export function setTranslateDirs(value, workspaceRoot) {
   }
 
   translateDirs = dirs
+  workspaceRootDir = workspaceRoot
   translateRoots = globSync(dirs, {
     absolute: true,
     cwd: workspaceRoot,
