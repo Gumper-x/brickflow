@@ -1,6 +1,6 @@
 import { onMounted, reactive } from 'vue'
 
-type ScreenKey = keyof ScreenState
+export type ScreenKey = keyof ScreenState
 
 interface ScreenState {
   dk: boolean

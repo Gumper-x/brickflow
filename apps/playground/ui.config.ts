@@ -74,6 +74,10 @@ export default defineBrickflowUi({
       },
       variantDefault: 'solid',
     },
+    dialog: {
+      placement: { dk: 'center', lp: 'center', mb: 'bottom', ms: 'bottom', tb: 'center' },
+      rubberBand: true,
+    },
     input: {
       hidePasswordIconName: 'eye-closed',
       searchClearIconName: 'x',
@@ -212,6 +216,41 @@ export default defineBrickflowUi({
         disabled: 'pointer-events-none opacity-50',
         loading: 'animate-spin',
         square: 'aspect-square px-0',
+      },
+    },
+    dialog: {
+      content: 'flex min-h-0 flex-1 flex-col *:flex-1',
+      contentBottom: '*:after:block *:after:h-(--dialog-rubber-height) *:after:shrink-0',
+      handle: 'absolute inset-x-0 top-0 z-10 grid h-7 cursor-grab touch-none place-items-center',
+      handleIndicator: 'h-1 w-9 rounded-full bg-plain-500',
+      panel:
+        'global-border-gradient-half global-border-gradient relative flex flex-col overflow-hidden bg-plain-950 shadow-2xl',
+      placementClasses: {
+        bottom: 'max-h-full w-full origin-bottom rounded-2xl',
+        center: 'max-h-full w-full max-w-2xl rounded-2xl',
+        fullscreen: 'size-full rounded-2xl',
+      },
+      rubberSettle: '*:after:transition-all *:after:duration-300 *:after:ease-out',
+    },
+    host: {
+      animation: {
+        backdropSettle: 'transition-opacity duration-300 ease-out',
+        enterActive:
+          'transition-opacity duration-300 ease-out **:data-dialog-panel:transition-transform **:data-dialog-panel:duration-300 **:data-dialog-panel:ease-out',
+        enterFrom:
+          'opacity-0 **:data-dialog-panel:scale-95 data-[placement=bottom]:**:data-dialog-panel:translate-y-full',
+        leaveActive:
+          'transition-opacity duration-250 ease-in **:data-dialog-panel:transition-transform **:data-dialog-panel:duration-250 **:data-dialog-panel:ease-in',
+        leaveTo:
+          'opacity-0 **:data-dialog-panel:scale-95 data-[placement=bottom]:**:data-dialog-panel:translate-y-full',
+        panelSettle: 'transition-transform duration-300 ease-out',
+      },
+      backdrop: 'absolute inset-0 touch-none bg-plain-950/55',
+      layer: 'fixed inset-0 grid',
+      placementClasses: {
+        bottom: 'items-end p-4',
+        center: 'place-items-center p-6',
+        fullscreen: 'items-stretch p-6',
       },
     },
     input: {
