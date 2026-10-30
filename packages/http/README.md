@@ -206,6 +206,7 @@ export const createGet = defineGet(useHttp)
 
 - `url`
 - `initParams`
+- `config` — расширенный `HttpConfig` (например, `ignore`) и `retry`, уходит в `httpClient.get`
 - `effect`
 - `isError`
 - `lazy`
@@ -320,10 +321,23 @@ const productsHttp = await products({
 })
 ```
 
-Если `effect` или `isError` указаны и при объявлении, и при вызове, пакет объединяет их так:
+Если `effect`, `isError` или `config` указаны и при объявлении, и при вызове, пакет объединяет их так:
 
 - `effect` вызывает оба обработчика
 - `isError` из runtime имеет приоритет
+- `config` мерджится, поля из runtime имеют приоритет
+
+`config` пробрасывает поля расширенного `HttpConfig` в `httpClient.get`, поэтому они доступны в `onResponse` через `response.config`:
+
+```ts
+const products = createGet<{ limit: number }>()('/products', {
+  config: { ignore: ['not_found'] },
+})
+
+await products({ config: { ignore: ['not_found', 'expired'] } })
+```
+
+`params` и `signal` через `config` не передаются — ими управляет `useHttp`.
 
 ## createUseCase
 
