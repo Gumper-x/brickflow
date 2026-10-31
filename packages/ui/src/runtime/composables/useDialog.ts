@@ -12,7 +12,7 @@ export interface DialogController {
 export interface DialogEntry {
   component: Component
   id: number
-  options: Required<DialogOptions>
+  options: Required<DialogOptions> & { rubberBand: boolean }
   props: Record<string, unknown>
 }
 
@@ -26,8 +26,6 @@ export interface DialogOptions {
   placement?: DialogPlacementConfig
   /** Prevent backdrop, Escape, and swipe dismissal. Defaults to false. */
   preventClose?: boolean
-  /** Stretch the bottom sheet when dragging upward. Defaults to true. */
-  rubberBand?: boolean
 }
 
 export type DialogPlacement = 'bottom' | 'center' | 'fullscreen'
@@ -39,7 +37,9 @@ type DialogProps<C> = C extends new (...args: never[]) => { $props: infer P }
 
 export const dialogKey: InjectionKey<DialogController> = Symbol('brickflow-dialog')
 
-export function createDialogController(defaultOptions: DialogOptions = {}): DialogController {
+export function createDialogController(
+  defaultOptions: DialogOptions & { rubberBand?: boolean } = {},
+): DialogController {
   const stack = reactive<DialogEntry[]>([])
   let nextId = 0
 
@@ -62,7 +62,7 @@ export function createDialogController(defaultOptions: DialogOptions = {}): Dial
         options: {
           placement: options.placement ?? defaultOptions.placement ?? 'center',
           preventClose: options.preventClose ?? defaultOptions.preventClose ?? false,
-          rubberBand: options.rubberBand ?? defaultOptions.rubberBand ?? true,
+          rubberBand: defaultOptions.rubberBand ?? true,
         },
         props: { ...props },
       })

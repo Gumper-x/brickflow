@@ -37,17 +37,6 @@
         Open at bottom
       </BrickButton>
       <BrickButton
-        @click="
-          dialog.open(
-            LazyDialogExample,
-            { text: `Dialog №${dialog.stack.length + 1} · movable bottom` },
-            { placement: 'bottom', rubberBand: false },
-          )
-        "
-      >
-        Open movable bottom
-      </BrickButton>
-      <BrickButton
         @click="dialog.open(LazyDialogExample, { text: 'Fullscreen dialog' }, { placement: 'fullscreen' })"
       >
         Open fullscreen

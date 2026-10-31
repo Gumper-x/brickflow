@@ -29,6 +29,7 @@
     data-dialog-panel
     role="dialog"
     aria-modal="true"
+    tabindex="-1"
     :style="{
       '--dialog-rubber-height':
         placement === 'bottom' && rubberBand ? `${Math.max(0, -(dragY ?? 0))}px` : undefined,

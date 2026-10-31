@@ -21,13 +21,6 @@
     <Button @click="dialog.open(LazyDemoDialog, { title: 'Bottom sheet' }, { placement: 'bottom' })">
       Bottom sheet
     </Button>
-    <Button
-      @click="
-        dialog.open(LazyDemoDialog, { title: 'Movable bottom sheet' }, { placement: 'bottom', rubberBand: false })
-      "
-    >
-      Movable sheet
-    </Button>
     <Button @click="dialog.open(LazyDemoDialog, { title: 'Fullscreen dialog' }, { placement: 'fullscreen' })">
       Fullscreen
     </Button>

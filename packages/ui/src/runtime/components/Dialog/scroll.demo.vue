@@ -20,17 +20,6 @@
     <Button @click="dialog.open(LazyDemoContent, { text: 'Scrollable bottom sheet' }, { placement: 'bottom' })">
       Scrollable sheet
     </Button>
-    <Button
-      @click="
-        dialog.open(
-          LazyDemoContent,
-          { text: 'Movable scrollable sheet' },
-          { placement: 'bottom', rubberBand: false },
-        )
-      "
-    >
-      Scrollable movable sheet
-    </Button>
     <Button @click="dialog.open(LazyDemoContent, { text: 'Scrollable centered dialog' }, { placement: 'center' })">
       Scrollable center
     </Button>

@@ -11,7 +11,6 @@ dialog.close() // closes the top dialog
 dialog.closeAll() // closes every dialog
 
 dialog.open(LazySomeUserDialog, { text: 'test', userId: 42 }, { placement: 'bottom' })
-dialog.open(LazySomeUserDialog, { text: 'test', userId: 42 }, { placement: 'bottom', rubberBand: false })
 dialog.open(LazySomeUserDialog, { text: 'test', userId: 42 }, { placement: 'fullscreen' })
 ```
 
@@ -23,7 +22,7 @@ dialog: {
 }
 ```
 
-The screen ranges are `dk` (1440 px and wider), `lp` (1024–1439 px), `tb` (768–1023 px), `mb` (480–767 px), and `ms` (under 480 px). A responsive placement must specify all five ranges. Each range can use `center`, `bottom`, or `fullscreen`. Drag a bottom sheet down from its handle, backdrop, or content to close it. Scrollable content scrolls normally; once it reaches an edge, dragging can move the sheet. The content component controls its own scrolling with `overflow-y-auto` and `min-h-0`. Upward dragging has elastic resistance in both modes. By default, it stretches the content; set `rubberBand: false` in `uiConfig.dialog` or per dialog to move the whole sheet upward with the same resistance. Set `preventClose: true` to disable backdrop, Escape, and swipe dismissal. Placement styles live in `uiStyles.dialog.placementClasses` and `uiStyles.host.placementClasses`.
+The screen ranges are `dk` (1440 px and wider), `lp` (1024–1439 px), `tb` (768–1023 px), `mb` (480–767 px), and `ms` (under 480 px). A responsive placement must specify all five ranges. Each range can use `center`, `bottom`, or `fullscreen`. Drag a bottom sheet down from its handle, backdrop, or content to close it. Scrollable content scrolls normally; once it reaches an edge, dragging can move the sheet. The content component controls its own scrolling with `overflow-y-auto` and `min-h-0`. Upward dragging has elastic resistance in both modes. By default, it stretches the content; set `rubberBand: false` in `uiConfig.dialog` to move the whole sheet upward with the same resistance. Set `preventClose: true` to disable backdrop, Escape, and swipe dismissal. Placement styles live in `uiStyles.dialog.placementClasses` and `uiStyles.host.placementClasses`.
 
 The UI playground includes runnable examples for placement and motion, a form with explicit dismissal that returns a value, long scrolling content, and a stack of dialogs. Each example uses `dialog.open(Component, props, options)`, with its content in a separate component so the same pattern works in an application.
 

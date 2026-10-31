@@ -228,7 +228,7 @@ export default defineBrickflowUi({
       placementClasses: {
         bottom: 'mx-auto max-h-full w-full max-w-2xl origin-bottom rounded-2xl',
         center: 'max-h-full w-full max-w-lg rounded-2xl',
-        fullscreen: 'size-full rounded-2xl',
+        fullscreen: 'size-full rounded-none',
       },
       rubberSettle: '*:after:transition-all *:after:duration-300 *:after:ease-out',
     },
@@ -250,7 +250,7 @@ export default defineBrickflowUi({
       placementClasses: {
         bottom: 'items-end p-4',
         center: 'place-items-center p-6',
-        fullscreen: 'items-stretch p-6',
+        fullscreen: 'items-stretch p-0',
       },
     },
     input: {

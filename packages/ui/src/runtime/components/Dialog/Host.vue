@@ -42,6 +42,8 @@
   let touchStartY = 0
   let touchTarget: HTMLElement | undefined
   let previousOverflow = ''
+  let focusObserver: MutationObserver | undefined
+  const focusOrigins = new Map<number, HTMLElement>()
 
   const backdropOpacity = computed(() => Math.max(0, 1 - Math.max(0, dragY.value) / dismissDistance.value))
   const topId = (): number | undefined => props.dialog.stack.at(-1)?.id
@@ -129,6 +131,46 @@
     })
   }
 
+  function flushDrag(): void {
+    if (dragFrame !== undefined) {
+      window.cancelAnimationFrame(dragFrame)
+      dragFrame = undefined
+      dragY.value = pendingDragY
+    }
+  }
+
+  function focusableElements(panel: HTMLElement): HTMLElement[] {
+    return Array.from(
+      panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((element) => element.getClientRects().length > 0)
+  }
+
+  function focusPanel(): void {
+    const panel = topPanel()
+    if (panel) {
+      const first = focusableElements(panel)[0]
+      if (first) {
+        first.focus()
+        return
+      }
+      panel.focus()
+      focusObserver = new MutationObserver(() => {
+        if (topPanel() !== panel || document.activeElement !== panel) {
+          focusObserver?.disconnect()
+          return
+        }
+        const next = focusableElements(panel)[0]
+        if (next) {
+          next.focus()
+          focusObserver?.disconnect()
+        }
+      })
+      focusObserver.observe(panel, { childList: true, subtree: true })
+    }
+  }
+
   function moveDrag(event: PointerEvent): void {
     if (event.pointerId !== pointerId) {
       return
@@ -194,6 +236,24 @@
   }
 
   function onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Tab') {
+      const panel = topPanel()
+      if (panel) {
+        const focusables = focusableElements(panel)
+        const first = focusables[0] ?? panel
+        const last = focusables.at(-1) ?? panel
+        if (!panel.contains(document.activeElement) || document.activeElement === panel) {
+          event.preventDefault()
+          ;(event.shiftKey ? last : first).focus()
+        } else if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
+    }
     if (event.key === 'Escape' && props.dialog.stack.at(-1) && !props.dialog.stack.at(-1)?.options.preventClose) {
       event.preventDefault()
       props.dialog.close()
@@ -259,12 +319,9 @@
     }
   }
 
-  function flushDrag(): void {
-    if (dragFrame !== undefined) {
-      window.cancelAnimationFrame(dragFrame)
-      dragFrame = undefined
-      dragY.value = pendingDragY
-    }
+  function topPanel(): HTMLElement | null {
+    const id = topId()
+    return id === undefined ? null : document.querySelector(`[data-dialog-id="${id}"] [data-dialog-panel]`)
   }
 
   function updateDrag(clientY: number): void {
@@ -294,9 +351,38 @@
     },
   )
 
+  watch(
+    () => props.dialog.stack.map((entry) => entry.id),
+    (ids, previousIds) => {
+      focusObserver?.disconnect()
+      const added = ids.find((id) => !previousIds.includes(id))
+      if (added !== undefined && document.activeElement instanceof HTMLElement) {
+        focusOrigins.set(added, document.activeElement)
+      }
+      const removed = previousIds.filter((id) => !ids.includes(id))
+      const restoreId = ids.length ? previousIds.at(-1) : previousIds[0]
+      const restore = restoreId === undefined ? undefined : focusOrigins.get(restoreId)
+      for (const id of removed) {
+        focusOrigins.delete(id)
+      }
+      nextTick(() => {
+        if (ids.length) {
+          if (removed.length && restore?.isConnected && topPanel()?.contains(restore)) {
+            restore.focus()
+          } else {
+            focusPanel()
+          }
+        } else if (restore?.isConnected) {
+          restore.focus()
+        }
+      })
+    },
+  )
+
   onMounted(() => document.addEventListener('keydown', onKeydown))
   onBeforeUnmount(() => {
     document.removeEventListener('keydown', onKeydown)
+    focusObserver?.disconnect()
     clearGesture()
     if (previousOverflow) {
       document.body.style.overflow = previousOverflow === 'auto' ? '' : previousOverflow
