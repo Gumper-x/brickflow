@@ -1,6 +1,5 @@
 <script lang="ts">
   export const uiDemo = {
-    description: 'Compare responsive placement, a bottom sheet, and a fullscreen dialog.',
     title: 'Placement and motion',
   }
 </script>
