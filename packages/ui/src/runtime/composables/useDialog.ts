@@ -22,12 +22,10 @@ export interface DialogHandle {
 }
 
 export interface DialogOptions {
-  /** Allow closing by clicking the backdrop. Defaults to true. */
-  closeOnBackdrop?: boolean
-  /** Allow closing with Escape. Defaults to true. */
-  closeOnEscape?: boolean
   /** Dialog position, optionally overridden for each screen range. Defaults to center. */
   placement?: DialogPlacementConfig
+  /** Prevent backdrop, Escape, and swipe dismissal. Defaults to false. */
+  preventClose?: boolean
   /** Stretch the bottom sheet when dragging upward. Defaults to true. */
   rubberBand?: boolean
 }
@@ -62,9 +60,8 @@ export function createDialogController(defaultOptions: DialogOptions = {}): Dial
         component: markRaw(component),
         id,
         options: {
-          closeOnBackdrop: options.closeOnBackdrop ?? true,
-          closeOnEscape: options.closeOnEscape ?? true,
           placement: options.placement ?? defaultOptions.placement ?? 'center',
+          preventClose: options.preventClose ?? defaultOptions.preventClose ?? false,
           rubberBand: options.rubberBand ?? defaultOptions.rubberBand ?? true,
         },
         props: { ...props },

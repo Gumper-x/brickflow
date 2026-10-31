@@ -158,7 +158,7 @@ const resolveUiConfigStyleReferences = (
     return styleValue
   }
 
-  if (typeof value === 'string') {
+  if (typeof value === 'string' || typeof value === 'boolean') {
     return value
   }
 
@@ -288,7 +288,7 @@ export const collectUiStyleConfigPathsFromCode = (code: string, id: string): str
   collectUiStylePathsFromCode(code).map((path) => resolveUiStyleConfigPath(id, path))
 
 const collectUiConfigValuePaths = (value: BrickflowUiConfigValue, prefix: string[]): string[][] => {
-  if (typeof value === 'string' || isBrickflowUiStyleReference(value)) {
+  if (typeof value === 'string' || typeof value === 'boolean' || isBrickflowUiStyleReference(value)) {
     return [prefix]
   }
 
@@ -489,7 +489,13 @@ export const createUiConfigLiteralTypeDeclaration = (
     ...renderInterfaceDeclaration('BrickflowUiConfigLiteralPaths', paths, undefined, (path) => {
       const value = config ? readPath(config, path) : undefined
 
-      return typeof value === 'string' ? toStringLiteral(value) : 'string'
+      if (typeof value === 'string') {
+        return toStringLiteral(value)
+      }
+      if (typeof value === 'boolean') {
+        return String(value)
+      }
+      return 'string'
     }),
     '}',
     '',

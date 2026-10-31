@@ -1,14 +1,15 @@
 import { defineNuxtPlugin } from 'nuxt/app'
 import { createVNode, render } from 'vue'
 
+import { uiConfig } from '#brickflow-ui'
+
 import DialogHost from '../components/Dialog/Host.vue'
-import { dialogConfig } from '../components/Dialog/index.vue'
 import { createDialogController, dialogKey } from '../composables/useDialog'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const dialog = createDialogController({
-    placement: dialogConfig.placement,
-    rubberBand: (dialogConfig as { rubberBand?: boolean }).rubberBand,
+    placement: uiConfig.dialog.placement,
+    rubberBand: (uiConfig.dialog as { rubberBand?: boolean }).rubberBand,
   })
   nuxtApp.vueApp.provide(dialogKey, dialog)
 

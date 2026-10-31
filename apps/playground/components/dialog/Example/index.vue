@@ -9,7 +9,7 @@
 </script>
 
 <template>
-  <div class="space-y-4 p-6">
+  <div class="space-y-4 p-5">
     <p>{{ text }}</p>
     <div class="flex gap-2">
       <BrickButton @click="dialog.open(LazyDialogExample, { text: `Dialog №${dialog.stack.length + 1}` })">

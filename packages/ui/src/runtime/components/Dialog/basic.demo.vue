@@ -1,8 +1,7 @@
 <script lang="ts">
   export const uiDemo = {
-    description:
-      'Open centered dialogs or bottom sheets. Scroll the sheet, then swipe down from the top to close it.',
-    title: 'Stack and placement',
+    description: 'Compare responsive placement, a bottom sheet, and a fullscreen dialog.',
+    title: 'Placement and motion',
   }
 </script>
 
@@ -13,38 +12,24 @@
   import Button from '../Button/index.vue'
 
   const dialog = useDialog()
-  const LazyDemoDialog = defineAsyncComponent(() => import('./DemoContent.vue'))
+  const LazyDemoDialog = defineAsyncComponent(() => import('./DemoSimple.vue'))
 </script>
 
 <template>
   <div class="flex flex-wrap gap-2">
-    <Button @click="dialog.open(LazyDemoDialog, { text: `Dialog №${dialog.stack.length + 1}` })">
-      Open dialog
+    <Button @click="dialog.open(LazyDemoDialog, { title: 'Responsive dialog' })">Default placement</Button>
+    <Button @click="dialog.open(LazyDemoDialog, { title: 'Bottom sheet' }, { placement: 'bottom' })">
+      Bottom sheet
     </Button>
     <Button
       @click="
-        dialog.open(
-          LazyDemoDialog,
-          { text: `Dialog №${dialog.stack.length + 1} · rubber bottom` },
-          { placement: 'bottom' },
-        )
+        dialog.open(LazyDemoDialog, { title: 'Movable bottom sheet' }, { placement: 'bottom', rubberBand: false })
       "
     >
-      Open rubber bottom
+      Movable sheet
     </Button>
-    <Button
-      @click="
-        dialog.open(
-          LazyDemoDialog,
-          { text: `Dialog №${dialog.stack.length + 1} · movable bottom` },
-          { placement: 'bottom', rubberBand: false },
-        )
-      "
-    >
-      Open movable bottom
-    </Button>
-    <Button @click="dialog.open(LazyDemoDialog, { text: 'Fullscreen dialog' }, { placement: 'fullscreen' })">
-      Open fullscreen
+    <Button @click="dialog.open(LazyDemoDialog, { title: 'Fullscreen dialog' }, { placement: 'fullscreen' })">
+      Fullscreen
     </Button>
   </div>
 </template>

@@ -135,7 +135,7 @@ export default defineBrickflowUi({
   uiStyles: {
     button: {
       animationTap: 'global-tap-animation',
-      base: 'relative inline-flex cursor-pointer items-center justify-center overflow-hidden font-sans font-medium whitespace-nowrap transition duration-150 ease-in select-none focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-105',
+      base: 'relative inline-flex cursor-pointer items-center justify-center overflow-hidden font-sans font-medium whitespace-nowrap transition duration-150 ease-in select-none focus:outline-none active:scale-105',
       color: {
         alt: {
           ghost: 'text-alt-400 hover:bg-alt-950',
@@ -226,8 +226,8 @@ export default defineBrickflowUi({
       panel:
         'global-border-gradient-half global-border-gradient relative flex flex-col overflow-hidden bg-plain-950 shadow-2xl',
       placementClasses: {
-        bottom: 'max-h-full w-full origin-bottom rounded-2xl',
-        center: 'max-h-full w-full max-w-2xl rounded-2xl',
+        bottom: 'mx-auto max-h-full w-full max-w-2xl origin-bottom rounded-2xl',
+        center: 'max-h-full w-full max-w-lg rounded-2xl',
         fullscreen: 'size-full rounded-2xl',
       },
       rubberSettle: '*:after:transition-all *:after:duration-300 *:after:ease-out',

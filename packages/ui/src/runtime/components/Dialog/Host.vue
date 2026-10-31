@@ -26,6 +26,8 @@
   const dismissDistance = ref(320)
   const isDragging = ref(false)
   let startY = 0
+  let dragFrame: number | undefined
+  let pendingDragY = 0
   let pointerId: number | undefined
   let pointerDialogId: number | undefined
   let pointerStartX = 0
@@ -54,10 +56,16 @@
       panelTop === undefined ? 320 : Math.max(1, Math.ceil(window.innerHeight - panelTop) + 1)
     startY = clientY
     dragMoved = false
+    pendingDragY = 0
     dragY.value = 0
   }
 
   function clearGesture(): void {
+    if (dragFrame !== undefined) {
+      window.cancelAnimationFrame(dragFrame)
+      dragFrame = undefined
+    }
+    pendingDragY = 0
     if (settleTimer !== undefined) {
       window.clearTimeout(settleTimer)
       settleTimer = undefined
@@ -97,6 +105,7 @@
   }
 
   function finishDrag(cancelled: boolean, target: HTMLElement): void {
+    flushDrag()
     if (dragMoved) {
       suppressBackdropClickUntil = performance.now() + 400
     }
@@ -179,13 +188,13 @@
     if (performance.now() < suppressBackdropClickUntil) {
       return
     }
-    if (id === topId() && props.dialog.stack.at(-1)?.options.closeOnBackdrop) {
+    if (id === topId() && !props.dialog.stack.at(-1)?.options.preventClose) {
       props.dialog.close(id)
     }
   }
 
   function onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && props.dialog.stack.at(-1)?.options.closeOnEscape) {
+    if (event.key === 'Escape' && props.dialog.stack.at(-1) && !props.dialog.stack.at(-1)?.options.preventClose) {
       event.preventDefault()
       props.dialog.close()
     }
@@ -211,6 +220,7 @@
       event.button !== 0 ||
       id !== topId() ||
       draggedId.value !== undefined ||
+      props.dialog.stack.at(-1)?.options.preventClose ||
       resolvePlacement(props.dialog.stack.at(-1)?.options.placement ?? 'center') !== 'bottom'
     ) {
       return
@@ -225,6 +235,7 @@
     if (
       touchId !== undefined ||
       draggedId.value !== undefined ||
+      props.dialog.stack.at(-1)?.options.preventClose ||
       id !== topId() ||
       resolvePlacement(props.dialog.stack.at(-1)?.options.placement ?? 'center') !== 'bottom'
     ) {
@@ -248,10 +259,24 @@
     }
   }
 
+  function flushDrag(): void {
+    if (dragFrame !== undefined) {
+      window.cancelAnimationFrame(dragFrame)
+      dragFrame = undefined
+      dragY.value = pendingDragY
+    }
+  }
+
   function updateDrag(clientY: number): void {
     const distance = clientY - startY
     dragMoved ||= Math.abs(distance) > 4
-    dragY.value = distance < 0 ? -72 * (1 - Math.exp(distance / 120)) : distance
+    pendingDragY = distance < 0 ? -72 * (1 - Math.exp(distance / 120)) : distance
+    if (dragFrame === undefined) {
+      dragFrame = window.requestAnimationFrame(() => {
+        dragFrame = undefined
+        dragY.value = pendingDragY
+      })
+    }
   }
 
   watch(
