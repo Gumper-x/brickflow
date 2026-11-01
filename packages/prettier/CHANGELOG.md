@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.58
+
+### Patch Changes
+
+- Dialog release
+
 ## 0.0.57
 
 ### Patch Changes
