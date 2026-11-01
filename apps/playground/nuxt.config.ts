@@ -19,5 +19,8 @@ export default defineNuxtConfig({
       },
       postcss: {},
     },
+    optimizeDeps: {
+      include: ['@vue/devtools-core', 'maska', 'tailwind-merge'],
+    },
   },
 })
