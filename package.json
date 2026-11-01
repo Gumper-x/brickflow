@@ -25,9 +25,9 @@
     "clear": "rm -rf node_modules pnpm-lock.yaml package-lock.json **/**/.nuxt **/**/node_modules **/**/pnpm-lock.yaml **/**/package-lock.json **/**/dist **/**/.DS_Store"
   },
   "devDependencies": {
-    "@changesets/cli": "3.0.2",
-    "eslint": "10.10.0",
-    "prettier": "3.9.6",
+    "@changesets/cli": "3.0.3",
+    "eslint": "10.14.0",
+    "prettier": "3.9.10",
     "typescript": "6.0.3"
   },
   "author": "",

@@ -20,13 +20,13 @@
   "dependencies": {
     "@brickflow/ui": "workspace:*",
     "@brickflow/http": "workspace:*",
-    "nuxt": "4.5.2"
+    "nuxt": "4.6.3"
   },
   "devDependencies": {
     "@brickflow/lint": "workspace:*",
     "@brickflow/prettier": "workspace:*",
-    "vitest": "5.0.0",
-    "vue-tsc": "3.3.11"
+    "vitest": "5.0.5",
+    "vue-tsc": "3.3.14"
   },
   "author": "",
   "license": "ISC"

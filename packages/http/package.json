@@ -36,13 +36,13 @@
     "access": "public"
   },
   "dependencies": {
-    "@nuxt/kit": "4.5.2"
+    "@nuxt/kit": "4.6.3"
   },
   "devDependencies": {
     "@brickflow/lint": "workspace:*",
     "@brickflow/prettier": "workspace:*",
-    "rolldown": "1.2.7",
-    "vue-tsc": "3.3.11"
+    "rolldown": "1.2.16",
+    "vue-tsc": "3.3.14"
   },
   "peerDependencies": {
     "nuxt": ">=3",
