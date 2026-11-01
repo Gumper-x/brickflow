@@ -75,8 +75,11 @@ export default defineBrickflowUi({
       variantDefault: 'solid',
     },
     dialog: {
+      elasticHeight: true,
+      loadingDelay: 2000,
+      loadingIconName: 'loading',
+      loadingIconTransition: 'poof',
       placement: { dk: 'center', lp: 'center', mb: 'bottom', ms: 'bottom', tb: 'center' },
-      rubberBand: true,
     },
     input: {
       hidePasswordIconName: 'eye-closed',
@@ -219,38 +222,38 @@ export default defineBrickflowUi({
       },
     },
     dialog: {
-      content: 'flex min-h-0 flex-1 flex-col *:flex-1',
-      contentBottom: '*:after:block *:after:h-(--dialog-rubber-height) *:after:shrink-0',
-      handle: 'absolute inset-x-0 top-0 z-10 grid h-7 cursor-grab touch-none place-items-center',
-      handleIndicator: 'h-1 w-9 rounded-full bg-plain-500',
-      panel:
-        'global-border-gradient-half global-border-gradient relative flex flex-col overflow-hidden bg-plain-950 shadow-2xl',
-      placementClasses: {
-        bottom: 'mx-auto max-h-full w-full max-w-2xl origin-bottom rounded-2xl',
-        center: 'max-h-full w-full max-w-lg rounded-2xl',
-        fullscreen: 'size-full rounded-none',
-      },
-      rubberSettle: '*:after:transition-all *:after:duration-300 *:after:ease-out',
-    },
-    host: {
       animation: {
-        backdropSettle: 'transition-opacity duration-300 ease-out',
-        enterActive:
-          'transition-opacity duration-300 ease-out **:data-dialog-panel:transition-transform **:data-dialog-panel:duration-300 **:data-dialog-panel:ease-out',
-        enterFrom:
-          'opacity-0 **:data-dialog-panel:scale-95 data-[placement=bottom]:**:data-dialog-panel:translate-y-full',
-        leaveActive:
-          'transition-opacity duration-250 ease-in **:data-dialog-panel:transition-transform **:data-dialog-panel:duration-250 **:data-dialog-panel:ease-in',
-        leaveTo:
-          'opacity-0 **:data-dialog-panel:scale-95 data-[placement=bottom]:**:data-dialog-panel:translate-y-full',
-        panelSettle: 'transition-transform duration-300 ease-out',
+        backdropEnterActive: 'transition-opacity duration-250 ease-out',
+        backdropHidden: 'opacity-0',
+        backdropLeaveActive: 'transition-opacity duration-250 ease-in',
+        bottomPanelHidden: 'translate-y-full scale-95 opacity-70',
+        panelEnterActive: 'transition-all duration-250 ease-out',
+        panelHidden: 'scale-95 opacity-0',
+        panelLeaveActive: 'transition-all duration-250 ease-in',
+        settleBackdrop: 'transition-opacity duration-300 ease-out',
+        settleElasticHeight: 'after:transition-all after:duration-300 after:ease-out',
+        settlePanel: 'transition-transform duration-300 ease-out',
       },
       backdrop: 'absolute inset-0 touch-none bg-plain-950/55',
+      content: 'min-h-0 flex-1',
+      dragHandle:
+        'absolute inset-x-0 top-0 z-10 grid h-7 cursor-grab touch-none place-items-center active:cursor-grabbing',
+      dragHandleIndicator: 'h-1 w-9 rounded-full bg-plain-500',
+      elasticHeightStretch: 'after:block after:h-(--dialog-elastic-height) after:shrink-0',
       layer: 'fixed inset-0 grid',
-      placementClasses: {
+      layerPlacementClasses: {
         bottom: 'items-end p-4',
         center: 'place-items-center p-6',
         fullscreen: 'items-stretch p-0',
+      },
+      loader: 'pointer-events-none absolute inset-0 grid place-items-center',
+      loadingIcon: 'size-8 animate-spin text-plain-100',
+      panel:
+        'global-border-gradient-half global-border-gradient relative flex max-h-full w-full flex-col overflow-hidden bg-plain-950 shadow-2xl',
+      panelPlacementClasses: {
+        bottom: 'mx-auto max-w-2xl origin-bottom rounded-2xl',
+        center: 'max-w-lg rounded-2xl',
+        fullscreen: 'h-full rounded-none',
       },
     },
     input: {

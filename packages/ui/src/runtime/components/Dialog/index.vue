@@ -1,25 +1,29 @@
 <script lang="ts">
+  import type { IconName } from '#brickflow-ui'
+
   import type { DialogPlacement } from '../../composables/useDialog'
   import type { ScreenKey } from '../../composables/useScreen'
 
   export const dialogConfig = defineUiConfig<{
+    elasticHeight?: boolean
+    loadingDelay: number
+    loadingIconName: IconName
+    loadingIconTransition: string
     placement: Record<ScreenKey, DialogPlacement>
-    rubberBand?: boolean
   }>()
 </script>
 
 <script setup lang="ts">
   defineProps<{
     dragY?: number
+    elasticHeight: boolean
     placement: 'bottom' | 'center' | 'fullscreen'
-    rubberBand: boolean
-    settling?: boolean
   }>()
 
   const placementClasses = {
-    bottom: UI_STYLE.placementClasses.bottom,
-    center: UI_STYLE.placementClasses.center,
-    fullscreen: UI_STYLE.placementClasses.fullscreen,
+    bottom: UI_STYLE.panelPlacementClasses.bottom,
+    center: UI_STYLE.panelPlacementClasses.center,
+    fullscreen: UI_STYLE.panelPlacementClasses.fullscreen,
   }
 </script>
 
@@ -31,27 +35,19 @@
     aria-modal="true"
     tabindex="-1"
     :style="{
-      '--dialog-rubber-height':
-        placement === 'bottom' && rubberBand ? `${Math.max(0, -(dragY ?? 0))}px` : undefined,
-      transform: dragY && (!rubberBand || dragY > 0) ? `translateY(${dragY}px)` : undefined,
+      '--dialog-elastic-height':
+        placement === 'bottom' && elasticHeight ? `${Math.max(0, -(dragY ?? 0))}px` : undefined,
+      transform: dragY && (!elasticHeight || dragY > 0) ? `translateY(${dragY}px)` : undefined,
     }"
   >
     <div
       v-if="placement === 'bottom'"
-      :class="UI_STYLE.handle"
+      :class="UI_STYLE.dragHandle"
       data-dialog-handle
       aria-hidden="true"
     >
-      <span :class="UI_STYLE.handleIndicator" />
+      <span :class="UI_STYLE.dragHandleIndicator" />
     </div>
-    <div
-      :class="[
-        UI_STYLE.content,
-        placement === 'bottom' && rubberBand && UI_STYLE.contentBottom,
-        settling && rubberBand && UI_STYLE.rubberSettle,
-      ]"
-    >
-      <slot />
-    </div>
+    <slot />
   </div>
 </template>

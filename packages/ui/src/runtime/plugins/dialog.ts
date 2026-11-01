@@ -8,8 +8,8 @@ import { createDialogController, dialogKey } from '../composables/useDialog'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const dialog = createDialogController({
+    elasticHeight: (uiConfig.dialog as { elasticHeight?: boolean }).elasticHeight,
     placement: uiConfig.dialog.placement,
-    rubberBand: (uiConfig.dialog as { rubberBand?: boolean }).rubberBand,
   })
   nuxtApp.vueApp.provide(dialogKey, dialog)
 

@@ -1,17 +1,23 @@
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-  import type { DialogController, DialogPlacement, DialogPlacementConfig } from '../../composables/useDialog'
+  import type {
+    DialogController,
+    DialogEntry,
+    DialogPlacement,
+    DialogPlacementConfig,
+  } from '../../composables/useDialog'
 
   import { useScreen } from '../../composables/useScreen'
-  import Dialog from './index.vue'
+  import Icon from '../Icon/index.vue'
+  import Dialog, { dialogConfig } from './index.vue'
 
   const props = defineProps<{ dialog: DialogController }>()
   const screen = useScreen()
   const placementClasses = {
-    bottom: UI_STYLE.placementClasses.bottom,
-    center: UI_STYLE.placementClasses.center,
-    fullscreen: UI_STYLE.placementClasses.fullscreen,
+    bottom: UI_STYLE.layerPlacementClasses.bottom,
+    center: UI_STYLE.layerPlacementClasses.center,
+    fullscreen: UI_STYLE.layerPlacementClasses.fullscreen,
   }
   const screenKeys = ['ms', 'mb', 'tb', 'lp', 'dk'] as const
   function resolvePlacement(config: DialogPlacementConfig): DialogPlacement {
@@ -22,6 +28,15 @@
     return key ? config[key] : 'center'
   }
   const dragY = ref(0)
+  const renderedDialogs = ref<
+    {
+      entry: DialogEntry
+      loadingVisible: boolean
+      ready: boolean
+      visible: boolean
+    }[]
+  >([])
+  const loadingTimers = new Map<number, number>()
   const draggedId = ref<number>()
   const dismissDistance = ref(320)
   const isDragging = ref(false)
@@ -43,6 +58,8 @@
   let touchTarget: HTMLElement | undefined
   let previousOverflow = ''
   let focusObserver: MutationObserver | undefined
+  let deniedAnimation: Animation | undefined
+  const completedLeaves = new Map<number, Set<'backdrop' | 'panel'>>()
   const focusOrigins = new Map<number, HTMLElement>()
 
   const backdropOpacity = computed(() => Math.max(0, 1 - Math.max(0, dragY.value) / dismissDistance.value))
@@ -51,6 +68,7 @@
   function beginDrag(id: number, clientY: number, target: HTMLElement): void {
     draggedId.value = id
     isDragging.value = true
+    window.getSelection()?.removeAllRanges()
     const layer = target.parentElement
     const panel = layer?.querySelector('[data-dialog-panel]')
     const panelTop = panel?.getBoundingClientRect().top
@@ -80,6 +98,28 @@
     touchId = undefined
     touchDialogId = undefined
     touchTarget = undefined
+  }
+
+  function denyClose(id: number): void {
+    if (id !== topId() || !props.dialog.stack.at(-1)?.options.preventClose) {
+      return
+    }
+    const panel = topPanel()
+    if (!panel || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return
+    }
+    deniedAnimation?.cancel()
+    deniedAnimation = panel.animate(
+      [
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-12px)' },
+        { transform: 'translateX(10px)' },
+        { transform: 'translateX(-7px)' },
+        { transform: 'translateX(4px)' },
+        { transform: 'translateX(0)' },
+      ],
+      { duration: 380, easing: 'ease-in-out' },
+    )
   }
 
   function endDrag(event: PointerEvent): void {
@@ -114,17 +154,22 @@
     const id = draggedId.value
     const layer = target.parentElement
     const shouldDismiss = !cancelled && dragY.value > 100 && id !== undefined
+    const prevented = shouldDismiss && props.dialog.stack.at(-1)?.options.preventClose
     isDragging.value = false
     nextTick(() => {
       if (draggedId.value !== id) {
         return
       }
       layer?.querySelector('[data-dialog-panel]')?.getBoundingClientRect()
-      dragY.value = shouldDismiss ? Math.max(dragY.value, dismissDistance.value) : 0
+      dragY.value = shouldDismiss && !prevented ? Math.max(dragY.value, dismissDistance.value) : 0
       settleTimer = window.setTimeout(() => {
         if (shouldDismiss && id !== undefined) {
-          props.dialog.close(id)
-          return
+          if (prevented) {
+            denyClose(id)
+          } else {
+            props.dialog.close(id)
+            return
+          }
         }
         clearGesture()
       }, 320)
@@ -183,6 +228,9 @@
       beginDrag(pointerDialogId, pointerStartY, event.currentTarget as HTMLElement)
       ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
     }
+    if (draggedId.value !== undefined) {
+      event.preventDefault()
+    }
     updateDrag(event.clientY)
   }
 
@@ -220,8 +268,16 @@
     updateDrag(touch.clientY)
   }
 
-  function onAfterLeave(element: Element): void {
-    if (Number((element as HTMLElement).dataset.dialogId) === draggedId.value) {
+  function onAfterLeave(id: number, part: 'backdrop' | 'panel'): void {
+    const completed = completedLeaves.get(id) ?? new Set<'backdrop' | 'panel'>()
+    completed.add(part)
+    if (completed.size < 2) {
+      completedLeaves.set(id, completed)
+      return
+    }
+    completedLeaves.delete(id)
+    renderedDialogs.value = renderedDialogs.value.filter(({ entry }) => entry.id !== id)
+    if (id === draggedId.value) {
       clearGesture()
     }
   }
@@ -230,9 +286,36 @@
     if (performance.now() < suppressBackdropClickUntil) {
       return
     }
-    if (id === topId() && !props.dialog.stack.at(-1)?.options.preventClose) {
-      props.dialog.close(id)
+    if (id === topId()) {
+      if (props.dialog.stack.at(-1)?.options.preventClose) {
+        denyClose(id)
+      } else {
+        props.dialog.close(id)
+      }
     }
+  }
+
+  function onBeforeBackdropLeave(element: Element): void {
+    const backdrop = element as HTMLElement
+    const id = Number(backdrop.parentElement?.dataset.dialogId)
+    if (id === draggedId.value && backdropOpacity.value < 1) {
+      backdrop.style.opacity = String(backdropOpacity.value)
+    } else {
+      backdrop.style.removeProperty('opacity')
+    }
+    removeStyleClasses(backdrop, UI_STYLE.animation.settleBackdrop)
+  }
+
+  function onBeforePanelLeave(element: Element): void {
+    removeStyleClasses(element, UI_STYLE.animation.settlePanel)
+  }
+
+  function onContentResolved(id: number): void {
+    const rendered = renderedDialogs.value.find(({ entry }) => entry.id === id)
+    if (rendered) {
+      rendered.ready = true
+    }
+    stopLoading(id)
   }
 
   function onKeydown(event: KeyboardEvent): void {
@@ -254,10 +337,23 @@
         }
       }
     }
-    if (event.key === 'Escape' && props.dialog.stack.at(-1) && !props.dialog.stack.at(-1)?.options.preventClose) {
+    const topEntry = props.dialog.stack.at(-1)
+    if (event.key === 'Escape' && topEntry) {
       event.preventDefault()
-      props.dialog.close()
+      if (topEntry.options.preventClose) {
+        denyClose(topEntry.id)
+      } else {
+        props.dialog.close()
+      }
     }
+  }
+
+  function panelHiddenClass(placement: DialogPlacement): string {
+    return placement === 'bottom' ? UI_STYLE.animation.bottomPanelHidden : UI_STYLE.animation.panelHidden
+  }
+
+  function removeStyleClasses(element: Element, classes: string): void {
+    element.classList.remove(...classes.split(' '))
   }
 
   function scrollableAncestors(target: HTMLElement, panel: Element): HTMLElement[] {
@@ -278,9 +374,9 @@
       event.pointerType === 'touch' ||
       !event.isPrimary ||
       event.button !== 0 ||
+      (event.target instanceof Element && event.target.closest('input, textarea, [contenteditable]')) ||
       id !== topId() ||
       draggedId.value !== undefined ||
-      props.dialog.stack.at(-1)?.options.preventClose ||
       resolvePlacement(props.dialog.stack.at(-1)?.options.placement ?? 'center') !== 'bottom'
     ) {
       return
@@ -291,11 +387,24 @@
     pointerStartY = event.clientY
   }
 
+  function startLoadingTimer(id: number): void {
+    if (typeof window === 'undefined') {
+      return
+    }
+    const timer = window.setTimeout(() => {
+      loadingTimers.delete(id)
+      const rendered = renderedDialogs.value.find(({ entry }) => entry.id === id)
+      if (rendered?.visible && !rendered.ready) {
+        rendered.loadingVisible = true
+      }
+    }, dialogConfig.loadingDelay)
+    loadingTimers.set(id, timer)
+  }
+
   function startTouch(event: TouchEvent, id: number): void {
     if (
       touchId !== undefined ||
       draggedId.value !== undefined ||
-      props.dialog.stack.at(-1)?.options.preventClose ||
       id !== topId() ||
       resolvePlacement(props.dialog.stack.at(-1)?.options.placement ?? 'center') !== 'bottom'
     ) {
@@ -316,6 +425,18 @@
       (event.currentTarget as HTMLElement).hasAttribute('data-dialog-backdrop')
     ) {
       beginDrag(id, touch.clientY, event.currentTarget as HTMLElement)
+    }
+  }
+
+  function stopLoading(id: number): void {
+    const timer = loadingTimers.get(id)
+    if (timer !== undefined) {
+      clearTimeout(timer)
+      loadingTimers.delete(id)
+    }
+    const rendered = renderedDialogs.value.find(({ entry }) => entry.id === id)
+    if (rendered) {
+      rendered.loadingVisible = false
     }
   }
 
@@ -379,9 +500,43 @@
     },
   )
 
-  onMounted(() => document.addEventListener('keydown', onKeydown))
+  watch(
+    () => props.dialog.stack.map((entry) => entry.id),
+    (ids) => {
+      for (const rendered of renderedDialogs.value) {
+        if (!ids.includes(rendered.entry.id)) {
+          rendered.visible = false
+          stopLoading(rendered.entry.id)
+          if (!rendered.ready) {
+            onAfterLeave(rendered.entry.id, 'panel')
+          }
+        }
+      }
+      for (const entry of props.dialog.stack) {
+        if (!renderedDialogs.value.some((rendered) => rendered.entry.id === entry.id)) {
+          renderedDialogs.value.push({ entry, loadingVisible: false, ready: false, visible: true })
+          startLoadingTimer(entry.id)
+        }
+      }
+    },
+    { immediate: true },
+  )
+
+  onMounted(() => {
+    document.addEventListener('keydown', onKeydown)
+    for (const rendered of renderedDialogs.value) {
+      if (!rendered.ready && !loadingTimers.has(rendered.entry.id)) {
+        startLoadingTimer(rendered.entry.id)
+      }
+    }
+  })
   onBeforeUnmount(() => {
     document.removeEventListener('keydown', onKeydown)
+    for (const timer of loadingTimers.values()) {
+      clearTimeout(timer)
+    }
+    loadingTimers.clear()
+    deniedAnimation?.cancel()
     focusObserver?.disconnect()
     clearGesture()
     if (previousOverflow) {
@@ -392,57 +547,108 @@
 
 <template>
   <Teleport to="body">
-    <TransitionGroup
-      :enterActiveClass="UI_STYLE.animation.enterActive"
-      :enterFromClass="UI_STYLE.animation.enterFrom"
-      :leaveActiveClass="UI_STYLE.animation.leaveActive"
-      :leaveToClass="UI_STYLE.animation.leaveTo"
-      @afterLeave="onAfterLeave"
+    <template
+      v-for="({ entry, loadingVisible, visible }, index) in renderedDialogs"
+      :key="entry.id"
     >
       <div
-        v-for="(entry, index) in dialog.stack"
-        :key="entry.id"
         :data-dialog-id="entry.id"
-        :class="[UI_STYLE.layer, placementClasses[resolvePlacement(entry.options.placement)]]"
+        :class="[
+          UI_STYLE.layer,
+          placementClasses[resolvePlacement(entry.options.placement)],
+          entry.id === draggedId && isDragging && 'select-none',
+        ]"
         :data-placement="resolvePlacement(entry.options.placement)"
         :style="{ zIndex: 1000 + index * 2 }"
       >
-        <div
-          :class="[UI_STYLE.backdrop, entry.id === draggedId && !isDragging && UI_STYLE.animation.backdropSettle]"
-          data-dialog-backdrop
-          aria-hidden="true"
-          :style="entry.id === draggedId ? { opacity: backdropOpacity } : undefined"
-          @click="onBackdropClick(entry.id)"
-          @pointerdown="startDrag($event, entry.id)"
-          @pointermove="moveDrag"
-          @pointerup="endDrag"
-          @pointercancel="endDrag"
-          @touchstart="startTouch($event, entry.id)"
-          @touchmove="moveTouch"
-          @touchend="endTouch"
-          @touchcancel="endTouch"
-        />
-        <Dialog
-          :placement="resolvePlacement(entry.options.placement)"
-          :rubberBand="entry.options.rubberBand"
-          :dragY="entry.id === draggedId ? dragY : 0"
-          :settling="entry.id === draggedId && !isDragging"
-          :class="entry.id === draggedId && !isDragging ? UI_STYLE.animation.panelSettle : undefined"
-          @pointerdown="startDrag($event, entry.id)"
-          @pointermove="moveDrag"
-          @pointerup="endDrag"
-          @pointercancel="endDrag"
-          @touchstart="startTouch($event, entry.id)"
-          @touchmove="moveTouch"
-          @touchend="endTouch"
-          @touchcancel="endTouch"
+        <Transition
+          appear
+          :enterActiveClass="UI_STYLE.animation.backdropEnterActive"
+          :enterFromClass="UI_STYLE.animation.backdropHidden"
+          :leaveActiveClass="UI_STYLE.animation.backdropLeaveActive"
+          :leaveToClass="UI_STYLE.animation.backdropHidden"
+          @beforeLeave="onBeforeBackdropLeave"
+          @afterLeave="onAfterLeave(entry.id, 'backdrop')"
         >
-          <component
-            :is="entry.component"
-            v-bind="entry.props"
+          <div
+            v-if="visible"
+            :class="[
+              UI_STYLE.backdrop,
+              entry.id === draggedId && !isDragging && UI_STYLE.animation.settleBackdrop,
+            ]"
+            data-dialog-backdrop
+            aria-hidden="true"
+            :style="entry.id === draggedId ? { opacity: backdropOpacity } : undefined"
+            @click="onBackdropClick(entry.id)"
+            @pointerdown="startDrag($event, entry.id)"
+            @pointermove="moveDrag"
+            @pointerup="endDrag"
+            @pointercancel="endDrag"
+            @touchstart="startTouch($event, entry.id)"
+            @touchmove="moveTouch"
+            @touchend="endTouch"
+            @touchcancel="endTouch"
           />
-        </Dialog>
+        </Transition>
+        <Suspense @resolve="onContentResolved(entry.id)">
+          <template #default>
+            <Transition
+              appear
+              :enterActiveClass="UI_STYLE.animation.panelEnterActive"
+              :enterFromClass="panelHiddenClass(resolvePlacement(entry.options.placement))"
+              :leaveActiveClass="UI_STYLE.animation.panelLeaveActive"
+              :leaveToClass="panelHiddenClass(resolvePlacement(entry.options.placement))"
+              @beforeLeave="onBeforePanelLeave"
+              @afterLeave="onAfterLeave(entry.id, 'panel')"
+            >
+              <Dialog
+                v-if="visible"
+                :placement="resolvePlacement(entry.options.placement)"
+                :elasticHeight="entry.options.elasticHeight"
+                :dragY="entry.id === draggedId ? dragY : 0"
+                :class="entry.id === draggedId && !isDragging ? UI_STYLE.animation.settlePanel : undefined"
+                @pointerdown="startDrag($event, entry.id)"
+                @pointermove="moveDrag"
+                @pointerup="endDrag"
+                @pointercancel="endDrag"
+                @touchstart="startTouch($event, entry.id)"
+                @touchmove="moveTouch"
+                @touchend="endTouch"
+                @touchcancel="endTouch"
+              >
+                <component
+                  :is="entry.component"
+                  v-bind="entry.props"
+                  :class="[
+                    UI_STYLE.content,
+                    resolvePlacement(entry.options.placement) === 'bottom' &&
+                      entry.options.elasticHeight &&
+                      UI_STYLE.elasticHeightStretch,
+                    entry.id === draggedId &&
+                      !isDragging &&
+                      entry.options.elasticHeight &&
+                      UI_STYLE.animation.settleElasticHeight,
+                  ]"
+                />
+              </Dialog>
+            </Transition>
+          </template>
+        </Suspense>
+        <Transition :name="dialogConfig.loadingIconTransition">
+          <div
+            v-if="loadingVisible"
+            :class="UI_STYLE.loader"
+            role="status"
+          >
+            <Icon
+              :name="dialogConfig.loadingIconName"
+              :class="UI_STYLE.loadingIcon"
+              aria-hidden="true"
+            />
+            <span class="sr-only">Loading dialog</span>
+          </div>
+        </Transition>
       </div>
-    </TransitionGroup>
+    </template>
   </Teleport>
 </template>

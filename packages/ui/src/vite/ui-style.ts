@@ -110,8 +110,10 @@ export const resolveUiStyleConfigPath = (id: string, path: string[]): string[] =
   }
 
   const componentName = basename(cleanId, extname(cleanId))
+  const parentName = basename(dirname(cleanId))
+  const isComponentFile = basename(dirname(dirname(cleanId))) === 'components'
   const configName =
-    componentName === 'index' || componentName.endsWith('.demo') ? basename(dirname(cleanId)) : componentName
+    isComponentFile || componentName === 'index' || componentName.endsWith('.demo') ? parentName : componentName
 
   return [toCamelCase(configName), ...path]
 }
@@ -158,7 +160,7 @@ const resolveUiConfigStyleReferences = (
     return styleValue
   }
 
-  if (typeof value === 'string' || typeof value === 'boolean') {
+  if (typeof value === 'string' || typeof value === 'boolean' || typeof value === 'number') {
     return value
   }
 
@@ -288,7 +290,12 @@ export const collectUiStyleConfigPathsFromCode = (code: string, id: string): str
   collectUiStylePathsFromCode(code).map((path) => resolveUiStyleConfigPath(id, path))
 
 const collectUiConfigValuePaths = (value: BrickflowUiConfigValue, prefix: string[]): string[][] => {
-  if (typeof value === 'string' || typeof value === 'boolean' || isBrickflowUiStyleReference(value)) {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    typeof value === 'number' ||
+    isBrickflowUiStyleReference(value)
+  ) {
     return [prefix]
   }
 
@@ -405,7 +412,7 @@ const collectUiConfigStyleReferencePathsFromValue = (
     return [[...componentPath, ...getBrickflowUiStyleReferencePath(value)]]
   }
 
-  if (typeof value === 'string') {
+  if (typeof value === 'string' || typeof value === 'boolean' || typeof value === 'number') {
     return []
   }
 
@@ -436,7 +443,7 @@ export const collectUiStylePathsWithConfig = (
         const requiredPath = [...referencePath.slice(0, prefixLength), ...configPath.slice(1)]
         configReferences.push(`UI_STYLE.${requiredPath.join('.')}`)
       }
-    } else if (typeof value !== 'string') {
+    } else if (typeof value === 'object') {
       for (const [key, childValue] of Object.entries(value)) {
         addConfigReferences(childValue, [...configPath, key])
       }
@@ -493,6 +500,9 @@ export const createUiConfigLiteralTypeDeclaration = (
         return toStringLiteral(value)
       }
       if (typeof value === 'boolean') {
+        return String(value)
+      }
+      if (typeof value === 'number') {
         return String(value)
       }
       return 'string'

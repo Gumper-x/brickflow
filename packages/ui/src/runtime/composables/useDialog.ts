@@ -12,7 +12,7 @@ export interface DialogController {
 export interface DialogEntry {
   component: Component
   id: number
-  options: Required<DialogOptions> & { rubberBand: boolean }
+  options: Required<DialogOptions> & { elasticHeight: boolean }
   props: Record<string, unknown>
 }
 
@@ -38,7 +38,7 @@ type DialogProps<C> = C extends new (...args: never[]) => { $props: infer P }
 export const dialogKey: InjectionKey<DialogController> = Symbol('brickflow-dialog')
 
 export function createDialogController(
-  defaultOptions: DialogOptions & { rubberBand?: boolean } = {},
+  defaultOptions: DialogOptions & { elasticHeight?: boolean } = {},
 ): DialogController {
   const stack = reactive<DialogEntry[]>([])
   let nextId = 0
@@ -60,9 +60,9 @@ export function createDialogController(
         component: markRaw(component),
         id,
         options: {
+          elasticHeight: defaultOptions.elasticHeight ?? true,
           placement: options.placement ?? defaultOptions.placement ?? 'center',
           preventClose: options.preventClose ?? defaultOptions.preventClose ?? false,
-          rubberBand: defaultOptions.rubberBand ?? true,
         },
         props: { ...props },
       })
