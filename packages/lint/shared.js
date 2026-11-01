@@ -143,6 +143,10 @@ const baseRules = {
       message: 'Assign useScreen() only to a variable named screen.',
       selector: "VariableDeclarator[init.type='CallExpression'][init.callee.name='useScreen'][id.name!='screen']",
     },
+    {
+      message: 'Assign useDialog() only to a variable named dialog.',
+      selector: "VariableDeclarator[init.type='CallExpression'][init.callee.name='useDialog'][id.name!='dialog']",
+    },
   ],
   'no-return-assign': 'error',
   'no-script-url': 'error',

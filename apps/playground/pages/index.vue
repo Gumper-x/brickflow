@@ -36,7 +36,7 @@
 <template>
   <main class="mx-auto max-w-3xl space-y-10 p-6">
     <section class="space-y-4 text-alt-400 hover:bg-alt-950">
-      <p class="text-sm font-medium text-gray-500">{{ product.data }}</p>
+      <p class="text-sm font-medium text-plain-500">{{ product.data }}</p>
       <div class="flex flex-wrap items-center gap-3">
         <BrickButton @click="clicks += 1">
           <template #leading><span aria-hidden="true">+</span></template>
@@ -73,7 +73,7 @@
     </section>
 
     <section class="space-y-4 text-alt-400">
-      <p class="text-sm font-medium text-gray-500">Button loading icon transition</p>
+      <p class="text-sm font-medium text-plain-500">Button loading icon transition</p>
       <div class="flex flex-col flex-wrap items-start gap-3">
         <BrickButton
           :loading="testLoading"
@@ -100,15 +100,15 @@
 
     <ClientOnly>{{ theme }}</ClientOnly>
     <section class="space-y-4">
-      <p class="text-sm font-medium text-gray-500">useScreen</p>
-      <p class="text-sm text-gray-300">
+      <p class="text-sm font-medium text-plain-500">useScreen</p>
+      <p class="text-sm text-plain-300">
         <template v-if="screenReady">
           {{ t('Active range') }}: {{ t('Active range2') }}:
           <strong>{{ activeScreen }}</strong>
         </template>
         <template v-else>Detecting screen size…</template>
       </p>
-      <div class="grid gap-2 rounded-lg bg-gray-100 p-3 text-sm font-medium text-gray-700">
+      <div class="grid gap-2 rounded-lg bg-plain-100 p-3 text-sm font-medium text-plain-700">
         <p
           v-if="screen.dk"
           :class="screen.dkClass"

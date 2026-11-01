@@ -74,6 +74,13 @@ export default defineBrickflowUi({
       },
       variantDefault: 'solid',
     },
+    dialog: {
+      elasticHeight: true,
+      loadingDelay: 2000,
+      loadingIconName: 'loading',
+      loadingIconTransition: 'poof',
+      placement: { dk: 'center', lp: 'center', mb: 'bottom', ms: 'bottom', tb: 'center' },
+    },
     input: {
       hidePasswordIconName: 'eye-closed',
       searchClearIconName: 'x',
@@ -131,7 +138,7 @@ export default defineBrickflowUi({
   uiStyles: {
     button: {
       animationTap: 'global-tap-animation',
-      base: 'relative inline-flex cursor-pointer items-center justify-center overflow-hidden font-sans font-medium whitespace-nowrap transition duration-150 ease-in select-none focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-105',
+      base: 'relative inline-flex cursor-pointer items-center justify-center overflow-hidden font-sans font-medium whitespace-nowrap transition duration-150 ease-in select-none focus:outline-none active:scale-105',
       color: {
         alt: {
           ghost: 'text-alt-400 hover:bg-alt-950',
@@ -212,6 +219,41 @@ export default defineBrickflowUi({
         disabled: 'pointer-events-none opacity-50',
         loading: 'animate-spin',
         square: 'aspect-square px-0',
+      },
+    },
+    dialog: {
+      animation: {
+        backdropEnterActive: 'transition-opacity duration-250 ease-out',
+        backdropHidden: 'opacity-0',
+        backdropLeaveActive: 'transition-opacity duration-250 ease-in',
+        bottomPanelHidden: 'translate-y-full scale-95 opacity-70',
+        panelEnterActive: 'transition-all duration-250 ease-out',
+        panelHidden: 'scale-95 opacity-0',
+        panelLeaveActive: 'transition-all duration-250 ease-in',
+        settleBackdrop: 'transition-opacity duration-300 ease-out',
+        settleElasticHeight: 'after:transition-all after:duration-300 after:ease-out',
+        settlePanel: 'transition-transform duration-300 ease-out',
+      },
+      backdrop: 'absolute inset-0 touch-none bg-plain-950/55',
+      content: 'min-h-0 flex-1',
+      dragHandle:
+        'absolute inset-x-0 top-0 z-10 grid h-7 cursor-grab touch-none place-items-center active:cursor-grabbing',
+      dragHandleIndicator: 'h-1 w-9 rounded-full bg-plain-500',
+      elasticHeightStretch: 'after:block after:h-(--dialog-elastic-height) after:shrink-0',
+      layer: 'fixed inset-0 grid',
+      layerPlacementClasses: {
+        bottom: 'items-end p-4',
+        center: 'place-items-center p-6',
+        fullscreen: 'items-stretch p-0',
+      },
+      loader: 'pointer-events-none absolute inset-0 grid place-items-center',
+      loadingIcon: 'size-8 animate-spin text-plain-100',
+      panel:
+        'global-border-gradient-half global-border-gradient relative flex max-h-full w-full flex-col overflow-hidden bg-plain-950 shadow-2xl',
+      panelPlacementClasses: {
+        bottom: 'mx-auto max-w-2xl origin-bottom rounded-2xl',
+        center: 'max-w-lg rounded-2xl',
+        fullscreen: 'h-full rounded-none',
       },
     },
     input: {

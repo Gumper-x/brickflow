@@ -1,0 +1,26 @@
+import { defineNuxtPlugin } from 'nuxt/app'
+import { createVNode, render } from 'vue'
+
+import { uiConfig } from '#brickflow-ui'
+
+import DialogHost from '../components/Dialog/Host.vue'
+import { createDialogController, dialogKey } from '../composables/useDialog'
+
+export default defineNuxtPlugin((nuxtApp) => {
+  const dialog = createDialogController({
+    elasticHeight: (uiConfig.dialog as { elasticHeight?: boolean }).elasticHeight,
+    placement: uiConfig.dialog.placement,
+  })
+  nuxtApp.vueApp.provide(dialogKey, dialog)
+
+  if (import.meta.client) {
+    nuxtApp.hook('app:mounted', () => {
+      const mountPoint = document.createElement('div')
+      mountPoint.id = 'brickflow-dialog-host'
+      document.body.appendChild(mountPoint)
+      const vnode = createVNode(DialogHost, { dialog })
+      vnode.appContext = nuxtApp.vueApp._context
+      render(vnode, mountPoint)
+    })
+  }
+})

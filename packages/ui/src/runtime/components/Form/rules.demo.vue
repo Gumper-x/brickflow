@@ -79,7 +79,7 @@
     <Form
       v-for="demo in demos"
       :key="demo.id"
-      class="rounded-lg border border-zinc-700 p-4"
+      class="rounded-lg"
       @submit="submitted[demo.id] = true"
     >
       <Input

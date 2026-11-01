@@ -3,6 +3,7 @@
 @import '../../packages/ui/src/runtime/ui.css';
 @theme {
   --font-sans: 'Noto Sans', ui-sans-serif, system-ui, sans-serif;
+  --color-*: initial;
 
   --color-alt-50: #fff7ed;
   --color-alt-100: #ffedd4;
