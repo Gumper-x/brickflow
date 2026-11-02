@@ -721,7 +721,7 @@ export default defineNuxtModule<ModuleOptions>({
         type: name !== 'useTheme',
       })),
     ])
-    addPlugin({ mode: 'all', src: resolver.resolve('./runtime/plugins/dialog.ts') })
+    addPlugin({ mode: 'all', src: resolver.resolve('./runtime/plugins/dialog') })
     addComponentsDir({
       ignore: ['**/*.demo.vue', '**/Dialog/Host.vue', '**/Dialog/DemoContent.vue'],
       path: resolver.resolve('./runtime/components'),
