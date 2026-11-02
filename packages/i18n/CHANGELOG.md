@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.59
+
+### Patch Changes
+
+- Fix dialog .ts
+
 ## 0.0.58
 
 ### Patch Changes
