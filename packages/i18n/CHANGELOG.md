@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.60
+
+### Patch Changes
+
+- http update
+
 ## 0.0.59
 
 ### Patch Changes

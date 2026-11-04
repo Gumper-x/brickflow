@@ -1,7 +1,7 @@
 import { useState } from 'nuxt/app'
 import { onScopeDispose, shallowReactive } from 'vue'
 
-import type { GetConfig, HttpClient, HttpErrorGuard, HttpKey, HttpParam, HttpResponseData } from './http'
+import type { GetMeta, HttpClient, HttpErrorGuard, HttpKey, HttpParam, HttpResponseData } from './http'
 
 import { createURL, hashData } from './utils'
 
@@ -32,18 +32,18 @@ export interface UseHttpCacheEntry<T> {
   value: T
 }
 
-export type UseHttpConfig<T extends HttpKey = HttpKey> = Omit<GetConfig<T>, 'params' | 'signal'>
-
 export interface UseHttpFn {
   <T extends HttpKey, P extends HttpParam>(options: UseHttpOptions<T, P>): Promise<UseHttpResult<T, P>>
 }
 
+export type UseHttpMeta<T extends HttpKey = HttpKey> = Omit<GetMeta<T>, 'params' | 'signal'>
+
 export interface UseHttpOptions<T extends HttpKey, P extends HttpParam> {
-  config?: UseHttpConfig<T>
   effect?: UseHttpEffect<T, P>
   initParams?: P
   isError?: (payload: HttpResponseData<T>) => boolean
   lazy?: true
+  meta?: UseHttpMeta<T>
   server?: boolean
   url: T
 }
@@ -134,9 +134,9 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
 
       try {
         const response = await httpClient.get<T>(options.url, {
-          ...options.config,
+          ...options.meta,
           params: mappedParams,
-        } as GetConfig<T>)
+        } as GetMeta<T>)
         const responsePayload = response.data as HttpResponseData<T>
 
         serverData.value = responsePayload
@@ -230,10 +230,10 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
 
           const signalHttp = fetchOpt?.signal ? [controller.signal, fetchOpt.signal] : controller.signal
           const response = await httpClient.get<T>(options.url, {
-            ...options.config,
+            ...options.meta,
             params: mappedParams,
             signal: signalHttp,
-          } as GetConfig<T>)
+          } as GetMeta<T>)
           const responsePayload = response.data as HttpResponseData<T>
 
           effect?.(responsePayload, {

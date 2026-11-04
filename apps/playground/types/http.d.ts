@@ -28,11 +28,11 @@ type Convention = {
 }
 
 declare module '@brickflow/http' {
-  interface HttpConfig<TKey extends HttpKey = HttpKey> {
+  interface HttpEndpoint extends Convention {}
+
+  interface HttpMeta<TKey extends HttpKey = HttpKey> {
     ignore?: (data: HttpResponseData<TKey>) => boolean
   }
-
-  interface HttpEndpoint extends Convention {}
 }
 
 export {}

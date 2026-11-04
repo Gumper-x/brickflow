@@ -5,162 +5,160 @@ export interface CreateHttpOptions {
   baseURL: string
   fetch?: typeof fetch
   headers?: (() => HttpHeaders) | HttpHeaders
-  onResponse?: (response: HttpAnyResponse) => Promise<void> | void
+  onResponse?: HttpResponseHandler | HttpResponseHandler[]
   timeout?: number
 }
 
-export type GetConfig<TKey extends HttpKey = HttpKey> = HttpConfigFull<TKey> & {
-  retry?: {
-    delay?: number
-    retries?: number
-  }
-}
-
-export type HttpAnyResponse = HttpResponse<HttpResponseData<HttpKey>, HttpKey, HttpConfigFull<HttpKey>>
-
+export type GetMeta<TKey extends HttpKey = HttpKey> = HttpMetaFull<TKey>
+export type HttpAnyResponse = HttpResponse<HttpResponseData<HttpKey>, HttpKey, HttpMetaFull<HttpKey>>
 export type HttpArrayMode = 'json' | 'repeat'
 export type HttpClient = {
-  get: <T extends HttpKey, TConfig extends GetConfig<T> = GetConfig<T>>(
+  get: <T extends HttpKey, TMeta extends GetMeta<T> = GetMeta<T>>(
     url: T,
-    config?: TConfig,
-  ) => Promise<HttpResponse<HttpResponseData<T>, T, TConfig>>
+    meta?: TMeta,
+  ) => Promise<HttpResponse<HttpResponseData<T>, T, TMeta>>
   post: <
     T extends HttpKey,
     TData extends Record<string, unknown> = Record<string, unknown>,
-    TConfig extends PostConfig<T> = PostConfig<T>,
+    TMeta extends PostMeta<T> = PostMeta<T>,
   >(
     url: T,
     data?: HttpPostData<TData>,
-    config?: TConfig,
-  ) => Promise<HttpResponse<HttpResponseData<T>, T, TConfig>>
+    meta?: TMeta,
+  ) => Promise<HttpResponse<HttpResponseData<T>, T, TMeta>>
 }
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export interface HttpConfig<TKey extends HttpKey = HttpKey> {}
-
 export interface HttpEndpoint {}
 export type HttpErrorGuard<TData = unknown, TError extends TData = TData> = (payload: TData) => payload is TError
-export type HttpKey = Extract<keyof HttpSchema, string>
 
+export type HttpKey = Extract<keyof HttpSchema, string>
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export interface HttpMeta<TKey extends HttpKey = HttpKey> {}
 export type HttpParam = Record<string, boolean | number | string | string[] | undefined>
 export type HttpPostData<TData extends Record<string, unknown> = Record<string, unknown>> = FormData | TData
-
 export interface HttpResponse<
   T = unknown,
   TKey extends HttpKey = HttpKey,
-  TConfig extends HttpConfigFull<TKey> = HttpConfigFull<TKey>,
+  TMeta extends HttpMetaFull<TKey> = HttpMetaFull<TKey>,
 > {
-  config: HttpResponseConfig<TKey, TConfig>
   data: T
+  meta: HttpResponseMeta<TKey, TMeta>
   status: number
 }
-export type HttpResponseConfig<
-  TKey extends HttpKey = HttpKey,
-  TConfig extends HttpConfig<TKey> = HttpConfig<TKey>,
-> = Omit<TConfig, 'signal'> & { url: string }
+export type HttpResponseAction = { action: 'retry' }
 
+export interface HttpResponseContext {
+  attempt: number
+}
 export type HttpResponseData<TKey extends HttpKey = HttpKey> = HttpSchema[TKey]
-
-export type PostConfig<TKey extends HttpKey = HttpKey> = HttpConfigFull<TKey>
-
-type HttpConfigFull<TKey extends HttpKey = HttpKey> = HttpConfig<TKey> & {
+export type HttpResponseHandler = (
+  response: HttpAnyResponse,
+  context: HttpResponseContext,
+) => HttpResponseAction | Promise<HttpResponseAction | void> | void
+export type HttpResponseMeta<TKey extends HttpKey = HttpKey, TMeta extends HttpMeta<TKey> = HttpMeta<TKey>> = Omit<
+  TMeta,
+  'signal'
+> & { url: string }
+export type PostMeta<TKey extends HttpKey = HttpKey> = HttpMetaFull<TKey>
+type HttpHeaders = Record<string, string | undefined>
+type HttpMetaFull<TKey extends HttpKey = HttpKey> = HttpMeta<TKey> & {
   params?: HttpParam
   signal?: AbortSignal | AbortSignal[]
 }
-
-type HttpHeaders = Record<string, string | undefined>
-
 type HttpSchema = keyof HttpEndpoint extends never ? Record<string, unknown> : HttpEndpoint
+
+const MAX_REQUEST_RETRIES = 100
 
 export function createHttp(options: CreateHttpOptions): HttpClient {
   const arrayMode = options.arrayMode ?? 'json'
   const clientFetch = options.fetch ?? fetch
   const timeout = options.timeout ?? 80_000
+  const handlers = options.onResponse ? [options.onResponse].flat() : []
 
-  return {
-    get<T extends HttpKey, TConfig extends GetConfig<T> = GetConfig<T>>(url: T, config?: TConfig) {
-      const requestConfig = (config ?? {}) as TConfig
-      const resolved = resolveUrlParams(url, requestConfig.params)
-      const requestUrl = `${joinUrl(options.baseURL, resolved.url)}${toQueryString(resolved.params, arrayMode)}`
-      const { delay = 300, retries = 3 } = requestConfig.retry ?? {}
+  async function execute<T extends HttpKey, TMeta extends HttpMetaFull<T>>(
+    url: T,
+    meta: TMeta,
+    method: 'GET' | 'POST',
+    data?: HttpPostData,
+  ): Promise<HttpResponse<HttpResponseData<T>, T, TMeta>> {
+    const isForm = isFormData(data)
+    const resolved = resolveUrlParams(url, meta.params)
+    const baseUrl = joinUrl(options.baseURL, resolved.url)
+    const requestUrl = `${baseUrl}${toQueryString(resolved.params, arrayMode)}`
+    const responseMeta = createResponseMeta<T, TMeta>(baseUrl, { ...meta, params: resolved.params })
 
-      const attemptRequest = async (attempt: number): Promise<HttpResponse<HttpResponseData<T>, T, TConfig>> => {
-        try {
-          const result = await clientFetch(requestUrl, {
-            credentials: 'include',
-            headers: resolveHeaders(options.headers),
-            method: 'GET',
-            signal: createSignal(requestConfig.signal, timeout),
-          })
-
-          const parsedResult = await result.json()
-          const response: HttpResponse<HttpResponseData<T>, T, TConfig> = {
-            config: createResponseConfig<T, TConfig>(joinUrl(options.baseURL, resolved.url), {
-              ...requestConfig,
-              params: resolved.params,
-            }),
-            data: parsedResult,
-            status: result.status,
-          }
-
-          if (!result.ok && isRetryableStatus(result.status) && attempt < retries) {
-            await wait(getRetryDelay(attempt, delay))
-            return attemptRequest(attempt + 1)
-          }
-
-          await options.onResponse?.(response as unknown as HttpAnyResponse)
-          return response
-        } catch (error) {
-          if (isAbortError(error) || attempt >= retries) {
-            throw error
-          }
-
-          await wait(getRetryDelay(attempt, delay))
-          return attemptRequest(attempt + 1)
-        }
-      }
-
-      return attemptRequest(0)
-    },
-    async post<
-      T extends HttpKey,
-      TData extends Record<string, unknown> = Record<string, unknown>,
-      TConfig extends PostConfig<T> = PostConfig<T>,
-    >(url: T, data?: HttpPostData<TData>, config?: TConfig) {
-      const requestConfig = (config ?? {}) as TConfig
-      const isForm = isFormData(data)
-      const resolved = resolveUrlParams(url, requestConfig.params)
-      const requestUrl = `${joinUrl(options.baseURL, resolved.url)}${toQueryString(resolved.params, arrayMode)}`
-      const response = await clientFetch(requestUrl, {
-        body: isForm || data === undefined ? data : JSON.stringify(data),
+    for (let attempt = 0; ; attempt++) {
+      const result = await clientFetch(requestUrl, {
+        ...(method === 'POST' ? { body: isForm || data === undefined ? data : JSON.stringify(data) } : {}),
         credentials: 'include',
         headers: resolveHeaders(
           options.headers,
-          data !== undefined && !isForm ? { 'Content-Type': 'application/json' } : undefined,
+          method === 'POST' && data !== undefined && !isForm ? { 'Content-Type': 'application/json' } : undefined,
         ),
-        method: 'POST',
-        signal: createSignal(requestConfig.signal, timeout),
+        method,
+        signal: createSignal(meta.signal, timeout),
       })
-
-      let parsedResult: Awaited<ReturnType<typeof response.json>> = {}
+      let parsedResult: unknown = {}
       try {
-        parsedResult = await response.json()
+        parsedResult = await result.json()
       } catch {
-        parsedResult = {}
+        // Empty and non-JSON bodies have no data.
       }
-
-      const parsedResponse: HttpResponse<HttpResponseData<T>, T, TConfig> = {
-        config: createResponseConfig<T, TConfig>(joinUrl(options.baseURL, resolved.url), {
-          ...requestConfig,
-          params: resolved.params,
-        }),
-        data: parsedResult,
-        status: response.status,
+      const response = {
+        data: parsedResult as HttpResponseData<T>,
+        meta: responseMeta,
+        status: result.status,
+      } as HttpResponse<HttpResponseData<T>, T, TMeta>
+      const context: HttpResponseContext = {
+        attempt,
       }
+      let retry = false
+      for (const handler of handlers) {
+        const action = await handler(response as HttpAnyResponse, context)
+        if (action?.action === 'retry' && attempt < MAX_REQUEST_RETRIES) {
+          retry = true
+          break
+        }
+      }
+      if (!retry) {
+        return response
+      }
+    }
+  }
 
-      await options.onResponse?.(parsedResponse as unknown as HttpAnyResponse)
-      return parsedResponse
+  return {
+    get<T extends HttpKey, TMeta extends GetMeta<T> = GetMeta<T>>(url: T, meta?: TMeta) {
+      return execute(url, (meta ?? {}) as TMeta, 'GET')
     },
+    post<
+      T extends HttpKey,
+      TData extends Record<string, unknown> = Record<string, unknown>,
+      TMeta extends PostMeta<T> = PostMeta<T>,
+    >(url: T, data?: HttpPostData<TData>, meta?: TMeta) {
+      return execute(url, (meta ?? {}) as TMeta, 'POST', data)
+    },
+  }
+}
+
+export function defineOnResponse(
+  handler: (payload: {
+    context: HttpResponseContext
+    response: HttpAnyResponse
+  }) => HttpResponseAction | Promise<HttpResponseAction | void> | void,
+): HttpResponseHandler {
+  return (response, context) => handler({ context, response })
+}
+
+export function onResponseRetry(options: {
+  attempts: number
+  code: number[]
+  delay: number
+}): HttpResponseHandler {
+  return async (response, context) => {
+    if (!options.code.includes(response.status) || context.attempt >= options.attempts) {
+      return
+    }
+    await wait(options.delay * 2 ** context.attempt)
+    return { action: 'retry' }
   }
 }
 
@@ -178,17 +176,17 @@ function createAnySignal(signals: AbortSignal[]): AbortSignal {
   return controller.signal
 }
 
-function createResponseConfig<TKey extends HttpKey, TConfig extends HttpConfigFull<TKey>>(
+function createResponseMeta<TKey extends HttpKey, TMeta extends HttpMetaFull<TKey>>(
   url: string,
-  config: TConfig,
-): HttpResponseConfig<TKey, TConfig> {
-  const responseConfig = { ...config } as Record<string, unknown>
-  delete responseConfig.signal
+  meta: TMeta,
+): HttpResponseMeta<TKey, TMeta> {
+  const responseMeta = { ...meta } as Record<string, unknown>
+  delete responseMeta.signal
 
   return {
-    ...responseConfig,
+    ...responseMeta,
     url,
-  } as HttpResponseConfig<TKey, TConfig>
+  } as HttpResponseMeta<TKey, TMeta>
 }
 
 function createSignal(signal: AbortSignal | AbortSignal[] | undefined, timeout: number): AbortSignal {
@@ -220,20 +218,8 @@ function createTimeoutSignal(ms: number): AbortSignal {
   return controller.signal
 }
 
-function getRetryDelay(attempt: number, delay: number): number {
-  return delay * 2 ** attempt
-}
-
-function isAbortError(err: unknown): boolean {
-  return err instanceof DOMException && err.name === 'AbortError'
-}
-
 function isFormData(value: unknown): value is FormData {
   return typeof FormData !== 'undefined' && value instanceof FormData
-}
-
-function isRetryableStatus(status: number): boolean {
-  return status >= 500 || status === 429
 }
 
 function joinUrl(baseURL: string, url: string): string {

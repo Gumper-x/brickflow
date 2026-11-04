@@ -1,7 +1,8 @@
-import type { CreateHttpOptions } from '@brickflow/http'
+import { defineOnResponse } from '@brickflow/http'
 
-export function handlePlaygroundResponse(
-  response: Parameters<NonNullable<CreateHttpOptions['onResponse']>>[0],
-): void {
-  console.log(response.config.ignore?.(response.data))
-}
+export const handlePlaygroundResponse = defineOnResponse(({ context, response }) => {
+  if (context.attempt < 3) {
+    return { action: 'retry' }
+  }
+  console.log(context.attempt, response.meta.ignore?.(response.data))
+})

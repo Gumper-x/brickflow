@@ -17,6 +17,9 @@
     effect() {
       console.log('Effect productOne')
     },
+    initParams: {
+      productId: '23',
+    },
     server: true,
   })
 

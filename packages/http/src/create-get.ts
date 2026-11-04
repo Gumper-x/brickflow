@@ -1,5 +1,5 @@
 import type { HttpClient, HttpKey, HttpParam, HttpResponseData } from './http'
-import type { HttpError, UseHttpConfig, UseHttpFn, UseHttpOptions, UseHttpResult } from './nuxt'
+import type { HttpError, UseHttpFn, UseHttpMeta, UseHttpOptions, UseHttpResult } from './nuxt'
 
 export interface CreateGetFactory<P extends HttpParam> {
   <T extends HttpKey>(
@@ -23,9 +23,9 @@ export type CreateGetPathParams<T extends string> = [CreateGetParamKeys<T>] exte
     }
 
 export type CreateGetPayload<T extends string, P extends HttpParam> = {
-  config?: UseHttpConfig<HttpKey & T>
   effect?: CreateGetEffect<T, P>
   isError?: CreateGetIsError<T>
+  meta?: UseHttpMeta<HttpKey & T>
 }
 export type CreateGetResult<T extends string, P extends HttpParam> = Omit<
   UseHttpResult<HttpKey, P>,
@@ -73,12 +73,12 @@ export function defineGet(useHttp: UseHttpFn) {
       ): Promise<CreateGetResult<T, CreateGetParams<T, P>>> {
         const result = await useHttp({
           ...options,
-          config: { ...payload?.config, ...options.config },
           effect: (data, config) => {
             payload?.effect?.(data as CreateGetData<T>, config)
             options?.effect?.(data as CreateGetData<T>, config)
           },
           isError: options.isError ?? payload?.isError,
+          meta: { ...payload?.meta, ...options.meta },
           url,
         } as UseHttpOptions<HttpKey, CreateGetParams<T, P>>)
 

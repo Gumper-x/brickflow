@@ -1,4 +1,4 @@
-import { createHttp } from '@brickflow/http'
+import { createHttp, onResponseRetry } from '@brickflow/http'
 
 import { handlePlaygroundResponse } from '~/core/http-error'
 
@@ -10,7 +10,7 @@ export default defineNuxtPlugin(() => {
     headers: {
       'X-Playground-Http': 'playground-runtime',
     },
-    onResponse: handlePlaygroundResponse,
+    onResponse: [onResponseRetry({ attempts: 3, code: [429, 500], delay: 300 }), handlePlaygroundResponse],
   })
 
   // httpClient.get('/products', {
