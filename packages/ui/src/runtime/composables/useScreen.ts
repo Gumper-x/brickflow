@@ -1,4 +1,5 @@
-import { onMounted, reactive } from 'vue'
+import { onNuxtReady } from 'nuxt/app'
+import { reactive } from 'vue'
 
 export type ScreenKey = keyof ScreenState
 
@@ -33,6 +34,7 @@ const queries = {
 } satisfies Record<ScreenKey, string>
 
 let initialized = false
+let scheduled = false
 let resolveReady: () => void = () => undefined
 
 const ready = import.meta.client
@@ -96,7 +98,10 @@ const screen = {
 } as const
 
 export function useScreen(): typeof screen {
-  onMounted(initialize)
+  if (import.meta.client && !scheduled) {
+    scheduled = true
+    onNuxtReady(initialize)
+  }
 
   return screen
 }
