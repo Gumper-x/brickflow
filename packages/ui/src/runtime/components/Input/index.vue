@@ -52,6 +52,7 @@
       autocomplete?: string
       autoWidth?: boolean
       description?: string
+      descriptionError?: string
       disabled?: boolean
       icon?: IconName
       label?: string
@@ -77,6 +78,7 @@
       autocomplete: undefined,
       autoWidth: false,
       description: undefined,
+      descriptionError: undefined,
       disabled: false,
       icon: undefined,
       label: undefined,
@@ -142,7 +144,8 @@
     return Boolean(displayValue.value)
   })
 
-  const hasError = computed(() => Boolean(error.value))
+  const errorDescription = computed(() => props.descriptionError || error.value)
+  const hasError = computed(() => Boolean(errorDescription.value))
   const hasDescription = computed(() => Boolean(props.description || slots.description || hasError.value))
   const inputType = computed(() => {
     return props.type === 'password' && !showPassword.value ? 'password' : 'text'
@@ -429,7 +432,7 @@
           v-if="hasError"
           name="error"
         >
-          {{ error }}
+          {{ errorDescription }}
         </slot>
         <slot
           v-else

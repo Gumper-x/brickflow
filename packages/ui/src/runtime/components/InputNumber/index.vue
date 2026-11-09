@@ -17,6 +17,7 @@
       autoWidth?: boolean
       denominator?: number
       description?: string
+      descriptionError?: string
       disabled?: boolean
       icon?: IconName
       label?: string
@@ -45,6 +46,7 @@
       autoWidth: false,
       denominator: 0,
       description: undefined,
+      descriptionError: undefined,
       disabled: false,
       icon: undefined,
       label: undefined,
@@ -213,6 +215,7 @@
     :autoWidth="props.autoWidth"
     :label="props.label"
     :description="props.description"
+    :descriptionError="props.descriptionError"
     :disabled="props.disabled"
     :icon="props.icon"
     :placeholder="props.placeholder"

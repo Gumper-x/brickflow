@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.61
+
+### Patch Changes
+
+- Input error custom
+
 ## 0.0.60
 
 ### Patch Changes
