@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.62
+
+### Patch Changes
+
+- Fix input value number
+
 ## 0.0.61
 
 ### Patch Changes
