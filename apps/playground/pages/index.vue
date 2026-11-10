@@ -7,6 +7,8 @@
   const clicks = ref(0)
   const screenReady = ref(false)
   const testLoading = ref(false)
+  const inputNumberValue = ref(0)
+  const inputNumberValueInput = ref(0)
 
   const activeScreen = computed(() => {
     const screens = ['dk', 'lp', 'tb', 'mb', 'ms'] as const
@@ -143,6 +145,18 @@
           ms: under 480px
         </p>
       </div>
+    </section>
+
+    <section class="space-y-4">
+      <p class="text-sm font-medium text-plain-500">Input Number Value: {{ inputNumberValue }}</p>
+      <p class="text-sm font-medium text-plain-500">Input Number Value Input: {{ inputNumberValueInput }}</p>
+      <BrickInputNumber
+        :value="inputNumberValue"
+        :min="2"
+        :max="30"
+        @input="inputNumberValueInput = $event"
+        @change="inputNumberValue = Number($event)"
+      />
     </section>
   </main>
 </template>

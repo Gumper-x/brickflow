@@ -107,6 +107,10 @@
   }
 
   function handleChange(value: string, target: HTMLInputElement): void {
+    if (!isEmpty(props.min) && Number(value) < props.min) {
+      target.value = prepareValue(props.min)
+      value = target.value
+    }
     props.onChange?.(value, target)
   }
 
@@ -157,7 +161,6 @@
 
     let nextValueNumber = Number(nextValue)
     if (!isEmpty(props.min) && nextValueNumber < props.min) {
-      target.value = prepareValue(props.min)
       nextValueNumber = props.min
     }
     if (!isEmpty(props.max) && nextValueNumber > props.max) {
