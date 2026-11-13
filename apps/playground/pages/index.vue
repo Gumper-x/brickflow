@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+  import { parseIcon } from '#brickflow-ui'
+
   const { t } = useI18n()
   const screen = useScreen()
   const { $di } = useNuxtApp()
@@ -9,6 +11,10 @@
   const testLoading = ref(false)
   const inputNumberValue = ref(0)
   const inputNumberValueInput = ref(0)
+  const backendIconName = ref('rocket')
+  const resolvedIcon = computed(() =>
+    parseIcon(backendIconName.value, { allowed: ['rocket', 'cart'], fallback: 'fast' }),
+  )
 
   const activeScreen = computed(() => {
     const screens = ['dk', 'lp', 'tb', 'mb', 'ms'] as const
@@ -101,6 +107,27 @@
           TestButton
         </BrickButton>
       </div>
+    </section>
+
+    <section class="space-y-4">
+      <p class="text-sm font-medium text-plain-500">parseIcon: icon name from the backend</p>
+      <div class="flex flex-wrap items-center gap-4">
+        <select
+          v-model="backendIconName"
+          aria-label="Backend icon name"
+          class="rounded-lg border border-plain-300 bg-plain-50 px-3 py-2 text-sm text-plain-950"
+        >
+          <option value="rocket">rocket</option>
+          <option value="cart">cart</option>
+          <option value="unknown">unknown</option>
+        </select>
+        <BrickIcon
+          :name="resolvedIcon"
+          class="text-2xl"
+        />
+        <span class="text-sm text-plain-500">{{ backendIconName }} → {{ resolvedIcon }}</span>
+      </div>
+      <p class="text-sm text-plain-500">Allowed: rocket, cart · fallback: x</p>
     </section>
 
     <ClientOnly>{{ theme }}</ClientOnly>

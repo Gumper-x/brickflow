@@ -479,6 +479,7 @@ export default defineNuxtModule<ModuleOptions>({
         return [
           `export const iconNames = ${JSON.stringify(iconNames)}`,
           `export const firstIconName = ${JSON.stringify(iconNames[0] ?? '')}`,
+          'export const parseIcon = (value, { allowed, fallback }) => allowed.includes(value) ? value : fallback',
           '',
         ].join('\n')
       },
@@ -493,6 +494,7 @@ export default defineNuxtModule<ModuleOptions>({
           `export type IconName = ${iconNameType}`,
           'export const firstIconName: IconName',
           'export const iconNames: readonly IconName[]',
+          'export function parseIcon(value: unknown, options: { allowed: readonly IconName[]; fallback: IconName }): IconName',
           '',
         ].join('\n')
       },
@@ -521,7 +523,7 @@ export default defineNuxtModule<ModuleOptions>({
       getContents: () =>
         [
           "export { UI_CONFIG, UI_STYLE, uiConfig, uiStyles } from './brickflow-ui-config.mjs'",
-          "export { firstIconName, iconNames } from './brickflow-ui-icons.mjs'",
+          "export { firstIconName, iconNames, parseIcon } from './brickflow-ui-icons.mjs'",
           '',
         ].join('\n'),
     })

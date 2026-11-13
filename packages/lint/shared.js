@@ -107,6 +107,10 @@ const baseRules = {
   'no-restricted-syntax': [
     'error',
     {
+      message: 'Use parseIcon with explicit allowed icons instead of asserting IconName.',
+      selector: "TSAsExpression > TSTypeReference[typeName.name='IconName']",
+    },
+    {
       message: 'Write function props only with a prefix ^on | ^set.',
       selector:
         'CallExpression[callee.name=defineProps] TSPropertySignature[typeAnnotation.typeAnnotation.type=TSFunctionType][key.name!=/^on|^set/]',

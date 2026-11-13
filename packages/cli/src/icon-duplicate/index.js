@@ -638,12 +638,12 @@ function parseArgs(rawArgs) {
 }
 
 function printHelp() {
-  console.log(`brick icon-check <path> [name]
+  console.log(`brick icon-duplicate <path> [name]
 
 Usage:
-  brick icon-check ./path/to/svg-icons
-  brick icon-check ./path/to/svg-icons bounty
-  brick icon-check --path ./path/to/svg-icons --name bounty
+  brick icon-duplicate ./path/to/svg-icons
+  brick icon-duplicate ./path/to/svg-icons bounty
+  brick icon-duplicate --path ./path/to/svg-icons --name bounty
 
   Notes:
   path: directory with source .svg icons
@@ -829,7 +829,7 @@ if (svgFiles.length < 2) {
   process.exit(0)
 }
 
-console.log(`Start icon-check for "${scopeName}"`)
+console.log(`Start icon-duplicate for "${scopeName}"`)
 console.log(`[${scopeName}] ${svgFiles.length} icons`)
 
 const totalPairsEstimate = (svgFiles.length * (svgFiles.length - 1)) / 2
@@ -908,7 +908,7 @@ const duplicateGroups = buildDuplicateGroups(duplicateGraph, iconsDir)
   .filter((group) => group.duplicateIcons.length > 0)
 
 console.log(`  ${scopeName} done in ${formatDuration(Date.now() - startAt)}; groups: ${duplicateGroups.length}`)
-console.log(`\nicon-check finished in ${formatDuration(Date.now() - startAt)}`)
+console.log(`\nicon-duplicate finished in ${formatDuration(Date.now() - startAt)}`)
 
 if (duplicateGroups.length === 0) {
   console.log('✅ No duplicate icons found')

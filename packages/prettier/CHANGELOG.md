@@ -1,5 +1,11 @@
 # @brickflow/prettier
 
+## 0.0.63
+
+### Patch Changes
+
+- Icon unsed
+
 ## 0.0.62
 
 ### Patch Changes
