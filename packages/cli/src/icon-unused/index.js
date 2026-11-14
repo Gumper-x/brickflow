@@ -160,8 +160,18 @@ function paint(text, code) {
   return colorEnabled ? `\u001B[${code}m${text}\u001B[0m` : text
 }
 
-function parseScript(source) {
-  return parseCode(source, { plugins: ['typescript', 'jsx'], sourceType: 'unambiguous' })
+function parseScript(source, file, jsx = false, lineOffset = 0) {
+  try {
+    return parseCode(source, { plugins: jsx ? ['typescript', 'jsx'] : ['typescript'], sourceType: 'unambiguous' })
+  } catch (error) {
+    if (error.loc) {
+      throw new Error(
+        `Cannot parse ${file}:${error.loc.line + lineOffset}:${error.loc.column + 1}: ${error.message}`,
+        { cause: error },
+      )
+    }
+    throw error
+  }
 }
 
 function pascalCase(value) {
@@ -199,13 +209,13 @@ function readNuxtIconOptions(ast) {
   return options
 }
 
-function readVueTypes(source) {
+function readVueTypes(source, file) {
   const { descriptor } = parseVue(source)
-  const scripts = [descriptor.script?.content, descriptor.scriptSetup?.content].filter(Boolean)
+  const scripts = [descriptor.script, descriptor.scriptSetup].filter(Boolean)
   const result = { config: new Set(), props: new Set() }
 
   for (const script of scripts) {
-    const ast = parseScript(script)
+    const ast = parseScript(script.content, file, /^[tj]sx$/.test(script.attrs.lang), script.loc.start.line - 1)
     const aliases = new Map()
     traverse(ast, {
       TSInterfaceDeclaration({ node }) {
@@ -267,7 +277,7 @@ function resolveUiComponentsDir(appDir) {
 
 async function run(appDir) {
   const nuxtConfigPath = path.join(appDir, 'nuxt.config.ts')
-  const nuxtConfig = parseScript(await readFile(nuxtConfigPath, 'utf8'))
+  const nuxtConfig = parseScript(await readFile(nuxtConfigPath, 'utf8'), nuxtConfigPath)
   const options = readNuxtIconOptions(nuxtConfig)
 
   if (!options.iconsPath) {
@@ -291,7 +301,7 @@ async function run(appDir) {
   for (const file of globSync('**/index.vue', { absolute: true, cwd: uiComponentsDir, ignore: ignored })) {
     const name = `${options.componentPrefix ?? 'Brick'}${path.basename(path.dirname(file))}`
     const source = await readFile(file, 'utf8')
-    const types = readVueTypes(source)
+    const types = readVueTypes(source, file)
     components.set(name, types.props)
 
     for (const key of types.config) {
@@ -312,7 +322,7 @@ async function run(appDir) {
     const relative = path.relative(path.join(appDir, 'components'), file).replace(/\.vue$/, '')
     const parts = relative.split(path.sep).filter((part) => part !== 'index')
     const name = parts.map(pascalCase).join('')
-    const types = readVueTypes(await readFile(file, 'utf8'))
+    const types = readVueTypes(await readFile(file, 'utf8'), file)
     components.set(name, types.props)
     components.set(`Lazy${name}`, types.props)
   }
@@ -331,10 +341,24 @@ async function run(appDir) {
   for (const file of appFiles) {
     const source = await readFile(file, 'utf8')
     const descriptor = file.endsWith('.vue') ? parseVue(source, { filename: file }).descriptor : null
-    const script = descriptor
-      ? [descriptor.script?.content, descriptor.scriptSetup?.content].filter(Boolean).join('\n')
-      : source
-    const scriptAst = script.trim() ? parseScript(script) : null
+    const scriptBlocks = descriptor ? [descriptor.script, descriptor.scriptSetup].filter(Boolean) : []
+    const script = descriptor ? scriptBlocks.map((block) => block.content).join('\n') : source
+    const jsx = descriptor
+      ? [descriptor.script, descriptor.scriptSetup].some((block) => /^[tj]sx$/.test(block?.attrs.lang))
+      : /\.[jt]sx$/.test(file)
+    let scriptAst = null
+    if (script.trim()) {
+      try {
+        scriptAst = parseScript(script, file, jsx, scriptBlocks[0]?.loc.start.line - 1 || 0)
+      } catch (error) {
+        if (scriptBlocks.length > 1) {
+          for (const block of scriptBlocks) {
+            parseScript(block.content, file, /^[tj]sx$/.test(block.attrs.lang), block.loc.start.line - 1)
+          }
+        }
+        throw error
+      }
+    }
     const bindings = new Map()
     const fileComponents = new Map(components)
 
@@ -349,7 +373,7 @@ async function run(appDir) {
         if (!existsSync(importPath)) {
           continue
         }
-        const importedProps = readVueTypes(await readFile(importPath, 'utf8')).props
+        const importedProps = readVueTypes(await readFile(importPath, 'utf8'), importPath).props
         for (const specifier of statement.specifiers) {
           fileComponents.set(specifier.local.name, importedProps)
         }

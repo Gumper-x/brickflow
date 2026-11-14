@@ -1,5 +1,11 @@
 # @brickflow/i18n
 
+## 0.0.65
+
+### Patch Changes
+
+- Fix unused
+
 ## 0.0.64
 
 ### Patch Changes
