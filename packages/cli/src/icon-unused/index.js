@@ -17,6 +17,7 @@ const ignored = [
   '**/dist/**',
   '**/coverage/**',
   '**/*.demo.vue',
+  '**/*.d.ts',
   '**/tests/**',
 ]
 
@@ -191,8 +192,72 @@ function propertyName(node) {
   return null
 }
 
-function readNuxtIconOptions(ast) {
+function readNuxtIconOptions(ast, configDir) {
   let options = {}
+  const declarations = new Map()
+  traverse(ast, {
+    VariableDeclarator({ node }) {
+      if (node.id.type === 'Identifier') {
+        declarations.set(node.id.name, node.init)
+      }
+    },
+  })
+
+  const isImportMetaUrl = (node) =>
+    node?.type === 'MemberExpression' &&
+    propertyName(node.property) === 'url' &&
+    node.object.type === 'MetaProperty' &&
+    node.object.meta.name === 'import' &&
+    node.object.property.name === 'meta'
+  const isCurrentDir = (node, seen = new Set()) => {
+    if (node?.type === 'Identifier') {
+      if (seen.has(node.name)) {
+        return false
+      }
+      seen.add(node.name)
+      return isCurrentDir(declarations.get(node.name), seen)
+    }
+    if (node?.type === 'MemberExpression') {
+      return propertyName(node.property) === 'dirname' && node.object.type === 'MetaProperty'
+    }
+    if (node?.type !== 'CallExpression' || node.callee.type !== 'Identifier') {
+      return false
+    }
+    if (node.callee.name === 'dirname') {
+      const argument = node.arguments[0]
+      return (
+        argument?.type === 'CallExpression' &&
+        argument.callee.type === 'Identifier' &&
+        argument.callee.name === 'fileURLToPath' &&
+        isImportMetaUrl(argument.arguments[0])
+      )
+    }
+    return (
+      node.callee.name === 'fileURLToPath' &&
+      node.arguments[0]?.type === 'NewExpression' &&
+      node.arguments[0].callee.type === 'Identifier' &&
+      node.arguments[0].callee.name === 'URL' &&
+      literalValue(node.arguments[0].arguments[0]) === '.' &&
+      isImportMetaUrl(node.arguments[0].arguments[1])
+    )
+  }
+  const iconPath = (node) => {
+    const literal = literalValue(node)
+    if (literal !== null) {
+      return literal
+    }
+    if (
+      node?.type !== 'CallExpression' ||
+      node.callee.type !== 'Identifier' ||
+      node.callee.name !== 'join' ||
+      node.arguments.length < 2 ||
+      !isCurrentDir(node.arguments[0])
+    ) {
+      return null
+    }
+    const segments = node.arguments.slice(1).map(literalValue)
+    return segments.includes(null) ? null : path.join(configDir, ...segments)
+  }
   traverse(ast, {
     CallExpression({ node }) {
       if (node.callee.type !== 'Identifier' || node.callee.name !== 'defineNuxtConfig') {
@@ -202,7 +267,7 @@ function readNuxtIconOptions(ast) {
       options = {
         componentPrefix: literalValue(objectValue(brickflowUi, 'componentPrefix')),
         configPath: literalValue(objectValue(brickflowUi, 'configPath')),
-        iconsPath: literalValue(objectValue(brickflowUi, 'iconsPath')),
+        iconsPath: iconPath(objectValue(brickflowUi, 'iconsPath')),
       }
     },
   })
@@ -278,10 +343,10 @@ function resolveUiComponentsDir(appDir) {
 async function run(appDir) {
   const nuxtConfigPath = path.join(appDir, 'nuxt.config.ts')
   const nuxtConfig = parseScript(await readFile(nuxtConfigPath, 'utf8'), nuxtConfigPath)
-  const options = readNuxtIconOptions(nuxtConfig)
+  const options = readNuxtIconOptions(nuxtConfig, path.dirname(nuxtConfigPath))
 
   if (!options.iconsPath) {
-    throw new Error(`brickflowUi.iconsPath must be a string literal in ${nuxtConfigPath}`)
+    throw new Error(`brickflowUi.iconsPath must be a string literal or join(currentDir, ...) in ${nuxtConfigPath}`)
   }
 
   const iconsDir = path.resolve(appDir, options.iconsPath)

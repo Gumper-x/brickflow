@@ -1,5 +1,11 @@
 # @brickflow/cli
 
+## 0.0.66
+
+### Patch Changes
+
+- Fix icon unsed .d ts remove
+
 ## 0.0.65
 
 ### Patch Changes
