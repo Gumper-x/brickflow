@@ -1,5 +1,11 @@
 # @brickflow/ui
 
+## 0.0.68
+
+### Patch Changes
+
+- Feat component unused
+
 ## 0.0.67
 
 ### Patch Changes

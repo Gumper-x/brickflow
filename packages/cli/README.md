@@ -1,5 +1,15 @@
 # @brickflow/cli
 
+## Unused Nuxt components
+
+```sh
+brick component-unused [--app <nuxt-project>] [--root <workspace>]
+```
+
+The command checks auto-imported `.vue` files in `components/` and `app/components/` across local Nuxt projects. It finds component tags (including kebab-case and `Lazy` names), `#components` imports, `resolveComponent` calls, and component references in scripts and template expressions. Local `extends` links make a layer's components available to its consumers. A component used only in a consuming project is reported separately from components unused everywhere. `--app` limits the result to components owned by one project; all local projects are still scanned for usage. The command exits with code 1 when unused components exist. Dynamic component names and components registered by arbitrary module code cannot be resolved statically.
+
+From this repository, run `pnpm lint:component`.
+
 ## Fix SVG files
 
 Recursively expand SVG strokes to filled outlines. The command uses SVGO to resolve CSS and [@napi-rs/canvas](https://github.com/Brooooooklyn/canvas) for vector stroke geometry. It does not rasterize or trace artwork.

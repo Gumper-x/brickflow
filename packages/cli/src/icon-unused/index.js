@@ -7,6 +7,8 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+import { createProgress } from '../shared/progress.js'
+
 const traverse = traverseModule.default || traverseModule
 const cliDir = path.dirname(fileURLToPath(import.meta.url))
 const localUiComponentsDir = path.resolve(cliDir, '../../../ui/src/runtime/components')
@@ -429,6 +431,7 @@ async function run(appDir) {
     ignore: ignored,
     nodir: true,
   })
+  const progress = createProgress('Scanning icon usage', appFiles.length)
 
   for (const file of appFiles.filter(
     (candidate) => candidate.includes(`${path.sep}components${path.sep}`) && candidate.endsWith('.vue'),
@@ -555,19 +558,20 @@ async function run(appDir) {
         }
       })
     }
+    progress.tick()
   }
 
   const unused = [...icons].filter((name) => !used.has(name)).sort()
-  console.log(
-    `\n${paint('◆ Icon usage', '1;36')}  ${icons.size} total  ${paint(`${used.size} used`, '32')}  ${paint(`${unused.length} unused`, unused.length ? '33' : '32')}`,
-  )
+  console.log(`\n${paint('◆ Icon usage', '1;36')}`)
+  console.log(`${'Total'.padEnd(10)} ${icons.size}`)
+  console.log(`${'Used'.padEnd(10)} ${paint(String(used.size), '32')}`)
+  console.log(`${'Unused'.padEnd(10)} ${paint(String(unused.length), unused.length ? '1;33' : '32')}`)
   if (unused.length) {
     console.log(`\n${paint(`Unused SVGs (${unused.length})`, '1')}`)
     const nameWidth = Math.max(...unused.map((name) => name.length))
+    console.log(`${paint('Name'.padEnd(nameWidth + 4), '2')} ${paint('File', '2')}`)
     for (const name of unused) {
-      console.log(
-        `    ${paint(name, '1;33')}${' '.repeat(nameWidth - name.length + 4)}${fileLink(path.join(iconsDir, `${name}.svg`))}`,
-      )
+      console.log(`${paint(name.padEnd(nameWidth + 4), '1;33')} ${fileLink(path.join(iconsDir, `${name}.svg`))}`)
     }
   } else {
     console.log(`\n${paint('✓ No unused icons', '32')}`)
@@ -575,8 +579,10 @@ async function run(appDir) {
 
   if (invalid.length) {
     console.error(`\n${paint(`✖ Unknown icons (${invalid.length})`, '1;31')}`)
+    const nameWidth = Math.max(...invalid.map((item) => item.name.length))
+    console.error(`${paint('Name'.padEnd(nameWidth + 4), '2')} ${paint('File', '2')}`)
     for (const item of invalid) {
-      console.error(`  ${paint(item.name, '31')}  ${fileLink(item.file, item.line)}`)
+      console.error(`${paint(item.name.padEnd(nameWidth + 4), '31')} ${fileLink(item.file, item.line)}`)
     }
   }
 
