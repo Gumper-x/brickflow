@@ -1,5 +1,11 @@
 # @brickflow/http
 
+## 0.0.64
+
+### Patch Changes
+
+- svg-fix text element
+
 ## 0.0.63
 
 ### Patch Changes
