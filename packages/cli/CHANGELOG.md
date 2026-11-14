@@ -1,5 +1,11 @@
 # @brickflow/cli
 
+## 0.0.67
+
+### Patch Changes
+
+- fix cli
+
 ## 0.0.66
 
 ### Patch Changes

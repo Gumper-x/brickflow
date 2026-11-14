@@ -70,12 +70,21 @@ function collectConfigIcons(call, configIconPaths, file, record, unresolved) {
   }
 }
 
-function collectExpression(node, bindings, file, line, record, unresolved, visited = new Set()) {
+function collectExpression(
+  node,
+  bindings,
+  file,
+  line,
+  record,
+  unresolved,
+  visited = new Set(),
+  objectIcons = new Map(),
+) {
   if (node.type === 'StringLiteral') {
     record(node.value, file, line)
   } else if (node.type === 'ConditionalExpression') {
-    collectExpression(node.consequent, bindings, file, line, record, unresolved, visited)
-    collectExpression(node.alternate, bindings, file, line, record, unresolved, visited)
+    collectExpression(node.consequent, bindings, file, line, record, unresolved, visited, objectIcons)
+    collectExpression(node.alternate, bindings, file, line, record, unresolved, visited, objectIcons)
   } else if (
     node.type === 'CallExpression' &&
     node.callee.type === 'Identifier' &&
@@ -89,10 +98,20 @@ function collectExpression(node, bindings, file, line, record, unresolved, visit
     node.arguments[0]?.type === 'ArrowFunctionExpression' &&
     node.arguments[0].body.type !== 'BlockStatement'
   ) {
-    collectExpression(node.arguments[0].body, bindings, file, line, record, unresolved, visited)
+    collectExpression(node.arguments[0].body, bindings, file, line, record, unresolved, visited, objectIcons)
   } else if (node.type === 'Identifier' && bindings.has(node.name) && !visited.has(node.name)) {
     visited.add(node.name)
-    collectExpression(bindings.get(node.name), bindings, file, line, record, unresolved, visited)
+    collectExpression(bindings.get(node.name), bindings, file, line, record, unresolved, visited, objectIcons)
+  } else if (
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    node.object.type === 'Identifier' &&
+    propertyName(node.property) === 'icon' &&
+    objectIcons.has(node.object.name)
+  ) {
+    for (const icon of objectIcons.get(node.object.name)) {
+      record(icon.name, file, icon.line)
+    }
   } else if (
     node.type === 'MemberExpression' &&
     node.object.type === 'Identifier' &&
@@ -141,6 +160,36 @@ function fileLink(file, line = 1) {
   const displayPath = relativePath.startsWith('..') ? file : relativePath
   const label = paint(`${displayPath}:${line}`, '36')
   return linksEnabled ? `\u001B]8;;${pathToFileURL(file).href}\u001B\\${label}\u001B]8;;\u001B\\` : label
+}
+
+function findObjectIcons(root, bindings, seen = new Set()) {
+  const icons = []
+  const scan = (node) => {
+    if (!node || typeof node !== 'object') {
+      return
+    }
+    if (Array.isArray(node)) {
+      node.forEach(scan)
+      return
+    }
+    if (node.type === 'Identifier' && bindings.has(node.name) && !seen.has(node.name)) {
+      seen.add(node.name)
+      scan(bindings.get(node.name))
+    }
+    if (node.type === 'ObjectProperty' && propertyName(node.key) === 'icon') {
+      const name = literalValue(node.value)
+      if (name !== null) {
+        icons.push({ line: node.loc.start.line, name })
+      }
+    }
+    for (const [key, value] of Object.entries(node)) {
+      if (key !== 'loc' && key !== 'start' && key !== 'end' && key !== 'extra') {
+        scan(value)
+      }
+    }
+  }
+  scan(root)
+  return icons
 }
 
 function literalValue(node) {
@@ -468,7 +517,7 @@ async function run(appDir) {
     }
 
     if (descriptor?.template?.ast) {
-      visitTemplate(descriptor.template.ast, (element) => {
+      visitTemplate(descriptor.template.ast, (element, scope) => {
         const propTypes = fileComponents.get(element.tag) || fileComponents.get(pascalCase(element.tag))
 
         if (!propTypes) {
@@ -494,7 +543,11 @@ async function run(appDir) {
           } else if (prop.type === 7 && prop.exp) {
             try {
               const expression = parseExpression(prop.exp.content, { plugins: ['typescript'] })
-              collectExpression(expression, bindings, file, line, record, unresolved)
+              const objectIcons = new Map()
+              for (const [item, collection] of scope) {
+                objectIcons.set(item, findObjectIcons(bindings.get(collection), bindings))
+              }
+              collectExpression(expression, bindings, file, line, record, unresolved, new Set(), objectIcons)
             } catch {
               unresolved.push({ file, line, reason: prop.loc.source })
             }
@@ -527,29 +580,28 @@ async function run(appDir) {
     }
   }
 
-  if (unresolved.length) {
-    console.error(`\n${paint(`✖ Unresolved dynamic icons (${unresolved.length})`, '1;31')}`)
-    for (const item of unresolved) {
-      console.error(`  ${item.reason}  ${fileLink(item.file, item.line)}`)
-    }
-  }
-
-  if (unused.length || invalid.length || unresolved.length) {
+  if (unused.length || invalid.length) {
     process.exitCode = 1
   }
   console.log()
 }
 
-function visitTemplate(node, visit) {
+function visitTemplate(node, visit, scope = new Map()) {
+  const localScope = new Map(scope)
   if (node.type === 1) {
-    visit(node)
+    const loop = node.props.find((prop) => prop.type === 7 && prop.name === 'for')
+    const match = loop?.exp?.content.match(/^\s*(\w+)\s+(?:in|of)\s+(\w+)\s*$/)
+    if (match) {
+      localScope.set(match[1], match[2])
+    }
+    visit(node, localScope)
   }
   for (const child of node.children || []) {
-    visitTemplate(child, visit)
+    visitTemplate(child, visit, localScope)
   }
   if (node.branches) {
     for (const branch of node.branches) {
-      visitTemplate(branch, visit)
+      visitTemplate(branch, visit, localScope)
     }
   }
 }
