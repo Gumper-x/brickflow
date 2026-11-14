@@ -27,9 +27,9 @@ test('scans TypeScript generics and configured Nuxt component prefixes', () => {
     put('utils/checkup.ts', 'export const isPresent = <T>(value: T): value is NonNullable<T> => value != null')
 
     const output = execFileSync(process.execPath, [cli, 'component-unused', '--root', root], { encoding: 'utf8' })
-    assert.match(output, /Components\s+2/)
-    assert.match(output, /Used\s+2/)
-    assert.match(output, /Unused\s+0/)
+    assert.match(output, /2 components/)
+    assert.match(output, /2 used/)
+    assert.match(output, /0 unused/)
   } finally {
     rmSync(root, { force: true, recursive: true })
   }

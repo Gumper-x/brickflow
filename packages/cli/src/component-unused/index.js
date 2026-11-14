@@ -222,9 +222,6 @@ async function run() {
   }
   const allComponents = [...projects.values()].flatMap((project) => project.components)
   const files = [...projects.values()].flatMap((project) => project.files.map((file) => ({ file, project })))
-  console.log(`\n${paint('◆ Nuxt component usage', '1;36')}`)
-  console.log(`${'Projects'.padEnd(20)} ${projects.size}`)
-  console.log(`${'Components'.padEnd(20)} ${allComponents.length}`)
   const progress = createProgress('Scanning source files', files.length)
   try {
     for (const { file, project } of files) {
@@ -270,11 +267,11 @@ async function run() {
   const inherited = selected.filter(
     (component) => !component.usedBy.has(component.project) && component.usedBy.size > 0,
   )
-  console.log(`\n${'Used'.padEnd(20)} ${paint(String(selected.length - unused.length), '32')}`)
-  console.log(`${'Unused'.padEnd(20)} ${paint(String(unused.length), unused.length ? '1;33' : '32')}`)
-  console.log(`${'Used by consumers'.padEnd(20)} ${paint(String(inherited.length), '35')}`)
+  console.log(
+    `\n${paint('◆ Component usage', '1;36')}  ${projects.size} projects  ${allComponents.length} components  ${paint(`${selected.length - unused.length} used`, '32')}  ${paint(`${unused.length} unused`, unused.length ? '1;33' : '32')}  ${paint(`${inherited.length} used by consumers`, '35')}`,
+  )
   if (unused.length) {
-    console.log(`\n${paint(`✖ Unused in all local projects (${unused.length})`, '1;33')}`)
+    console.log(`\n${paint(`✖ Unused in all local projects (${unused.length})`, '1;31')}`)
     const nameWidth = Math.max(28, ...unused.map((component) => component.name.length + 2))
     console.log(`${paint('Name'.padEnd(nameWidth), '2')} ${paint('File', '2')}`)
     for (const component of unused) {

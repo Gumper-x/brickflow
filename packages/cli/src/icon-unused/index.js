@@ -562,10 +562,9 @@ async function run(appDir) {
   }
 
   const unused = [...icons].filter((name) => !used.has(name)).sort()
-  console.log(`\n${paint('◆ Icon usage', '1;36')}`)
-  console.log(`${'Total'.padEnd(10)} ${icons.size}`)
-  console.log(`${'Used'.padEnd(10)} ${paint(String(used.size), '32')}`)
-  console.log(`${'Unused'.padEnd(10)} ${paint(String(unused.length), unused.length ? '1;33' : '32')}`)
+  console.log(
+    `\n${paint('◆ Icon usage', '1;36')}  ${icons.size} total  ${paint(`${used.size} used`, '32')}  ${paint(`${unused.length} unused`, unused.length ? '1;33' : '32')}`,
+  )
   if (unused.length) {
     console.log(`\n${paint(`Unused SVGs (${unused.length})`, '1')}`)
     const nameWidth = Math.max(...unused.map((name) => name.length))

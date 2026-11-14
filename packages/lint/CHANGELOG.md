@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.69
+
+### Patch Changes
+
+- Restyle output unused
+
 ## 0.0.68
 
 ### Patch Changes
