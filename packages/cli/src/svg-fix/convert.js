@@ -1,4 +1,4 @@
-import { Path2D, StrokeCap, StrokeJoin } from '@napi-rs/canvas'
+import { convertSVGTextToPath, Path2D, StrokeCap, StrokeJoin } from '@napi-rs/canvas'
 import { optimize } from 'svgo'
 import svgpath from 'svgpath'
 import { scale } from 'transformation-matrix'
@@ -69,6 +69,16 @@ export class SvgFixError extends Error {
  */
 export function convertSvg(source, options = {}) {
   const diagnostics = createDiagnostics(options.onDiagnostic)
+  if (/<text(?:\s|>)/i.test(source)) {
+    try {
+      const rootTag = source.match(/<svg\b[^>]*>/i)?.[0]
+      const converted = convertSVGTextToPath(source).toString()
+      source = rootTag ? converted.replace(/<svg\b[^>]*>/i, rootTag) : converted
+      diagnostics.emit('TEXT_TO_PATH', 'Converted SVG text to outline paths.')
+    } catch (error) {
+      fatal('INVALID_TEXT', error.message)
+    }
+  }
   const descriptors = analyzeShapes(source)
   if (!descriptors.some(({ convert }) => convert)) {
     return source

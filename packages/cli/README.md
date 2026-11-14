@@ -23,7 +23,7 @@ Pass one or more paths as separate arguments, or repeat `--path` (`-p`). Each pa
 
 SVG files are overwritten at their original paths; there is no `--output` option. Repeated or overlapping paths do not cause a file to be processed more than once. All input paths are scanned before any files are changed. A file that cannot be converted is reported without rewriting it, and processing continues with the remaining files. The final summary includes failed files separately from unchanged files, and the command exits with code 1 if any file failed.
 
-`svg-fix` has one responsibility: elements with a visible computed `stroke` are converted to filled outline paths. Elements without strokes are never structurally or geometrically normalized. The root SVG, viewBox, dimensions, groups, definitions, metadata, fill-only shapes, IDs, classes, and transforms remain in place.
+`svg-fix` converts SVG text and elements with a visible computed `stroke` to filled outline paths. SVGs without text or visible strokes remain byte-for-byte unchanged. Text conversion uses the available system fonts and may normalize other markup in the same SVG; the root SVG attributes are retained.
 
 Stroke detection includes inline CSS, CSS classes, CSS variables, and inherited presentation attributes. Expansion supports paths, lines, polygons, polylines, circles, ellipses, and rectangles, including line caps, joins, miter limits, arbitrary dash arrays, and dash offsets. Transforms are preserved and apply to the generated outline exactly where they applied to the original element.
 

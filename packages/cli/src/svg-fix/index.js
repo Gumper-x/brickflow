@@ -134,7 +134,7 @@ Options:
   -h, --help   Show this help
 
 Notes:
-  Converts only elements with a visible stroke into filled outline paths
+  Converts SVG text and visible strokes into filled outline paths
   Paths are resolved from the current working directory
   SVG files are overwritten in place; no output directory is needed
   Each SVG is processed once, even when supplied paths overlap
