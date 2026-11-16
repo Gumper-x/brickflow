@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.70
+
+### Patch Changes
+
+- Fix component prefix for icon unused
+
 ## 0.0.69
 
 ### Patch Changes

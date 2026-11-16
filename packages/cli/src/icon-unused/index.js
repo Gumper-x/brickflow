@@ -315,7 +315,19 @@ function readNuxtIconOptions(ast, configDir) {
         return
       }
       const brickflowUi = objectValue(node.arguments[0], 'brickflowUi')
+      const componentDirs = objectValue(node.arguments[0], 'components')
+      const appComponentDirs =
+        componentDirs?.type === 'ArrayExpression'
+          ? componentDirs.elements
+              .filter((entry) => entry?.type === 'ObjectExpression')
+              .map((entry) => ({
+                path: literalValue(objectValue(entry, 'path')),
+                prefix: literalValue(objectValue(entry, 'prefix')),
+              }))
+              .filter((entry) => entry.path)
+          : [{ path: '~/components/', prefix: null }]
       options = {
+        appComponentDirs,
         componentPrefix: literalValue(objectValue(brickflowUi, 'componentPrefix')),
         configPath: literalValue(objectValue(brickflowUi, 'configPath')),
         iconsPath: iconPath(objectValue(brickflowUi, 'iconsPath')),
@@ -433,15 +445,18 @@ async function run(appDir) {
   })
   const progress = createProgress('Scanning icon usage', appFiles.length)
 
-  for (const file of appFiles.filter(
-    (candidate) => candidate.includes(`${path.sep}components${path.sep}`) && candidate.endsWith('.vue'),
-  )) {
-    const relative = path.relative(path.join(appDir, 'components'), file).replace(/\.vue$/, '')
-    const parts = relative.split(path.sep).filter((part) => part !== 'index')
-    const name = parts.map(pascalCase).join('')
-    const types = readVueTypes(await readFile(file, 'utf8'), file)
-    components.set(name, types.props)
-    components.set(`Lazy${name}`, types.props)
+  for (const entry of options.appComponentDirs) {
+    const componentDir = path.resolve(appDir, entry.path.replace(/^~\//, ''))
+    for (const file of appFiles.filter(
+      (candidate) => candidate.startsWith(`${componentDir}${path.sep}`) && candidate.endsWith('.vue'),
+    )) {
+      const relative = path.relative(componentDir, file).replace(/\.vue$/, '')
+      const parts = relative.split(path.sep).filter((part) => part !== 'index')
+      const name = `${entry.prefix || ''}${parts.map(pascalCase).join('')}`
+      const types = readVueTypes(await readFile(file, 'utf8'), file)
+      components.set(name, types.props)
+      components.set(`Lazy${name}`, types.props)
+    }
   }
 
   const used = new Set()
