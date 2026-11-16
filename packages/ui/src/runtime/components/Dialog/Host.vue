@@ -1,18 +1,19 @@
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-  import type {
-    DialogController,
-    DialogEntry,
-    DialogPlacement,
-    DialogPlacementConfig,
+  import {
+    type DialogController,
+    type DialogEntry,
+    type DialogPlacement,
+    type DialogPlacementConfig,
+    getDialogHostState,
   } from '../../composables/useDialog'
-
   import { useScreen } from '../../composables/useScreen'
   import Icon from '../Icon/index.vue'
   import Dialog, { dialogConfig } from './index.vue'
 
   const props = defineProps<{ dialog: DialogController }>()
+  const hostState = getDialogHostState(props.dialog)
   const screen = useScreen()
   const placementClasses = {
     bottom: UI_STYLE.layerPlacementClasses.bottom,
@@ -277,6 +278,7 @@
     }
     completedLeaves.delete(id)
     renderedDialogs.value = renderedDialogs.value.filter(({ entry }) => entry.id !== id)
+    hostState.settle(id)
     if (id === draggedId.value) {
       clearGesture()
     }
@@ -515,6 +517,7 @@
       for (const entry of props.dialog.stack) {
         if (!renderedDialogs.value.some((rendered) => rendered.entry.id === entry.id)) {
           renderedDialogs.value.push({ entry, loadingVisible: false, ready: false, visible: true })
+          hostState.rendered.add(entry.id)
           startLoadingTimer(entry.id)
         }
       }
