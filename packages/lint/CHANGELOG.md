@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.71
+
+### Patch Changes
+
+- Dialog promise closed
+
 ## 0.0.70
 
 ### Patch Changes
