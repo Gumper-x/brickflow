@@ -3,8 +3,6 @@ import { type Component, inject, type InjectionKey, markRaw, reactive } from 'vu
 import type { ScreenKey } from './useScreen'
 
 export interface DialogController {
-  /** Resolves once no dialog is open and every leave animation has finished. */
-  allClosed(): Promise<void>
   close(id?: number): void
   closeAll(): void
   open<C extends Component>(component: C, props: DialogProps<C>, options?: DialogOptions): DialogHandle
@@ -53,23 +51,13 @@ export function createDialogController(
 ): DialogController {
   const stack = reactive<DialogEntry[]>([])
   const closedResolvers = new Map<number, () => void>()
-  const allClosedResolvers: (() => void)[] = []
   const rendered = new Set<number>()
   let nextId = 0
-
-  function settleAllClosed(): void {
-    if (stack.length === 0 && rendered.size === 0) {
-      for (const resolve of allClosedResolvers.splice(0)) {
-        resolve()
-      }
-    }
-  }
 
   function settle(id: number): void {
     rendered.delete(id)
     closedResolvers.get(id)?.()
     closedResolvers.delete(id)
-    settleAllClosed()
   }
 
   function settleUnrendered(entries: DialogEntry[]): void {
@@ -81,12 +69,6 @@ export function createDialogController(
   }
 
   const controller: DialogController = {
-    allClosed() {
-      return new Promise((resolve) => {
-        allClosedResolvers.push(resolve)
-        settleAllClosed()
-      })
-    },
     close(id) {
       const index = id === undefined ? stack.length - 1 : stack.findIndex((entry) => entry.id === id)
       if (index !== -1) {

@@ -10,7 +10,6 @@ handle.close() // closes this dialog
 await handle.closed // resolves after the dialog is closed and its leave animation has finished
 dialog.close() // closes the top dialog
 dialog.closeAll() // closes every dialog
-await dialog.allClosed() // resolves once no dialog is open and every leave animation has finished
 
 dialog.open(LazySomeUserDialog, { text: 'test', userId: 42 }, { placement: 'bottom' })
 dialog.open(LazySomeUserDialog, { text: 'test', userId: 42 }, { placement: 'fullscreen' })
