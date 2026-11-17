@@ -7,6 +7,7 @@ const dialog = useDialog()
 const handle = dialog.open(LazySomeUserDialog, { text: 'test', userId: 42 })
 
 handle.close() // closes this dialog
+await handle.closed // resolves after the dialog is closed and its leave animation has finished
 dialog.close() // closes the top dialog
 dialog.closeAll() // closes every dialog
 
