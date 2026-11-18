@@ -1,5 +1,11 @@
 # @brickflow/lint
 
+## 0.0.72
+
+### Patch Changes
+
+- Fix race condition abort
+
 ## 0.0.71
 
 ### Patch Changes
