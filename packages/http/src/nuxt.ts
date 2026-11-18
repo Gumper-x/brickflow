@@ -189,20 +189,21 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
         result.hasFreshData = true
       }
 
-      const raceCondition: Record<string, number> = {}
+      const raceCondition: Record<string, { id: number; signal?: AbortSignal }> = {}
       const ttl = dependencies.ttl ?? DEFAULT_TTL
 
       const runFetch = async (params?: P, fetchOpt?: { signal?: AbortSignal }): Promise<void> => {
         const mappedParams = resolveParams(params)
         const fullUrl = buildUrl(options.url, mappedParams)
         const fetchId = Date.now() + getRandom(0, 300)
+        const inFlight = raceCondition[fullUrl]
 
-        if (raceCondition[fullUrl]) {
+        if (inFlight && !inFlight.signal?.aborted) {
           console.info('Race Condition affect', fullUrl)
           return
         }
 
-        raceCondition[fullUrl] = fetchId
+        raceCondition[fullUrl] = { id: fetchId, signal: fetchOpt?.signal }
 
         try {
           result.pending = true
@@ -274,7 +275,7 @@ export function createUseHttp(dependencies: CreateUseHttpDependencies): UseHttpF
         } catch (error) {
           console.error(error)
         } finally {
-          if (raceCondition[fullUrl] === fetchId) {
+          if (raceCondition[fullUrl]?.id === fetchId) {
             delete raceCondition[fullUrl]
           }
 
